@@ -320,6 +320,12 @@
 }
 
 \newcounter{taphasecur}
+\newif\ifregisterphasepart
+
+\newcommand{\phasepart}[5]{%
+  \registerphaseparttrue
+  \phasedivider{#1}{#2}{#3}{#4}{#5}%
+}
 
 \newcommand{\chapline}[3]{%
   \noindent
@@ -332,6 +338,12 @@
 \newcommand{\phasedivider}[5]{%
   \setcounter{taphasecur}{#1}%
   \cleardoublepage
+  \ifregisterphasepart
+    \refstepcounter{part}%
+    \addcontentsline{toc}{part}{\protect\numberline{Part~\thepart}Phase #1: #2}%
+    \markboth{Phase #1. #2}{Phase #1. #2}%
+    \registerphasepartfalse
+  \fi
   \thispagestyle{empty}
   \begin{tikzpicture}[remember picture, overlay]
     \fill[taPaper]
