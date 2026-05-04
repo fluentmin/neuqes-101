@@ -45,8 +45,6 @@
 
 \index{1intercept\_@intercept\_}
 
-\index{1multi\_class@multi\_class}
-
 \index{1predict\_proba@predict\_proba}
 
 \index{1binary equivalence@binary equivalence}
@@ -78,7 +76,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 1 & (TF-IDF) & \inlinecode{TfidfVectorizer()} & Yelp 5,000 & --- & --- & --- \\
 2 & \inlinecode{LinearRegression()} & \inlinecode{TfidfVectorizer()} & Yelp (별점 1-5) & (1차원) & 없음 & \inlinecode{MSELoss} \\
 3 & \inlinecode{LogisticRegression()} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (1차원) & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
-\textbf{4 ← 여기} & \inlinecode{LogisticRegression(multi\_class="multinomial")} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & \textbf{(2차원)} & \textbf{softmax} & \textbf{\inlinecode{CrossEntropyLoss}} \\
+\textbf{4 ← 여기} & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & \textbf{(2차원)} & \textbf{softmax} & \textbf{\inlinecode{CrossEntropyLoss}} \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -159,7 +157,6 @@ criterion = nn.CrossEntropyLoss()
 loss = criterion(logits, targets)
 
 LogisticRegression(
-    multi_class="multinomial",
     max_iter=1000,
 )
 \end{lstlisting}
@@ -287,7 +284,7 @@ object   shape
 \midrule
 
 A (\ref{ch:03}장 그대로) & \inlinecode{LogisticRegression()} & 1 & sigmoid & BCE \\
-B (이 장) & \inlinecode{LogisticRegression(multi\_class="multinomial")} & 2 & softmax & CE \\
+B (이 장) & \inlinecode{LogisticRegression()} (multinomial 자동) & 2 & softmax & CE \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -497,7 +494,7 @@ method         coef_shape  intercept_shape
 이름 & 한 줄 설명 & 다음 장에서 \\
 \midrule
 
-\inlinecode{LogisticRegression(multi\_class="multinomial")} & softmax + CE 다중 분류 (이 장엔 K=2) & \ref{ch:05}장에서 K=5로 확장, \ref{ch:11}장 BERT multi-class에서 같은 패러다임 \\
+\inlinecode{LogisticRegression()} (multinomial 자동) & softmax + CE 다중 분류 (이 장엔 K=2) & \ref{ch:05}장에서 K=5로 확장, \ref{ch:11}장 BERT multi-class에서 같은 패러다임 \\
 \inlinecode{sklearn.metrics.log\_loss} & CE/BCE 평가 함수 (multi-class 호환) & --- \\
 \bottomrule
 \end{tabular}
@@ -586,34 +583,26 @@ method         coef_shape  intercept_shape
 
 \end{faqBox}
 
-\begin{faqBox}{Q4. (실무) sklearn에서 binary에 \inlinecode{multi\_class="multinomial"} 을 줘도 \inlinecode{coef\_.shape}가 \inlinecode{(1,\ V)} 인 이유는?}
+\begin{faqBox}{Q4. (실무) sklearn binary에서 \inlinecode{coef\_.shape}가 왜 \inlinecode{(1,\ V)} 인가요?}
 
 위 본문에서 확인했듯 K=2 softmax는 두 logit 중 하나가 잉여(redundant)입니다 --- \(z_1 - z_0\) 만 의미가 있어요. sklearn은 이걸 알고 \textbf{K=2 multinomial을 자동으로 binary form으로 collapse} 시킵니다. 그래서 \inlinecode{coef\_} 가 \inlinecode{(2,\ V)} 가 아니라 \inlinecode{(1,\ V)}, \inlinecode{intercept\_} 도 \inlinecode{(1,)} 로 저장됩니다.
 
 \Needspace{5\baselineskip}
 \begin{lstlisting}
-LogisticRegression(multi_class="multinomial").fit(X, y_binary).coef_.shape
+LogisticRegression().fit(X, y_binary).coef_.shape
 # (1, V)
-LogisticRegression(multi_class="multinomial").fit(X, y_3class).coef_.shape
+LogisticRegression().fit(X, y_3class).coef_.shape
 \end{lstlisting}
 
 그래서 방식 A와 방식 B가 sklearn 안에서는 사실상 같은 모델이고, predict\_proba도 미세한 수치 오차 빼고 일치합니다. 진짜 \emph{두 별개의 logit head} 가 살아 있는 형태는 프레임워크가 collapse하지 않는 환경 --- PyTorch에서 \inlinecode{nn.Linear(H,\ 2)} 를 직접 만들 때 --- 비로소 등장합니다 (\ref{ch:10}장).
 
 \end{faqBox}
 
-\begin{faqBox}{Q5. (이론) sklearn \inlinecode{multi\_class} 인자의 의미와 자동 선택 기준은?}
+\begin{faqBox}{Q5. (이론) 최신 sklearn에서는 왜 \inlinecode{multi\_class} 인자를 쓰지 않나요?}
 
-\begin{itemize}
-\tightlist
-\item
-  \inlinecode{"multinomial"}: 모든 클래스를 한 번에 학습 (softmax). 이 장.
-\item
-  \inlinecode{"ovr"} (One-vs-Rest): K개 독립 binary 분류기. \ref{ch:06}장 multi-label로 가는 다리.
-\item
-  \inlinecode{"auto"} (기본값): solver와 데이터에 맞춰 자동 --- 클래스 2개면 binary, 3개 이상이면 multinomial(\inlinecode{lbfgs}, \inlinecode{newton-cg}, \inlinecode{sag}, \inlinecode{saga} solver) 또는 OvR(\inlinecode{liblinear}).
-\end{itemize}
+최신 sklearn에서는 \inlinecode{LogisticRegression()} 이 데이터의 클래스 개수를 보고 적절한 multi-class 동작을 선택합니다. \inlinecode{lbfgs} 같은 기본 solver에서는 K가 3 이상이면 multinomial softmax 방식으로 학습하고, K=2 binary에서는 수학적으로 동등한 1차원 binary form으로 collapse합니다.
 
-sklearn 1.5부터 \inlinecode{multi\_class} 자체가 deprecated이고 multinomial이 기본 동작이 됩니다. 호환성을 위해 명시할 때만 \inlinecode{multi\_class="multinomial"} 처럼 적습니다.
+따라서 이 원고의 실행 코드는 더 이상 \inlinecode{multi\_class="multinomial"} 을 명시하지 않습니다. 해당 인자는 sklearn 1.5부터 deprecated되었고, 이후 버전에서는 제거될 수 있습니다. 개념 설명에서는 \emph{multinomial/softmax}라는 말을 유지하되, API 호출은 \inlinecode{LogisticRegression(max\_iter=1000)} 처럼 씁니다.
 
 \end{faqBox}
 

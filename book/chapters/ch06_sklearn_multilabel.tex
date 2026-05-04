@@ -94,8 +94,8 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 1 & (TF-IDF) & \inlinecode{TfidfVectorizer()} & Yelp 5,000 & --- & --- & --- \\
 2 & \inlinecode{LinearRegression()} & \inlinecode{TfidfVectorizer()} & Yelp (별점 1-5) & (1차원) & 없음 & \inlinecode{MSELoss} \\
 3 & \inlinecode{LogisticRegression()} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (1차원) & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
-4 & \inlinecode{LogisticRegression(multi\_class="multinomial")} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
-5 & \inlinecode{LogisticRegression(multi\_class="multinomial")} & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
+4 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
+5 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
 \textbf{6 ← 여기} & \inlinecode{OneVsRestClassifier(LogisticRegression())} & \inlinecode{TfidfVectorizer()} & Yelp + 측면 키워드 합성 & (5차원) & \textbf{sigmoid (각각 독립)} & \textbf{\inlinecode{BCEWithLogitsLoss} per-label} \\
 \bottomrule
 \end{tabular}
@@ -1053,39 +1053,36 @@ display(threshold_table)
 
 \end{faqBox}
 
-\begin{faqBox}{Q7. (실무) \inlinecode{LogisticRegression(multi\_class="ovr")} (\ref{ch:05}장)와 \inlinecode{OneVsRestClassifier(LogisticRegression())} (이 장)은 정확히 어떻게 다른가요?}
+\begin{faqBox}{Q7. (실무) \ref{ch:05}장의 OvR 비교와 이 장의 \inlinecode{OneVsRestClassifier(LogisticRegression())}는 어떻게 다른가요?}
 
-겉보기엔 같은 OvR 알고리즘인데, 두 도구가 \emph{다른 위치} 에 있는 이유가 있습니다.
+겉보기엔 같은 OvR 알고리즘처럼 보이지만, \ref{ch:05}장과 이 장에서의 역할은 다릅니다. \ref{ch:05}장의 OvR은 multi-class softmax와 구조를 비교하기 위한 \emph{진단용 대안} 이고, 이 장의 OvR은 multi-label 문제를 실제로 푸는 \emph{주 모델} 입니다.
 
 \begin{booktable}{LogisticRegression OvR와 OneVsRestClassifier 비교}{tab:ch06-ovr-wrapper-comparison}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
-비교 항목 & \inlinecode{LogisticRegression(multi\_class="ovr")} (\ref{ch:05}장) & \inlinecode{OneVsRestClassifier(LogisticRegression())} (\ref{ch:06}장) \\
+비교 항목 & \ref{ch:05}장 OvR 비교 & \ref{ch:06}장 multi-label OvR \\
 \midrule
 
-정체 & 모델 \emph{인자(flag)} & 별도 \emph{wrapper class} (\inlinecode{sklearn.multiclass}) \\
-받는 Y 형식 & \textbf{1D만} (multi-class 인덱스 0\textasciitilde K-1) & \textbf{1D + 2D 둘 다} (multi-class 또는 multi-label) \\
-내부 저장 & 단일 \inlinecode{coef\_} shape \inlinecode{(K,\ V)} & K개 \emph{별도} estimator를 \inlinecode{.estimators\_} 리스트로, 각자 \inlinecode{coef\_} shape \inlinecode{(1,\ V)} \\
-base classifier & \inlinecode{LogisticRegression} 전용 (+ \inlinecode{LogisticRegressionCV}, \inlinecode{LinearSVC} 등 일부 선형 모델) & \textbf{임의 binary 분류기} 가능 (\inlinecode{SVC}, \inlinecode{RandomForestClassifier}, ...) \\
-multi-label 지원 & X (1D Y만 받으니 불가능) & OK \\
-sklearn 향후 & \inlinecode{multi\_class} 인자 deprecated 진행 중 (1.7+에서 제거 예정) & 표준 클래스로 그대로 유지 \\
+목적 & softmax multinomial과 비교 & multi-label을 직접 학습 \\
+받는 Y 형식 & 1D class index & 2D multi-hot label matrix \\
+예측 규칙 & K개 점수 중 하나를 선택 & label마다 독립 threshold 적용 \\
+확률 해석 & 한 샘플의 최종 예측은 한 클래스 & 여러 label이 동시에 1 가능 \\
+본문 역할 & 개념 비교용 보조 실험 & 이 장의 표준 모델 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
 \end{booktable}
 
-\textbf{핵심 차이}: \inlinecode{multi\_class="ovr"}은 \emph{multi-class 분류 안에서의 옵션} 이고, \inlinecode{OneVsRestClassifier}는 \emph{multi-class와 multi-label 둘 다 처리하는 일반 wrapper} 입니다.
+\textbf{핵심 차이}: multi-class에서는 최종적으로 \emph{하나의 클래스} 를 고르는 반면, multi-label에서는 각 label을 독립적으로 켜거나 끕니다. 최신 sklearn 코드에서는 구식 \inlinecode{multi\_class} 인자를 쓰지 않고, OvR 구조가 필요할 때 \inlinecode{OneVsRestClassifier(LogisticRegression())} 를 명시합니다.
 
-\Needspace{11\baselineskip}
+\Needspace{9\baselineskip}
 \begin{lstlisting}
-LogisticRegression(multi_class="ovr").fit(X, y_1d)
-LogisticRegression(multi_class="ovr").fit(X, y_multihot)
-
 OneVsRestClassifier(LogisticRegression()).fit(X, y_1d)
-# OK multi-class
+# OK: multi-class comparison, choose one class
+
 OneVsRestClassifier(LogisticRegression()).fit(X, y_multihot)
-# OK multi-label
+# OK: multi-label, threshold each label
 
 from sklearn.svm import SVC
 OneVsRestClassifier(SVC(probability=True)).fit(X, y_multihot)
@@ -1097,12 +1094,12 @@ OneVsRestClassifier(SVC(probability=True)).fit(X, y_multihot)
 \begin{itemize}
 \tightlist
 \item
-  multi-class에서 LogReg의 \emph{내장 OvR} 동작을 잠깐 비교하고 싶다면 \inlinecode{multi\_class="ovr"} (단, 향후 deprecated이라 신규 코드는 권장하지 않음).
+  보통의 multi-class 문제라면 \inlinecode{LogisticRegression()} 으로 충분합니다. 최신 sklearn은 K가 3 이상일 때 multinomial softmax 동작을 자동으로 선택합니다.
 \item
-  multi-label, 또는 base 분류기를 바꿔야 하거나, K개 binary 모델을 \emph{명시적으로} 다루고 싶다면 \inlinecode{OneVsRestClassifier} (안정적, 미래에도 그대로).
+  multi-label이거나, K개 binary 모델을 \emph{명시적으로} 다루고 싶다면 \inlinecode{OneVsRestClassifier} 를 씁니다.
 \end{itemize}
 
-이 커리큘럼은 \ref{ch:05}장에서 \textbf{개념 비교용으로} \inlinecode{multi\_class="ovr"} 을 잠깐 썼고, \ref{ch:06}장의 multi-label에서는 \textbf{표준 도구인} \inlinecode{OneVsRestClassifier} 로 정착합니다.
+이 커리큘럼은 \ref{ch:05}장에서 \textbf{개념 비교용으로} OvR wrapper를 잠깐 보여주고, \ref{ch:06}장의 multi-label에서는 \textbf{표준 도구인} \inlinecode{OneVsRestClassifier} 로 정착합니다.
 \end{faqBox}
 
 
@@ -1118,10 +1115,7 @@ y_pseudo_class = Y[mask_nonempty].argmax(axis=1)
 texts = df["text"][mask_nonempty]
 
 X_pseudo = tfidf.transform(texts)
-model_pseudo = LogisticRegression(
-    multi_class="multinomial",
-    max_iter=1000,
-)
+model_pseudo = LogisticRegression(max_iter=1000)
 model_pseudo.fit(X_pseudo[:4000], y_pseudo_class[:4000])
 acc_pseudo = (model_pseudo.predict(X_pseudo[4000:]) == y_pseudo_class[4000:]).mean()
 display(pd.DataFrame([{"metric": "pseudo_multiclass_accuracy", "value": acc_pseudo}]))

@@ -72,7 +72,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 \midrule
 
 3 & \inlinecode{LogisticRegression()} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (1차원) & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
-4 & \inlinecode{LogisticRegression(multi\_class="multinomial")} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
+4 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
 9 & DistilBERT 파인튜닝 & \inlinecode{AutoTokenizer.from\_pretrained(...)} & Yelp (별점 1-5) & \inlinecode{Linear(H,\ 1)} & 없음 & \inlinecode{MSELoss} \\
 10 & DistilBERT 파인튜닝 & 같음 & Yelp 이진화 & \inlinecode{Linear(H,\ 1)} & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
 \textbf{11 ← 여기} & DistilBERT 파인튜닝 & 같음 & Yelp 이진화 (\ref{ch:10}장과 동일) & \textbf{\inlinecode{Linear(H,\ 2)}} & \textbf{softmax} & \textbf{\inlinecode{CrossEntropyLoss}} \\
@@ -657,8 +657,8 @@ sns.kdeplot(
     palette=PAL, ax=ax,
 )
 ax.axvline(0.0, color="black", lw=1.2, ls="--", alpha=0.7)
-ax.set_title("Method B — Logit Distribution  (z = z1 − z0)")
-ax.set_xlabel("Logit  z = z1 − z0")
+ax.set_title("Method B — Logit Distribution  (z = z1 - z0)")
+ax.set_xlabel("Logit  z = z1 - z0")
 ax.set_ylabel("Density")
 plt.tight_layout()
 plt.show()
@@ -1138,7 +1138,7 @@ probs_full = torch.softmax(
 
 \end{faqBox}
 
-\begin{faqBox}{Q4. (이론) 방식 A는 sklearn \inlinecode{LogisticRegression()} 과 같은 셋업이고, 방식 B는 \inlinecode{LogisticRegression(multi\_class="multinomial")} 같은 셋업이라고 했는데 --- 그러면 sklearn에서도 두 모델의 학습 결과가 BERT처럼 다른가요?}
+\begin{faqBox}{Q4. (이론) 방식 A와 방식 B가 sklearn 안에서는 사실상 같은 모델이라고 했는데 --- 그러면 sklearn에서도 두 모델의 학습 결과가 BERT처럼 다른가요?}
 
 sklearn에서는 두 \emph{방식} 의 차이가 BERT보다 훨씬 작습니다. 이유는:
 

@@ -608,7 +608,7 @@ TrainOutput(global_step=..., training_loss=..., metrics={...})
 \end{itemize}
 
 \begin{quote}
-📒 \textbf{부록 노트북 두 편}
+\textbf{부록 노트북 두 편}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -828,7 +828,7 @@ plt.show()
 
 \subsection{잔차 분포}
 
-\inlinecode{Predicted\ −\ Actual} 을 y축에 두고 0 기준선을 긋습니다. 잔차가 0 근처에 좁게 모일수록 정확하고, 양/음 한 쪽으로 치우치면 \emph{bias} 가 있다는 뜻.
+\inlinecode{Predicted - Actual} 을 y축에 두고 0 기준선을 긋습니다. 잔차가 0 근처에 좁게 모일수록 정확하고, 양/음 한 쪽으로 치우치면 \emph{bias} 가 있다는 뜻.
 
 
 
@@ -846,8 +846,8 @@ ax.axhline(
     linewidth=1,
     alpha=0.7,
 )
-ax.set_title("Residual = Predicted − Actual, per actual class")
-ax.set_ylabel("Residual (predicted − actual)")
+ax.set_title("Residual = Predicted - Actual, per actual class")
+ax.set_ylabel("Residual (predicted - actual)")
 ax.legend(loc="upper left")
 plt.tight_layout()
 \end{lstlisting}
@@ -877,7 +877,7 @@ plt.show()
 \item
   잔차의 \emph{폭} 이 그 class에서의 일반적 오차 크기. BERT가 sklearn보다 좁다면 더 정확.
 \item
-  두 끝 class(1점, 5점)에서 잔차 중심이 \emph{반대 방향} (1점은 +, 5점은 −)으로 치우치는 패턴이 자주 보입니다 --- 위에서 본 \emph{regression to the mean} 의 잔차 시각화 형태.
+  두 끝 class(1점, 5점)에서 잔차 중심이 \emph{반대 방향} (1점은 \(+\), 5점은 \(-\))으로 치우치는 패턴이 자주 보입니다 --- 위에서 본 \emph{regression to the mean} 의 잔차 시각화 형태.
 \item
   0 기준선에서 멀리 늘어진 꼬리는 큰 오차를 내는 outlier 샘플들. 어느 모델이 꼬리가 더 두꺼운지 비교.
 \end{itemize}

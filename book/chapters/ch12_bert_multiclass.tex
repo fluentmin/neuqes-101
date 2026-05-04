@@ -73,7 +73,7 @@
 Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 \midrule
 
-5 & \inlinecode{LogisticRegression(multinomial)} & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
+5 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
 11 & DistilBERT 파인튜닝 & \inlinecode{AutoTokenizer.from\_pretrained(...)} & Yelp 이진화 & \inlinecode{Linear(H,\ 2)} & softmax & \inlinecode{CrossEntropyLoss} \\
 \textbf{12 ← 여기} & DistilBERT 파인튜닝 & 같음 & \textbf{Yelp 5클래스} & \textbf{\inlinecode{Linear(H,\ 5)}} & softmax & \inlinecode{CrossEntropyLoss} \\
 13 (다음) & DistilBERT 파인튜닝 & 같음 & Yelp + 측면 키워드 (5라벨 multi-label) & \inlinecode{Linear(H,\ 5)} & sigmoid (per-label) & \inlinecode{BCEWithLogitsLoss} (per-label) \\

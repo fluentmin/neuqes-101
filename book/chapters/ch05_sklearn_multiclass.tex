@@ -55,8 +55,6 @@
 
 \index{1class\_weight@class\_weight}
 
-\index{1multi\_class@multi\_class}
-
 \index{0다항 로지스틱 회귀@다항 로지스틱 회귀}
 
 \index{0일대나머지@일대나머지}
@@ -88,8 +86,8 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 1 & (TF-IDF) & \inlinecode{TfidfVectorizer()} & Yelp 5,000 & --- & --- & --- \\
 2 & \inlinecode{LinearRegression()} & \inlinecode{TfidfVectorizer()} & Yelp (별점 1-5) & (1차원) & 없음 & \inlinecode{MSELoss} \\
 3 & \inlinecode{LogisticRegression()} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (1차원) & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
-4 & \inlinecode{LogisticRegression(multi\_class="multinomial")} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
-\textbf{5 ← 여기} & \inlinecode{LogisticRegression(multi\_class="multinomial")} & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 (별점 0-4) & \textbf{(5차원)} & softmax & \inlinecode{CrossEntropyLoss} \\
+4 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
+\textbf{5 ← 여기} & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 (별점 0-4) & \textbf{(5차원)} & softmax & \inlinecode{CrossEntropyLoss} \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -111,7 +109,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 데이터 & Yelp 이진화 (K=2) & \textbf{Yelp 5클래스 (K=5)} \\
 Output Head & (2차원) & \textbf{(5차원)} \\
 활성화·Loss & softmax + CE & softmax + CE (그대로) \\
-모델·토크나이저 & LogReg(multinomial) + TF-IDF & 그대로 \\
+모델·토크나이저 & LogReg (multinomial 자동) + TF-IDF & 그대로 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -290,7 +288,7 @@ split  X_shape        y_shape
 
 \section{실습: 5클래스 분류}
 
-코드는 \ref{ch:04}장에서 \inlinecode{multi\_class="multinomial"} 그대로 --- sklearn은 K가 클래스 개수에 자동으로 맞춥니다.
+코드는 \ref{ch:04}장과 같은 \inlinecode{LogisticRegression()} 한 줄입니다. 최신 sklearn은 학습 데이터의 클래스 개수를 보고 K=5 multi-class 문제에서는 multinomial softmax 방식으로 자동 학습합니다.
 
 
 
@@ -470,7 +468,7 @@ true 5★  10        3         7         51        124
 
 \section{변형: multinomial vs OvR}
 
-\inlinecode{multi\_class="multinomial"} 은 한 모델이 K개 logit을 \textbf{동시에} 학습합니다. softmax 한 번이라 합 = 1이 강제 --- “K개 클래스 중 정확히 하나”라는 \emph{상호배타} 가정.
+\inlinecode{LogisticRegression()} 의 multinomial 동작은 한 모델이 K개 logit을 \textbf{동시에} 학습합니다. softmax 한 번이라 합 = 1이 강제 --- “K개 클래스 중 정확히 하나”라는 \emph{상호배타} 가정.
 
 또 다른 방식 \textbf{OvR (One-vs-Rest)} 은 K개의 \emph{독립} binary 분류기. 각 분류기는 “이 클래스 vs 나머지 모든 클래스”만 학습합니다.
 
@@ -832,7 +830,6 @@ K=5 정도는 위 트릭이 필요 없는 작은 규모.
 \Needspace{7\baselineskip}
 \begin{lstlisting}
 model = LogisticRegression(
-    multi_class="multinomial",
     class_weight="balanced",
     max_iter=1000,
 )

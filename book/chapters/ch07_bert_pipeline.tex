@@ -94,8 +94,8 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 1 & (TF-IDF) & \inlinecode{TfidfVectorizer()} & Yelp 5,000 & --- & --- & --- \\
 2 & \inlinecode{LinearRegression()} & \inlinecode{TfidfVectorizer()} & Yelp (별점 1-5) & (1차원) & 없음 & \inlinecode{MSELoss} \\
 3 & \inlinecode{LogisticRegression()} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (1차원) & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
-4 & \inlinecode{LogisticRegression(multi\_class="multinomial")} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
-5 & \inlinecode{LogisticRegression(multi\_class="multinomial")} & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
+4 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
+5 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
 6 & \inlinecode{OneVsRestClassifier(LogisticRegression())} & \inlinecode{TfidfVectorizer()} & Yelp + 측면 합성 & (5차원) & per-label sigmoid & per-label \inlinecode{BCEWithLogitsLoss} \\
 \textbf{7 ← 여기} & \inlinecode{pipeline("sentiment-analysis")} & \inlinecode{AutoTokenizer.from\_pretrained(...)} & 간단 영어 예시 & \textbf{사전학습 헤드} & softmax & --- (추론만) \\
 \bottomrule
@@ -905,7 +905,7 @@ print(
 \end{adjustbox}
 \end{booktable}
 
-WordPiece와 BPE는 둘 다 \emph{서브워드 알고리즘} 이지만 학습·표기 방식이 달라서 토큰 모양이 시각적으로도 구분됩니다 --- \inlinecode{\#\#} 접두사 vs \inlinecode{Ġ} (공백) 접두사.
+WordPiece와 BPE는 둘 다 \emph{서브워드 알고리즘} 이지만 학습·표기 방식이 달라서 토큰 모양이 시각적으로도 구분됩니다 --- \inlinecode{\#\#} 접두사 vs \inlinecode{<space>} 접두사.
 
 
 
@@ -1047,7 +1047,7 @@ tokens / input_ids: [...]
 \item
   \textbf{\inlinecode{\#\#} 접두사 (WordPiece)}: DistilBERT·BERT는 단어 중간 서브워드를 \inlinecode{\#\#xxx} 로 표시. 예: \texttt{tokenization\ →\ {[}\textquotesingle{}token\textquotesingle{},\ \textquotesingle{}\#\#ization\textquotesingle{}{]}}. 이전 토큰의 \emph{연속} 이라는 신호.
 \item
-  \textbf{\inlinecode{Ġ} 접두사 (BPE)}: GPT-2는 토큰 앞에 공백이 있었는지를 \inlinecode{Ġ} (Latin small letter G with stroke) 로 표시. 예: \inlinecode{Ġlove} 는 “love 앞에 공백이 있었다”. 토큰화/디코딩이 정확히 역연산이 되도록 하는 표기.
+  \textbf{\inlinecode{<space>} 접두사 (BPE)}: GPT-2 계열 BPE는 토큰 앞에 공백이 있었는지를 별도 접두사로 표시합니다. 원래 토큰 표기에서는 Latin small letter G with dot 위쪽 기호를 쓰지만, 원고 코드 글꼴 호환성을 위해 여기서는 \inlinecode{<space>love} 처럼 뜻을 풀어 씁니다. 즉 “love 앞에 공백이 있었다”는 뜻이고, 토큰화/디코딩이 정확히 역연산이 되도록 하는 표기입니다.
 \item
   \textbf{대소문자}: \inlinecode{bert-base-cased} 는 \inlinecode{Hugging\ Face} 의 \inlinecode{H}, \inlinecode{F} 를 그대로 보존. \inlinecode{distilbert-base-uncased} 는 모두 소문자. 이름·고유명사 처리에서 차이가 큽니다.
 \item
@@ -1150,7 +1150,7 @@ print(
 
 
 \begin{quote}
-📒 \textbf{더 깊이 보고 싶다면 --- 부록 노트북}
+\textbf{더 깊이 보고 싶다면 --- 부록 노트북}
 
 \href{./appendix_model_config.ipynb}{\inlinecode{appendix\_model\_config.ipynb}} 에서 다음을 다룹니다:
 
