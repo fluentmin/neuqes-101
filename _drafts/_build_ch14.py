@@ -36,13 +36,13 @@ def code(text: str):
 
 
 # ----- 1. Title -----
-md(r"""# Chapter 14. BERT Auxiliary Loss — 측면 분류 + 별점 보조 회귀 (Phase 1 클라이맥스)
+md(r"""# Chapter 14. BERT Auxiliary Loss — 항목 분류 + 별점 보조 회귀 (Phase 1 클라이맥스)
 
-**목표**: Ch 13의 multi-label 측면 분류를 *메인 task* 로 그대로 두고, **별점 회귀 보조 헤드** 를 추가합니다. 손실은 가중합 형태:
+**목표**: Ch 13의 multi-label 항목 분류를 *메인 task* 로 그대로 두고, **별점 회귀 보조 헤드** 를 추가합니다. 손실은 가중합 형태:
 
-$$L = L_\text{main}(\text{측면 BCE per-label}) + \lambda \cdot L_\text{aux}(\text{별점 MSE})$$
+$$L = L_\text{main}(\text{항목 BCE per-label}) + \lambda \cdot L_\text{aux}(\text{별점 MSE})$$
 
-핵심 질문은 *"보조 task가 메인 task의 정확도를 끌어올리는가?"* — 같은 BERT 본체를 두 task가 *공유* 학습하면서, 별점이라는 *연속적이고 일관성 있는 신호* 가 측면 분류 표현에 도움이 되는지 직접 측정합니다.
+핵심 질문은 *"보조 task가 메인 task의 정확도를 끌어올리는가?"* — 같은 BERT 본체를 두 task가 *공유* 학습하면서, 별점이라는 *연속적이고 일관성 있는 신호* 가 항목 분류 표현에 도움이 되는지 직접 측정합니다.
 
 **환경**: Google Colab **T4 GPU 필수**.
 
@@ -68,8 +68,8 @@ md(r"""## 📊 변화추적표
 | Ch | 모델 | 토크나이저 | 데이터 | Output Head | Activation | Loss |
 |---|---|---|---|---|---|---|
 | 9 | DistilBERT 파인튜닝 | WordPiece | Yelp 별점 | `Linear(H, 1)` | 없음 | `MSELoss` |
-| 13 | DistilBERT 파인튜닝 | WordPiece | Yelp + 측면 합성 | `Linear(H, 5)` | sigmoid (각각) | `BCEWithLogitsLoss` |
-| **14 ← 여기** | DistilBERT + **보조 헤드** | WordPiece | Yelp + 측면 + **별점** | **메인(5) + 보조(1)** | 메인 sigmoid + 보조 없음 | **`BCE per-label + λ·MSE`** |
+| 13 | DistilBERT 파인튜닝 | WordPiece | Yelp + 항목 합성 | `Linear(H, 5)` | sigmoid (각각) | `BCEWithLogitsLoss` |
+| **14 ← 여기** | DistilBERT + **보조 헤드** | WordPiece | Yelp + 항목 + **별점** | **메인(5) + 보조(1)** | 메인 sigmoid + 보조 없음 | **`BCE per-label + λ·MSE`** |
 | 15 (다음 Phase 2) | klue/bert-base | WordPiece (한국어) | NSMC | `Linear(H, 2)` | softmax | `CrossEntropyLoss` |
 
 전체 20챕터 표는 [루트 README.md](https://github.com/yoon-gu/neuqes-101#챕터별-변화추적표)를 참고하세요.""")
@@ -106,7 +106,7 @@ md(r"""## 🎯 왜 Auxiliary Loss 인가 — 다섯 가지 동기
 
 메인 task만 학습하면 모델이 *그 task 한정* 으로 과적합됩니다. 보조 task가 BERT 본체를 *더 일반적인* 표현으로 끌고 가서 메인에서도 일반화가 좋아집니다. Dropout과 비슷한 효과지만 **데이터 신호** 로 정규화하는 점이 다릅니다.
 
-> **이번 챕터의 주된 목적이 이거.** 측면 라벨이 키워드 매칭으로 *합성* 되어 노이즈가 큰데, 별점은 사용자가 *직접* 매긴 깨끗한 ground truth. 별점 회귀를 보조로 두면 BERT가 *과도하게 키워드 매칭에 맞추는* 걸 막아 일반화에 도움.
+> **이번 챕터의 주된 목적이 이거.** 항목 라벨이 키워드 매칭으로 *합성* 되어 노이즈가 큰데, 별점은 사용자가 *직접* 매긴 깨끗한 ground truth. 별점 회귀를 보조로 두면 BERT가 *과도하게 키워드 매칭에 맞추는* 걸 막아 일반화에 도움.
 
 ### (2) 데이터 효율 — *공짜로 있는* 메타데이터 활용
 
@@ -140,7 +140,7 @@ aux_label  = star_rating                         # 데이터에 이미 있음 ($
 
 ### (5) 운영 시점에 둘 다 필요 — 진짜 multi-task
 
-추론 시점에 *두 task 결과가 모두 필요* 한 경우 — 한 번의 forward로 측면 분류 + 별점 예측을 동시에 받기. 엄밀히 말하면 *auxiliary* 가 아니라 *joint training* 이 됩니다.
+추론 시점에 *두 task 결과가 모두 필요* 한 경우 — 한 번의 forward로 항목 분류 + 별점 예측을 동시에 받기. 엄밀히 말하면 *auxiliary* 가 아니라 *joint training* 이 됩니다.
 
 > Ch 14는 *auxiliary* 패턴이라 추론 시 보조 헤드를 *호출하지 않습니다*. 별점 회귀는 학습 정규화 용도로만 사용. 운영에서 별점 예측이 필요하면 *auxiliary* 가 아니라 *joint multi-task* 를 의도적으로 설계.
 
@@ -150,7 +150,7 @@ aux_label  = star_rating                         # 데이터에 이미 있음 ($
 
 이번 챕터의 셋업은 다섯 중 두 가지에 해당합니다:
 
-- **(1) 정규화**: 합성 측면 라벨의 노이즈를 깨끗한 별점 신호로 정규화 — 주된 효과
+- **(1) 정규화**: 합성 항목 라벨의 노이즈를 깨끗한 별점 신호로 정규화 — 주된 효과
 - **(2) 데이터 효율**: 별점은 Yelp 데이터에 *이미* 있어 추가 라벨링 비용 0
 
 학습 결과를 해석할 때 두 효과가 *같이* 나타날 거라 예측. 메인 F1이 1-3%p 올라가면 정규화 효과가 두드러진 것, 5%p 이상이면 데이터 효율 + 정규화가 합쳐진 것.
@@ -175,9 +175,9 @@ BERT 자체가 *MLM + NSP (Next Sentence Prediction)* 이라는 멀티태스크 
 # ----- 4. Loss 노트 -----
 md(r"""## 📐 Loss 노트 — Combined loss `L = L_main + λ · L_aux`
 
-$$L = \underbrace{\frac{1}{N \cdot K}\sum_{i,k}\text{BCE}(z_{i,k}^{main}, y_{i,k}^{main})}_{L_\text{main}: \text{측면 BCE per-label}} + \lambda \cdot \underbrace{\frac{1}{N}\sum_{i}(z_{i}^{aux} - y_{i}^{aux})^2}_{L_\text{aux}: \text{별점 MSE}}$$
+$$L = \underbrace{\frac{1}{N \cdot K}\sum_{i,k}\text{BCE}(z_{i,k}^{main}, y_{i,k}^{main})}_{L_\text{main}: \text{항목 BCE per-label}} + \lambda \cdot \underbrace{\frac{1}{N}\sum_{i}(z_{i}^{aux} - y_{i}^{aux})^2}_{L_\text{aux}: \text{별점 MSE}}$$
 
-- $z^\text{main} \in \mathbb{R}^5$ — 측면 logit 5개, sigmoid 후 BCE.
+- $z^\text{main} \in \mathbb{R}^5$ — 항목 logit 5개, sigmoid 후 BCE.
 - $z^\text{aux} \in \mathbb{R}$ — 별점 회귀 logit (활성화 없음, 직접 MSE).
 - $\lambda$ — 보조 loss의 가중치 (hyperparameter, 보통 0.1-10 범위 탐색).
 
@@ -193,7 +193,7 @@ $$L = \underbrace{\frac{1}{N \cdot K}\sum_{i,k}\text{BCE}(z_{i,k}^{main}, y_{i,k
 
 이번 챕터에선 **λ=1** 로 학습하고 λ=0 baseline과 비교. 실무에선 validation set에서 λ를 grid search (0.1, 0.3, 1, 3, 10).
 
-**숫자로 감 잡기 (단일 샘플)** — 측면 multi-hot $\mathbf{y}^\text{main} = [1, 0, 1, 0, 1]$, 별점 보조 라벨 $y^\text{aux} = 0.75$ (4★/4):
+**숫자로 감 잡기 (단일 샘플)** — 항목 multi-hot $\mathbf{y}^\text{main} = [1, 0, 1, 0, 1]$, 별점 보조 라벨 $y^\text{aux} = 0.75$ (4★/4):
 
 | 단계 | 값 |
 |---|---|
@@ -250,12 +250,12 @@ md(r"""**baseline VRAM**:""")
 
 code(r"""!nvidia-smi""")
 
-# ----- 8. 데이터 + 측면 + 별점 -----
-md(r"""## 1. 🚀 데이터 — Yelp + 측면 (Ch 13) + 별점 보조 라벨
+# ----- 8. 데이터 + 항목 + 별점 -----
+md(r"""## 1. 🚀 데이터 — Yelp + 항목 (Ch 13) + 별점 보조 라벨
 
-Ch 13의 측면 합성 라벨을 그대로 쓰고, **별점 보조 회귀 라벨** 을 추가합니다. 별점은 1-5 정수지만 회귀 헤드와 MSE를 자연스럽게 쓰기 위해 *0-1 스케일* 로 변환만 해 둡니다 (학습 정규화 효과를 위한 데이터 가공이 아니라, 그냥 단위만 맞추는 작업).
+Ch 13의 항목 합성 라벨을 그대로 쓰고, **별점 보조 회귀 라벨** 을 추가합니다. 별점은 1-5 정수지만 회귀 헤드와 MSE를 자연스럽게 쓰기 위해 *0-1 스케일* 로 변환만 해 둡니다 (학습 정규화 효과를 위한 데이터 가공이 아니라, 그냥 단위만 맞추는 작업).
 
-- 메인 라벨 $\mathbf{y}^\text{main} \in \{0, 1\}^5$ — 측면 multi-hot.
+- 메인 라벨 $\mathbf{y}^\text{main} \in \{0, 1\}^5$ — 항목 multi-hot.
 - 보조 라벨 $y^\text{aux} = \text{label} / 4 \in [0, 1]$ — 1★ → 0.0, 5★ → 1.0.""")
 
 code(r"""ASPECT_KEYWORDS = {
@@ -656,9 +656,9 @@ md(r"""**해석 가이드**
 - `delta` < 0 — 보조 loss 가 메인 task 를 *방해* 함 (λ가 너무 큼 / 보조 task 가 메인과 상관 약함).
 - `delta` ≈ 0 — 별 영향 없음 (보조 신호가 메인 표현에 의미 없는 추가).
 
-별점은 측면 분포와 *부분적으로* 상관 (긍정 측면 → 높은 별점) 이라 *작은 양의 delta* 가 자연스러운 결과. 0.5%p 정도면 노이즈일 수 있고, 1-2%p 면 의미 있는 효과.""")
+별점은 항목 분포와 *부분적으로* 상관 (긍정 항목 → 높은 별점) 이라 *작은 양의 delta* 가 자연스러운 결과. 0.5%p 정도면 노이즈일 수 있고, 1-2%p 면 의미 있는 효과.""")
 
-md(r"""### 8-2. 라벨별 F1 비교 — 어느 측면이 보조 loss로 가장 도움받았나""")
+md(r"""### 8-2. 라벨별 F1 비교 — 어느 항목이 보조 loss로 가장 도움받았나""")
 
 code(r"""def per_label_f1(Y_true, Y_pred):
     f1s = []
@@ -699,8 +699,8 @@ plt.show()""")
 
 md(r"""**해석**
 
-- **별점과 상관이 강한 측면** (food, service): 보조 별점 회귀 학습이 *긍정/부정 신호* 를 잘 잡으면 도움이 됩니다. 작은 양의 delta 기대.
-- **별점과 상관이 약한 측면** (location, price): 별점 신호가 *직접적 도움* 이 안 됨. delta가 0 근처거나 약간 음수일 수 있음.
+- **별점과 상관이 강한 항목** (food, service): 보조 별점 회귀 학습이 *긍정/부정 신호* 를 잘 잡으면 도움이 됩니다. 작은 양의 delta 기대.
+- **별점과 상관이 약한 항목** (location, price): 별점 신호가 *직접적 도움* 이 안 됨. delta가 0 근처거나 약간 음수일 수 있음.
 - **분산이 큰 라벨** — eval 표본이 적어 F1 자체가 노이즈가 큼. delta 도 의미 해석 조심.""")
 
 # ----- 19. 보조 task 자체 평가 -----
@@ -815,7 +815,7 @@ class DistilBertForSequenceClassification:
 
 네, 정확히 그렇습니다. 예시:
 
-- 메인: 측면 분류 (긍정 측면 vs 부정 측면)
+- 메인: 항목 분류 (Ch 13 의 5개 항목 multi-label 셋업 그대로)
 - 보조: *반대로* 라벨링된 별점 (1★=좋음, 5★=나쁨 — 라벨링 실수 시나리오)
 
 이 경우 두 task의 gradient가 BERT 본체에서 *반대 방향* 으로 끌어당겨 학습이 *발산* 하거나 *느려집니다*. 진단 신호:
@@ -823,7 +823,7 @@ class DistilBertForSequenceClassification:
 - 두 task의 train loss 가 *둘 다 정체* (서로 상쇄)
 - λ 를 키울수록 메인 metric 이 *떨어짐*
 
-해결: 보조 task가 메인과 같은 방향 신호인지 *간단한 sklearn baseline* 부터 확인. 별점이 측면 분류와 양의 상관이면 보조로 쓸 만함.
+해결: 보조 task가 메인과 같은 방향 신호인지 *간단한 sklearn baseline* 부터 확인. 별점이 항목 분류와 양의 상관이면 보조로 쓸 만함.
 
 ### Q5. (실무) 보조 task로 어떤 신호를 쓰는 게 좋나요?
 
@@ -831,7 +831,7 @@ class DistilBertForSequenceClassification:
 
 | 좋은 조건 | 예시 |
 |---|---|
-| *메인과 양의 상관* | 측면 분류 ↔ 별점, 감성 분류 ↔ 이모지 사용 |
+| *메인과 양의 상관* | 항목 분류 ↔ 별점, 감성 분류 ↔ 이모지 사용 |
 | *학습 데이터가 *공짜로* 있음* | 메타데이터(별점, 작성일, 길이) — 라벨링 비용 0 |
 | *연속적이고 안정적인 신호* | float regression, 순서형 점수 |
 | *메인보다 *덜 복잡* 한 task* | 회귀 < 분류, 단어 vs 문장 |
@@ -853,7 +853,7 @@ trainer.train()   # main + aux 둘 다 학습
 # 추론 시: 별점 없음 → 메인 head만 사용
 with torch.no_grad():
     out = model(input_ids=..., output_hidden_states=False)
-    main_probs = torch.sigmoid(out.logits)   # 측면 예측만
+    main_probs = torch.sigmoid(out.logits)   # 항목 예측만
     # aux_head 는 *호출 안 함*
 ```
 

@@ -91,7 +91,7 @@ $$L = \frac{1}{N} \sum_{i=1}^{N} (y_i - \hat y_i)^2$$
 
 다른 점은 *어떻게 이 $L$을 최소화하느냐* 입니다.
 
-| 측면 | Ch 2 (`LinearRegression`) | Ch 9 (BERT) |
+| 항목 | Ch 2 (`LinearRegression`) | Ch 9 (BERT) |
 |---|---|---|
 | 최소화 방법 | 정규방정식 $w = (X^\top X)^{-1} X^\top y$ — 한 번에 닫힌 해 | Adam optimizer — gradient descent step을 수천 번 |
 | 학습 시간 | 1초 미만 | T4에서 5-8분 |

@@ -36,7 +36,7 @@ def code(text: str):
 
 
 # ----- 1. Title -----
-md(r"""# Chapter 13. BERT Multi-label — Yelp 측면(aspect) 키워드
+md(r"""# Chapter 13. BERT Multi-label — Yelp 항목(aspect) 키워드
 
 **목표**: Ch 12(BERT 5클래스 분류) 셋업과 출력 헤드 크기를 *완전히 동일* 하게 둡니다 (`num_labels=5` 그대로). 변하는 건 **task의 의미** 입니다 — 5개 라벨이 *서로 배타적인 클래스* 가 아니라 *각각 독립적으로 활성될 수 있는 태그* 입니다 ("food" 와 "service" 가 동시에 1).
 
@@ -48,7 +48,7 @@ md(r"""# Chapter 13. BERT Multi-label — Yelp 측면(aspect) 키워드
 
 ## 학습 흐름
 
-1. 🚀 **실습**: Ch 6에서 만들었던 *측면 키워드 합성 라벨* (food/service/price/ambiance/location)을 그대로 BERT로 학습. `num_labels=5` + `problem_type="multi_label_classification"` 로 BCE per-label 자동 매핑.
+1. 🚀 **실습**: Ch 6에서 만들었던 *항목 키워드 합성 라벨* (food/service/price/ambiance/location)을 그대로 BERT로 학습. `num_labels=5` + `problem_type="multi_label_classification"` 로 BCE per-label 자동 매핑.
 2. 🔬 **해부**: 라벨별 sigmoid 확률 분포 (5 패널 KDE) + 라벨 간 공동 활성 패턴 (correlation heatmap).
 3. 🛠️ **클라이맥스**: 같은 노트북 안에서 Ch 6의 sklearn `OneVsRestClassifier(LogisticRegression)` baseline 재현 → 라벨별 metric 비교.
 
@@ -61,11 +61,11 @@ md(r"""## 📊 변화추적표
 
 | Ch | 모델 | 토크나이저 | 데이터 | Output Head | Activation | Loss |
 |---|---|---|---|---|---|---|
-| 6 | `OneVsRestClassifier(LogisticRegression())` | `TfidfVectorizer()` | Yelp + 측면 키워드 합성 | (5차원) | sigmoid (각각) | `BCEWithLogitsLoss` per-label |
+| 6 | `OneVsRestClassifier(LogisticRegression())` | `TfidfVectorizer()` | Yelp + 항목 키워드 합성 | (5차원) | sigmoid (각각) | `BCEWithLogitsLoss` per-label |
 | 10 | DistilBERT 파인튜닝 | `AutoTokenizer.from_pretrained(...)` | Yelp 이진화 | `Linear(H, 1)` | sigmoid | `BCEWithLogitsLoss` |
 | 12 | DistilBERT 파인튜닝 | 같음 | Yelp 5클래스 | `Linear(H, 5)` | softmax | `CrossEntropyLoss` |
-| **13 ← 여기** | DistilBERT 파인튜닝 | 같음 | **Yelp + 측면 키워드 합성** | **`Linear(H, 5)`** | **sigmoid (per-label)** | **`BCEWithLogitsLoss` (per-label)** |
-| 14 (다음) | DistilBERT 파인튜닝 | 같음 | Yelp + 측면 + 별점 보조 | `Linear(H, 5)` 메인 + `Linear(H, 1)` 보조 | sigmoid + 없음 | `BCE(per-label) + λ·MSE` |
+| **13 ← 여기** | DistilBERT 파인튜닝 | 같음 | **Yelp + 항목 키워드 합성** | **`Linear(H, 5)`** | **sigmoid (per-label)** | **`BCEWithLogitsLoss` (per-label)** |
+| 14 (다음) | DistilBERT 파인튜닝 | 같음 | Yelp + 항목 + 별점 보조 | `Linear(H, 5)` 메인 + `Linear(H, 1)` 보조 | sigmoid + 없음 | `BCE(per-label) + λ·MSE` |
 
 전체 20챕터 표는 [루트 README.md](https://github.com/yoon-gu/neuqes-101#챕터별-변화추적표)를 참고하세요.""")
 
@@ -165,12 +165,12 @@ md(r"""**baseline VRAM**:""")
 
 code(r"""!nvidia-smi""")
 
-# ----- 8. 데이터 + 측면 라벨 합성 -----
-md(r"""## 1. 🚀 데이터 — Yelp + 측면(aspect) 합성 라벨 (Ch 6과 동일)
+# ----- 8. 데이터 + 항목 라벨 합성 -----
+md(r"""## 1. 🚀 데이터 — Yelp + 항목(aspect) 합성 라벨 (Ch 6과 동일)
 
-Yelp 리뷰엔 multi-label 정답이 없습니다. Ch 6에서처럼 5개 측면(aspect)별 키워드 사전을 만들어 텍스트에서 매칭 — 어떤 키워드라도 등장하면 해당 측면을 1로 활성. 5차원 multi-hot 벡터가 합성됩니다.
+Yelp 리뷰엔 multi-label 정답이 없습니다. Ch 6에서처럼 5개 항목(aspect)별 키워드 사전을 만들어 텍스트에서 매칭 — 어떤 키워드라도 등장하면 해당 항목을 1로 활성. 5차원 multi-hot 벡터가 합성됩니다.
 
-| 측면 | 의미 | 키워드 예시 |
+| 항목 | 의미 | 키워드 예시 |
 |---|---|---|
 | `food` | 음식의 맛/메뉴 | food, meal, dish, taste, delicious, ... |
 | `service` | 서비스/응대 | service, staff, waiter, friendly, rude, ... |
@@ -178,7 +178,7 @@ Yelp 리뷰엔 multi-label 정답이 없습니다. Ch 6에서처럼 5개 측면(
 | `ambiance` | 분위기/인테리어 | atmosphere, decor, music, vibe, cozy, ... |
 | `location` | 위치/주차 | location, parking, area, neighborhood, ... |
 
-> **합성의 한계** — 키워드 매칭은 *언급한 측면* 만 잡고 *언급한 측면이 긍정인지 부정인지* 는 알 수 없습니다. 또 *키워드 없이* 측면이 표현된 경우(예: "10 minutes wait" → service)도 놓칩니다. 이 한계는 챕터 끝에서 솔직히 짚습니다.""")
+> **합성의 한계** — 키워드 매칭은 *언급한 항목* 만 잡고 *언급한 항목이 긍정인지 부정인지* 는 알 수 없습니다. 또 *키워드 없이* 항목이 표현된 경우(예: "10 minutes wait" → service)도 놓칩니다. 이 한계는 챕터 끝에서 솔직히 짚습니다.""")
 
 code(r"""ASPECT_KEYWORDS = {
     "food": ["food", "meal", "dish", "taste", "delicious", "flavor", "menu",
@@ -212,7 +212,7 @@ ds = load_dataset("yelp_review_full")
 train_full = ds["train"].shuffle(seed=42).select(range(5000))
 eval_full  = ds["test"].shuffle(seed=42).select(range(1000))
 
-# 측면 라벨 합성 — 각 텍스트에 multi-hot 5차원 벡터 부착
+# 항목 라벨 합성 — 각 텍스트에 multi-hot 5차원 벡터 부착
 def attach_aspects(batch):
     batch["aspects"] = [extract_aspects(t) for t in batch["text"]]
     return batch
@@ -226,7 +226,7 @@ print(f"  text: {train_full[0]['text'][:150]}...")
 print(f"  aspects (multi-hot): {train_full[0]['aspects']}")
 print(f"  active aspects: {[a for a, v in zip(ASPECTS, train_full[0]['aspects']) if v > 0]}")""")
 
-code(r"""# 측면별 활성률
+code(r"""# 항목별 활성률
 Y_train = np.array(train_full["aspects"])
 Y_eval  = np.array(eval_full["aspects"])
 
@@ -382,6 +382,56 @@ print(classification_report(
     target_names=ASPECTS,
     digits=4, zero_division=0,
 ))""")
+
+# ----- 12-half. 샘플 단위 해석 -----
+md(r"""### 샘플 단위 해석 — 모델 출력을 읽어내는 법
+
+평가 metric (F1·hamming·AUC) 은 *전체 평균* 이라 모델이 *한 리뷰를 보고 어떻게 판단했는지* 직관이 안 옵니다. 본격 시각화로 가기 전에, 5차원 출력을 *문장 단위* 로 어떻게 해석하는지 두 샘플로 짚어 보겠습니다.""")
+
+code(r"""# 평가 셋에서 항목 활성이 가장 *많은* 샘플 1개 + 가장 *적은* 샘플 1개 골라 읽어보기
+n_active = labels.sum(axis=1)
+idx_many = int(np.argmax(n_active))   # 정답 항목이 가장 많은 샘플
+idx_few  = int(np.argmin(n_active))   # 정답 항목이 가장 적은 샘플
+
+# eval_full 에서 원문 텍스트 가져오기 (eval_tok 와 같은 순서)
+texts = list(eval_full["text"])
+
+for label_kind, idx in [("many active labels", idx_many), ("few active labels", idx_few)]:
+    print("=" * 78)
+    print(f"sample #{idx}  ({label_kind})")
+    print("=" * 78)
+    print(f"text (truncated): {texts[idx][:320]}{'...' if len(texts[idx]) > 320 else ''}")
+    print()
+    print(f"{'aspect':>10}  {'true':>6}  {'prob':>8}  {'pred (>=0.5)':>14}  match")
+    for k, a in enumerate(ASPECTS):
+        t = int(labels[idx, k])
+        p = float(probs[idx, k])
+        pr = int(preds[idx, k])
+        ok = "✓" if t == pr else "✗"
+        print(f"  {a:>9}  {t:>6}  {p:>8.4f}  {pr:>14}    {ok}")
+
+    # 사람이 읽는 한 줄 해석
+    pred_active = [a for k, a in enumerate(ASPECTS) if preds[idx, k]]
+    true_active = [a for k, a in enumerate(ASPECTS) if labels[idx, k]]
+    print()
+    print(f"  predicted: {pred_active}")
+    print(f"  true:      {true_active}")
+    print()""")
+
+md(r"""**읽는 법 — 표를 한 줄씩**
+
+1. **`true` 컬럼** — 키워드 합성으로 만든 *정답 multi-hot*. 1 이면 "이 리뷰 본문에 그 항목 키워드가 등장했다".
+2. **`prob` 컬럼** — 모델이 출력한 *각 항목 sigmoid 확률* (독립). 합이 1 일 필요 없음 — multi-label 의 본질.
+3. **`pred` 컬럼** — `prob ≥ 0.5` 이면 1, 아니면 0. *임계값 0.5* 는 사후 후처리 — 라벨별로 다른 값을 줄 수도 있음 (FAQ Q1).
+4. **사람이 읽는 한 줄**: `predicted: [...]` 와 `true: [...]` 가 *얼마나 겹치는지* — 두 리스트가 같으면 완벽한 hit, 한 항목 차이면 *near miss*, 전혀 다르면 모델이 헛다리.
+
+**이 표가 한 리뷰에 대해 보여주는 것**:
+
+- 모델이 *어떤 항목에 자신* 있는지 (prob 0.9 이상)
+- 어떤 항목에서 *망설이는지* (prob 0.4-0.6 부근 — threshold 살짝 옮기면 결과가 뒤집히는 자리)
+- 키워드 합성 라벨의 한계가 드러나는 순간 — 예: 본문에 "10 minutes wait" 처럼 service 를 *키워드 없이* 묘사한 경우 정답은 `service=0` 인데 모델이 prob 0.7 로 활성할 수 있음. 이건 *모델 오답이 아니라 합성 라벨의 누락* 으로 봐야 함.
+
+**전체 metric 의 micro/macro F1 해석**: 위 표 같은 *샘플별 (true vs pred) 비교* 를 평가 셋 1,000건에 대해 *집계* 한 게 §4 상단 metric. micro 는 모든 (샘플 × 라벨) 위치를 동등하게 세고, macro 는 항목 5개의 F1 을 평균. 활성률이 낮은 항목 (location 등) 의 정확도가 *전체* 에 묻히는 걸 막으려면 macro 를 봅니다.""")
 
 # ----- 12a. 메인 시각화: per-label sigmoid prob KDE (5 facets) -----
 md(r"""### 4-1. 메인 그림 — 라벨별 sigmoid 확률 KDE (5 패널)
@@ -572,7 +622,7 @@ md(r"""**해석**
 - BERT가 *큰 폭으로* 이기는 라벨이 있다면 → 그 라벨의 *합성 룰이 키워드만으로 안 잡히는 신호* 를 BERT가 추가로 학습한 것 (예: ambiance에서 "lighting was perfect" 같은 묘사).
 - BERT가 *지는 라벨* 도 있을 수 있음 — 키워드가 *결정적* 인 라벨에서 sklearn은 *완벽* 한 매칭, BERT는 *근사* 라 약간의 noise가 들어감.
 
-**합성 라벨의 본질적 한계** — 이 비교는 *키워드 매칭으로 만든 라벨* 위에서의 비교. 실제 사람-annotated multi-label 데이터에선 BERT 격차가 훨씬 큼 (단어 빈도로 안 잡히는 미묘한 측면 인식이 BERT의 강점).""")
+**합성 라벨의 본질적 한계** — 이 비교는 *키워드 매칭으로 만든 라벨* 위에서의 비교. 실제 사람-annotated multi-label 데이터에선 BERT 격차가 훨씬 큼 (단어 빈도로 안 잡히는 미묘한 항목 인식이 BERT의 강점).""")
 
 # ----- 14. library -----
 md(r"""## 📦 이번 챕터에 등장한 라이브러리·함수
@@ -716,9 +766,9 @@ def tokenize_wrong(batch):
 # ----- 18. next -----
 md(r"""## 다음 챕터 예고
 
-**Chapter 14. BERT Auxiliary Loss — 측면 분류 + 별점 보조 회귀**
+**Chapter 14. BERT Auxiliary Loss — 항목 분류 + 별점 보조 회귀**
 
-- 메인 task: Ch 13의 multi-label 측면 분류 (`num_labels=5` + BCE per-label) — *완전히 동일*
+- 메인 task: Ch 13의 multi-label 항목 분류 (`num_labels=5` + BCE per-label) — *완전히 동일*
 - 추가: *보조 헤드* `Linear(H, 1)` 로 별점 점수 회귀 (별점 정규화 0-1)
 - 손실: `L = BCE_per_label(메인) + λ · MSE(보조)` 가중합 (λ는 hyperparameter)
 - `Trainer.compute_loss` 오버라이드로 두 헤드를 동시 학습

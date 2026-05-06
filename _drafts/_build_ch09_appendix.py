@@ -333,7 +333,7 @@ if len(runs) > 0:
 # ----- 11. 세 도구 비교 -----
 md(r"""## 6. wandb vs trackio vs MLflow — 비교 표
 
-| 측면 | wandb | trackio | MLflow |
+| 항목 | wandb | trackio | MLflow |
 |---|---|---|---|
 | 호스팅 | SaaS (cloud) | 자체 호스팅 (로컬 SQLite + Gradio) | 자체 호스팅 (로컬 또는 사내 서버) |
 | 가입·로그인 | 필요 (무료 tier 있음) | 불필요 | 불필요 |

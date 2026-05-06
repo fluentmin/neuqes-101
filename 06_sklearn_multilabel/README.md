@@ -6,7 +6,7 @@
 한 샘플에 *여러* 라벨이 동시에 붙는 multi-label 문제로 확장. softmax의 *상호배타* 가정을 풀고 K개 sigmoid가 라벨마다 독립적으로 0/1을 결정합니다.
 
 ## 다루는 핵심 개념
-- 측면(aspect) 키워드 합성으로 5차원 multi-hot 라벨 만들기 (food/service/price/ambiance/location)
+- 항목(aspect) 키워드 합성으로 5차원 multi-hot 라벨 만들기 (food/service/price/ambiance/location)
 - `OneVsRestClassifier(LogisticRegression())` + multi-hot Y 자동 인식
 - per-label sigmoid + per-label BCE 평균 — 라벨끼리 독립
 - 평가 지표: **subset accuracy / hamming loss / micro F1 / macro F1** (각각 언제 보는지)
@@ -23,7 +23,7 @@
 baseline = $\log 2 \approx 0.693$ — 모든 라벨에 0.5를 줄 때.
 
 ## 데이터
-Yelp 5,000건 + **측면 키워드 매칭** 으로 5차원 multi-hot 합성. 활성률: food 56% / service 50% / price 29% / ambiance 18% / location 22%. 샘플당 평균 1.75개 라벨. 빈 라벨 샘플 약 15%.
+Yelp 5,000건 + **항목 키워드 매칭** 으로 5차원 multi-hot 합성. 활성률: food 56% / service 50% / price 29% / ambiance 18% / location 22%. 샘플당 평균 1.75개 라벨. 빈 라벨 샘플 약 15%.
 
 ## 환경
 Google Colab CPU 런타임으로 충분 (GPU 불필요). 약 5-10분.
@@ -33,7 +33,7 @@ Google Colab CPU 런타임으로 충분 (GPU 불필요). 약 5-10분.
 | Ch | 모델 | 데이터 | Activation | Loss | 라벨 |
 |---|---|---|---|---|---|
 | 5 | `LogisticRegression()` (multinomial 자동) | Yelp 5클래스 | softmax | `CrossEntropyLoss` | int (0-4) |
-| **6** | `OneVsRestClassifier(LogisticRegression())` | Yelp + 측면 합성 | **per-label sigmoid** | **per-label `BCE`** | **multi-hot** |
+| **6** | `OneVsRestClassifier(LogisticRegression())` | Yelp + 항목 합성 | **per-label sigmoid** | **per-label `BCE`** | **multi-hot** |
 
 전체 20챕터 표는 [루트 README](../README.md#챕터별-변화추적표)를 참고하세요.
 

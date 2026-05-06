@@ -423,7 +423,7 @@ md(r"""## 다음 챕터 예고
 **Chapter 6. sklearn Multi-label — softmax 합=1 제약을 푼다**
 
 - 한 샘플에 *여러* 라벨이 동시에 붙는 multi-label 문제로 확장
-- 새 데이터: Yelp 리뷰 + **측면(aspect) 키워드 합성** (food/service/price/ambiance/location 5개)
+- 새 데이터: Yelp 리뷰 + **항목(aspect) 키워드 합성** (food/service/price/ambiance/location 5개)
 - softmax 한 개 대신 **5개 독립 sigmoid** — 각 라벨이 다른 라벨에 영향받지 않음
 - Loss는 CrossEntropyLoss에서 **per-label `BCEWithLogitsLoss`** 로
 - `OneVsRestClassifier(LogisticRegression())` + `MultiLabelBinarizer`로 구현""")

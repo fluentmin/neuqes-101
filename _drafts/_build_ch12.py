@@ -64,7 +64,7 @@ md(r"""## 📊 변화추적표
 | 5 | `LogisticRegression(multinomial)` | `TfidfVectorizer()` | Yelp 5클래스 | (5차원) | softmax | `CrossEntropyLoss` |
 | 11 | DistilBERT 파인튜닝 | `AutoTokenizer.from_pretrained(...)` | Yelp 이진화 | `Linear(H, 2)` | softmax | `CrossEntropyLoss` |
 | **12 ← 여기** | DistilBERT 파인튜닝 | 같음 | **Yelp 5클래스** | **`Linear(H, 5)`** | softmax | `CrossEntropyLoss` |
-| 13 (다음) | DistilBERT 파인튜닝 | 같음 | Yelp + 측면 키워드 (5라벨 multi-label) | `Linear(H, 5)` | sigmoid (per-label) | `BCEWithLogitsLoss` (per-label) |
+| 13 (다음) | DistilBERT 파인튜닝 | 같음 | Yelp + 항목 키워드 (5라벨 multi-label) | `Linear(H, 5)` | sigmoid (per-label) | `BCEWithLogitsLoss` (per-label) |
 
 전체 20챕터 표는 [루트 README.md](https://github.com/yoon-gu/neuqes-101#챕터별-변화추적표)를 참고하세요.""")
 
@@ -690,12 +690,12 @@ def tokenize_wrong(batch):
 # ----- 18. next -----
 md(r"""## 다음 챕터 예고
 
-**Chapter 13. BERT Multi-label — Yelp 측면 키워드**
+**Chapter 13. BERT Multi-label — Yelp 항목 키워드**
 
-- 같은 BERT, 같은 데이터에 *측면(food/service/price/ambiance/location) 키워드 자동 라벨링* 추가
+- 같은 BERT, 같은 데이터에 *항목(food/service/price/ambiance/location) 키워드 자동 라벨링* 추가
 - `num_labels=5` 그대로 (Ch 12와 같음), 단 `problem_type="multi_label_classification"` 으로 전환
 - Activation은 (per-label) sigmoid, Loss는 (per-label) `BCEWithLogitsLoss`
-- 한 리뷰에 *여러 측면이 동시에 등장* 할 수 있음 — single-label과 본질적으로 다른 task
+- 한 리뷰에 *여러 항목이 동시에 등장* 할 수 있음 — single-label과 본질적으로 다른 task
 - Ch 6의 sklearn `OneVsRestClassifier(LogisticRegression)` 의 BERT 버전
 
 > **변하는 축**: Ch 12 → Ch 13 은 *Loss 축* (CE → BCE per-label)이 변합니다 — task가 *single-label* 에서 *multi-label* 로 바뀌는 것이 본질이고 그에 맞춰 loss/activation/라벨 형식이 동시에 따라옵니다.""")

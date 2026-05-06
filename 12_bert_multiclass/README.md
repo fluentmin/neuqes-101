@@ -31,9 +31,9 @@ Google Colab **T4 GPU 필수**. 약 12분 (BERT 학습 ~10분 + sklearn 비교 ~
 | 5 | LogReg(multinomial) | TF-IDF Yelp 5클래스 | (5차원) | softmax | `CrossEntropyLoss` |
 | 11 | DistilBERT | Yelp 이진화 | `Linear(H, 2)` | softmax | `CrossEntropyLoss` |
 | **12** | DistilBERT | **Yelp 5클래스** | **`Linear(H, 5)`** | softmax | `CrossEntropyLoss` |
-| 13 (다음) | DistilBERT | Yelp + 측면 라벨 | `Linear(H, 5)` | sigmoid (per-label) | `BCEWithLogitsLoss` (per-label) |
+| 13 (다음) | DistilBERT | Yelp + 항목 라벨 | `Linear(H, 5)` | sigmoid (per-label) | `BCEWithLogitsLoss` (per-label) |
 
 전체 20챕터 표는 [루트 README](../README.md#챕터별-변화추적표)를 참고하세요.
 
 ## 다음 챕터
-[13_bert_multilabel](../13_bert_multilabel/) — 같은 num_labels=5, 같은 BERT, *task 만 single-label → multi-label*. 한 리뷰가 *여러 측면* 라벨을 동시에 가질 수 있는 케이스.
+[13_bert_multilabel](../13_bert_multilabel/) — 같은 num_labels=5, 같은 BERT, *task 만 single-label → multi-label*. 한 리뷰가 *여러 항목* 라벨을 동시에 가질 수 있는 케이스.

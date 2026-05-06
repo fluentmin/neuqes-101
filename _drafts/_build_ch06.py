@@ -48,7 +48,7 @@ md(r"""# Chapter 6. sklearn Multi-label — softmax 합=1 제약을 푼다
 
 ## 학습 흐름
 
-1. 🚀 **실습**: Yelp 리뷰에 측면(aspect) 키워드를 매칭해 5개 라벨(food/service/price/ambiance/location) multi-hot 합성 → `OneVsRestClassifier`로 학습
+1. 🚀 **실습**: Yelp 리뷰에 항목(aspect) 키워드를 매칭해 5개 라벨(food/service/price/ambiance/location) multi-hot 합성 → `OneVsRestClassifier`로 학습
 2. 📐 **Loss 분해**: 학습된 모델의 실제 예측으로 BCE 5개를 직접 합산해 본다 — multinomial CE를 못 쓰는 이유를 숫자로
 3. 🔬 **해부**: multi-label 평가 지표 — subset accuracy, hamming loss, micro/macro F1
 4. 🛠️ **변형**: 임계값(threshold)을 옮기면 micro/macro F1이 어떻게 움직이나
@@ -64,7 +64,7 @@ md(r"""## 📊 변화추적표
 | 3 | `LogisticRegression()` | `TfidfVectorizer()` | Yelp 이진화 | (1차원) | sigmoid | `BCEWithLogitsLoss` |
 | 4 | `LogisticRegression()` (multinomial 자동) | `TfidfVectorizer()` | Yelp 이진화 (Ch 3과 동일) | (2차원) | softmax | `CrossEntropyLoss` |
 | 5 | `LogisticRegression()` (multinomial 자동) | `TfidfVectorizer()` | Yelp 5클래스 | (5차원) | softmax | `CrossEntropyLoss` |
-| **6 ← 여기** | `OneVsRestClassifier(LogisticRegression())` | `TfidfVectorizer()` | Yelp + 측면 키워드 합성 | (5차원) | **sigmoid (각각 독립)** | **`BCEWithLogitsLoss` per-label** |
+| **6 ← 여기** | `OneVsRestClassifier(LogisticRegression())` | `TfidfVectorizer()` | Yelp + 항목 키워드 합성 | (5차원) | **sigmoid (각각 독립)** | **`BCEWithLogitsLoss` per-label** |
 
 전체 20챕터 표는 [루트 README.md](https://github.com/yoon-gu/neuqes-101#챕터별-변화추적표)를 참고하세요.""")
 
@@ -81,7 +81,7 @@ md(r"""## 🔄 변경점 (Diff from Ch 5)
 | Activation | softmax 한 번 (합 = 1 강제) | **per-label sigmoid** (라벨끼리 독립) |
 | Loss | `CrossEntropyLoss` | **per-label `BCEWithLogitsLoss` 평균** |
 | OvR 사용 방식 | K개 sigmoid → **argmax로 한 라벨 선택** | K개 sigmoid **그대로** (argmax 없음, 각자 임계값 0.5와 비교) |
-| 데이터 | 별점 5클래스 | **Yelp + 측면 키워드 합성** (5개 측면) |
+| 데이터 | 별점 5클래스 | **Yelp + 항목 키워드 합성** (5개 항목) |
 | 토크나이저 | TF-IDF | TF-IDF (그대로) |
 
 ### 왜 OvR이 multi-label의 자연스러운 선택인가
@@ -165,11 +165,11 @@ df = ds.to_pandas()
 print(f"Total samples: {len(df)}")""")
 
 # ----- 8. 합성 도입 -----
-md(r"""## 🚀 실습 1: 측면 라벨 합성
+md(r"""## 🚀 실습 1: 항목 라벨 합성
 
-Yelp 데이터에는 multi-label 정답이 없으므로 **5개 측면(aspect)** 별 키워드 사전을 만들어 매칭합니다.
+Yelp 데이터에는 multi-label 정답이 없으므로 **5개 항목(aspect)** 별 키워드 사전을 만들어 매칭합니다.
 
-| 측면 | 의미 | 키워드 예시 |
+| 항목 | 의미 | 키워드 예시 |
 |---|---|---|
 | `food` | 음식의 맛/메뉴 | food, meal, dish, taste, delicious, ... |
 | `service` | 서비스/응대 | service, staff, waiter, friendly, rude, ... |
@@ -177,7 +177,7 @@ Yelp 데이터에는 multi-label 정답이 없으므로 **5개 측면(aspect)** 
 | `ambiance` | 분위기/인테리어 | atmosphere, decor, music, vibe, cozy, ... |
 | `location` | 위치/주차 | location, parking, area, neighborhood, ... |
 
-각 리뷰 텍스트에 대해 *어떤 키워드라도* 등장하면 해당 측면을 1로 활성화 — 5차원 multi-hot 벡터가 됩니다. **이 합성의 한계** 는 챕터 끝에서 솔직히 짚습니다.""")
+각 리뷰 텍스트에 대해 *어떤 키워드라도* 등장하면 해당 항목을 1로 활성화 — 5차원 multi-hot 벡터가 됩니다. **이 합성의 한계** 는 챕터 끝에서 솔직히 짚습니다.""")
 
 # ----- 9. 합성 코드 -----
 code(r"""ASPECT_KEYWORDS = {
@@ -359,7 +359,7 @@ print(f"micro F1: {f1_score(Y_test, Y_pred, average='micro', zero_division=0):.4
 print(f"macro F1: {f1_score(Y_test, Y_pred, average='macro', zero_division=0):.4f}")""")
 
 # ----- 16. classification_report -----
-code(r"""# 측면별 precision/recall/F1
+code(r"""# 항목별 precision/recall/F1
 print(classification_report(
     Y_test, Y_pred,
     target_names=ASPECTS,
@@ -391,14 +391,14 @@ print(df_t.to_string(index=False))""")
 # ----- 19. 합성의 한계 -----
 md(r"""## ⚠️ 합성의 한계 — 솔직한 한계 짚기
 
-이 챕터의 학습 결과가 너무 좋아 보일 수 있습니다 (subset accuracy, micro F1 모두 매우 높음). 그 이유는 **모델이 *키워드 매칭 규칙* 자체를 학습** 하기 때문입니다 — 우리가 정한 사전을 다시 거꾸로 풀어내고 있을 뿐, 진짜 측면 추출 능력을 입증한 게 아닙니다.
+이 챕터의 학습 결과가 너무 좋아 보일 수 있습니다 (subset accuracy, micro F1 모두 매우 높음). 그 이유는 **모델이 *키워드 매칭 규칙* 자체를 학습** 하기 때문입니다 — 우리가 정한 사전을 다시 거꾸로 풀어내고 있을 뿐, 진짜 항목 추출 능력을 입증한 게 아닙니다.
 
 실제 multi-label 문제에서 부딪히는 것들:
 
 1. **부정·반어 무시** — `"this place is not noisy at all"` 의 'noisy'를 ambiance 활성으로 잡는 게 우리 사전의 한계. 사람이 읽으면 ambiance가 *아닌* 데도.
 2. **사전 협소** — 'food'에 'sushi', 'ramen', 'pasta' 같은 구체 음식명이 빠져 있으면 그 리뷰는 food=0이 되어 버림.
 3. **정답이 노이지** — 우리 라벨 자체가 진짜 정답이 아닌 휴리스틱이라, 모델 성능을 이 정답에 비교하는 건 결국 "모델이 휴리스틱을 얼마나 따라 했나"를 잴 뿐.
-4. **빈 라벨**: 모든 측면이 0인 샘플도 있음 (`{n_labels_per_sample == 0).sum()` 건). 실제 multi-label 데이터에선 보통 최소 한 라벨은 보장.
+4. **빈 라벨**: 모든 항목이 0인 샘플도 있음 (`{n_labels_per_sample == 0).sum()` 건). 실제 multi-label 데이터에선 보통 최소 한 라벨은 보장.
 
 **그럼 왜 합성을 쓰나?** — 학습 코드의 *형태* 와 *평가 지표 해석* 을 익히는 게 이 챕터의 목적이기 때문입니다. Ch 12 BERT multi-label에서 **같은 합성 라벨** 을 그대로 사용하므로 비교가 깔끔하게 됩니다. 진짜 multi-label 데이터(예: GoEmotions, Reuters)는 라벨이 사람 손으로 만들어져 있어 비용이 큽니다.""")
 
@@ -454,7 +454,7 @@ md(r"""## ❓ FAQ
 
 1. **그대로 둔다**: BCE가 처리 가능. 각 라벨이 0이라는 신호를 학습. 가장 흔한 방식.
 2. **버린다**: "라벨이 없으면 학습 신호가 없다"는 가정. 합성 데이터에서 빈 라벨 비율이 너무 크면 고려.
-3. **"기타" 라벨 추가**: K+1번째 라벨을 만들어 "어느 측면도 안 맞음"을 명시적으로 표현. 데이터셋 설계 결정.
+3. **"기타" 라벨 추가**: K+1번째 라벨을 만들어 "어느 항목도 안 맞음"을 명시적으로 표현. 데이터셋 설계 결정.
 
 ```python
 # 옵션 (b): 빈 라벨 샘플 제거
@@ -535,12 +535,12 @@ OneVsRestClassifier(SVC(probability=True)).fit(X, y_multihot)  # ✅
 # ----- 23. 삽질 -----
 md(r"""## 🚀 삽질 코너 (선택)
 
-같은 데이터를 multi-class로 잘못 풀면 어떻게 될까요? 측면이 가장 강한 것 *하나* 만 정답으로 골라보고 (argmax) multinomial LogReg를 학습합니다.
+같은 데이터를 multi-class로 잘못 풀면 어떻게 될까요? *가장 강하게 활성된 항목 하나* 만 정답으로 골라 (argmax) multinomial LogReg를 학습합니다.
 
 ```python
-# 측면이 하나라도 활성된 샘플만 사용
+# 항목이 하나라도 활성된 샘플만 사용
 mask_nonempty = Y.sum(axis=1) > 0
-y_pseudo_class = Y[mask_nonempty].argmax(axis=1)   # 0-4 사이 정수, "가장 강한 측면"
+y_pseudo_class = Y[mask_nonempty].argmax(axis=1)   # 0-4 사이 정수, "가장 강한 항목"
 texts = df["text"][mask_nonempty]
 
 X_pseudo = tfidf.transform(texts)
@@ -551,7 +551,7 @@ acc_pseudo = (model_pseudo.predict(X_pseudo[4000:]) == y_pseudo_class[4000:]).me
 print(f"강제로 multi-class화 한 경우 accuracy: {acc_pseudo:.4f}")
 ```
 
-힌트: 한 리뷰에 여러 측면이 동시에 있을 때 *하나만* 정답으로 골라 학습하면 정보가 사라집니다. 정답이 임의 선택이라 모델이 어느 라벨을 골라야 할지 모호해지고, multi-label 결과보다 정보가 적은 모델이 됩니다.""")
+힌트: 한 리뷰에 여러 항목이 동시에 있을 때 *하나만* 정답으로 골라 학습하면 정보가 사라집니다. 정답이 임의 선택이라 모델이 어느 라벨을 골라야 할지 모호해지고, multi-label 결과보다 정보가 적은 모델이 됩니다.""")
 
 # ----- Phase 0 → 1 미리보기 -----
 md(r"""## 🔮 Phase 0 마무리 — sklearn vs HuggingFace 미리보기

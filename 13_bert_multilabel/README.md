@@ -1,4 +1,4 @@
-# 13_bert_multilabel — BERT Multi-label (Yelp 측면 키워드)
+# 13_bert_multilabel — BERT Multi-label (Yelp 항목 키워드)
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/13_bert_multilabel/13_bert_multilabel.ipynb)
 
@@ -12,13 +12,13 @@ Ch 12(BERT 5클래스 분류)와 *모델 아키텍처가 완전히 동일* (`Lin
 - multi-label 평가: hamming loss + micro/macro F1 + per-label F1 + macro AUC
 - **softmax는 multi-label에 *수학적으로* 못 쓴다** — 합=1 강제가 동시 활성과 충돌
 - 모델이 라벨 간 상관을 학습하는 메커니즘 — *공유 BERT 본체* 를 통한 *간접* 결합 (loss엔 결합 항 없음)
-- 측면 합성 라벨의 본질적 한계 (키워드 매칭의 얕음)
+- 항목 합성 라벨의 본질적 한계 (키워드 매칭의 얕음)
 
 ## Loss
 **`BCEWithLogitsLoss` per-label** — Ch 6 sklearn OvR과 같은 식. K개 binary BCE의 평균.
 
 ## 데이터
-Yelp 5,000건 + Ch 6의 측면 키워드 사전 (food/service/price/ambiance/location)으로 multi-hot 5차원 라벨 합성.
+Yelp 5,000건 + Ch 6의 항목 키워드 사전 (food/service/price/ambiance/location)으로 multi-hot 5차원 라벨 합성.
 
 ## 환경
 Google Colab **T4 GPU 필수**. 약 12분 (BERT ~10분 + sklearn 비교 ~30초).
@@ -29,11 +29,11 @@ Google Colab **T4 GPU 필수**. 약 12분 (BERT ~10분 + sklearn 비교 ~30초).
 
 | Ch | 모델 | 데이터 | Output | Activation | Loss |
 |---|---|---|---|---|---|
-| 6 | OvR(LogReg) | TF-IDF + 측면 합성 | (5차원) | sigmoid (각각) | BCE per-label |
+| 6 | OvR(LogReg) | TF-IDF + 항목 합성 | (5차원) | sigmoid (각각) | BCE per-label |
 | 10 | DistilBERT | Yelp 이진화 | `Linear(H, 1)` | sigmoid | `BCEWithLogitsLoss` |
 | 12 | DistilBERT | Yelp 5클래스 | `Linear(H, 5)` | softmax | `CrossEntropyLoss` |
-| **13** | DistilBERT | **Yelp + 측면 합성** | **`Linear(H, 5)`** (그대로) | **per-label sigmoid** | **BCE per-label** |
-| 14 (다음) | DistilBERT + 보조 헤드 | 측면 + 별점 | 메인 + 보조 | 메인 sigmoid | BCE + λ·MSE |
+| **13** | DistilBERT | **Yelp + 항목 합성** | **`Linear(H, 5)`** (그대로) | **per-label sigmoid** | **BCE per-label** |
+| 14 (다음) | DistilBERT + 보조 헤드 | 항목 + 별점 | 메인 + 보조 | 메인 sigmoid | BCE + λ·MSE |
 
 전체 20챕터 표는 [루트 README](../README.md#챕터별-변화추적표)를 참고하세요.
 
