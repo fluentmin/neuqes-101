@@ -62,6 +62,13 @@ def patch_cell_source(src: str, quick: bool) -> str:
 
         src = re.sub(r"\.select\(range\((\d+)\)\)", shrink_range, src)
 
+        # 4b. df.sample(n=N, ...) — 같은 정책으로 축소
+        def shrink_sample(m: re.Match) -> str:
+            n = int(m.group(1))
+            return f".sample(n={max(50, n // 10)}" if n >= 100 else m.group(0)
+
+        src = re.sub(r"\.sample\(n\s*=\s*(\d+)", shrink_sample, src)
+
         # 5. num_train_epochs=N → num_train_epochs=1
         src = re.sub(r"num_train_epochs\s*=\s*\d+", "num_train_epochs=1", src)
 
@@ -88,8 +95,8 @@ SETUP_CELL_SOURCE = (
 def patch_notebook(nb_path: Path, out_path: Path, quick: bool) -> dict:
     """Read .ipynb, patch code cells, write to out_path. Return per-pattern hit counts."""
     nb = json.loads(nb_path.read_text(encoding="utf-8"))
-    stats = {"cells_patched": 0, "fp16": 0, "pip": 0, "nvidia": 0, "range": 0, "epoch": 0,
-             "setup_injected": 0}
+    stats = {"cells_patched": 0, "fp16": 0, "pip": 0, "nvidia": 0,
+             "range": 0, "sample_n": 0, "epoch": 0, "setup_injected": 0}
 
     # Inject the setup cell at the very top so the monkey-patch runs before any imports
     setup_cell = {
@@ -119,6 +126,8 @@ def patch_notebook(nb_path: Path, out_path: Path, quick: bool) -> dict:
             stats["nvidia"] += 1
         if quick and re.search(r"\.select\(range\(\d+\)\)", src):
             stats["range"] += 1
+        if quick and re.search(r"\.sample\(n\s*=\s*\d+", src):
+            stats["sample_n"] += 1
         if quick and re.search(r"num_train_epochs\s*=\s*\d+", src):
             stats["epoch"] += 1
 
