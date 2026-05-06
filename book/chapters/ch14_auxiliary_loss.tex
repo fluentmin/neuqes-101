@@ -6,7 +6,7 @@
 
 \markboth{보조 손실과 멀티태스크 학습 (Auxiliary Loss)}{보조 손실과 멀티태스크 학습 (Auxiliary Loss)}
 
-\chaptermeta{14_auxiliary_loss/14_auxiliary_loss.ipynb}{https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/14_auxiliary_loss/14_auxiliary_loss.ipynb}{다중 라벨 측면 분류에 별점 회귀 보조 헤드를 더해 결합 손실을 학습}
+\chaptermeta{14_auxiliary_loss/14_auxiliary_loss.ipynb}{https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/14_auxiliary_loss/14_auxiliary_loss.ipynb}{다중 라벨 항목 분류에 별점 회귀 보조 헤드를 더해 결합 손실을 학습}
 
 
 
@@ -84,8 +84,8 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 \midrule
 
 9 & DistilBERT 파인튜닝 & WordPiece & Yelp 별점 & \inlinecode{Linear(H,\ 1)} & 없음 & \inlinecode{MSELoss} \\
-13 & DistilBERT 파인튜닝 & WordPiece & Yelp + 측면 합성 & \inlinecode{Linear(H,\ 5)} & sigmoid (각각) & \inlinecode{BCEWithLogitsLoss} \\
-\textbf{14 ← 여기} & DistilBERT + \textbf{보조 헤드} & WordPiece & Yelp + 측면 + \textbf{별점} & \textbf{메인(5) + 보조(1)} & 메인 sigmoid + 보조 없음 & \textbf{\inlinecode{BCE\ per-label} + $\lambda\cdot$\inlinecode{MSE}} \\
+13 & DistilBERT 파인튜닝 & WordPiece & Yelp + 항목 합성 & \inlinecode{Linear(H,\ 5)} & sigmoid (각각) & \inlinecode{BCEWithLogitsLoss} \\
+\textbf{14 ← 여기} & DistilBERT + \textbf{보조 헤드} & WordPiece & Yelp + 항목 + \textbf{별점} & \textbf{메인(5) + 보조(1)} & 메인 sigmoid + 보조 없음 & \textbf{\inlinecode{BCE\ per-label} + $\lambda\cdot$\inlinecode{MSE}} \\
 15 (다음 Phase 2) & klue/bert-base & WordPiece (한국어) & NSMC & \inlinecode{Linear(H,\ 2)} & softmax & \inlinecode{CrossEntropyLoss} \\
 \bottomrule
 \end{tabular}
@@ -140,7 +140,7 @@ BERT 본체(67M 파라미터)가 \emph{공유} 되어 메인 헤드와 보조 �
 메인 task만 학습하면 모델이 \emph{그 task 한정} 으로 과적합됩니다. 보조 task가 BERT 본체를 \emph{더 일반적인} 표현으로 끌고 가서 메인에서도 일반화가 좋아집니다. Dropout과 비슷한 효과지만 \textbf{데이터 신호} 로 정규화하는 점이 다릅니다.
 
 \begin{quote}
-\textbf{이 장의 주된 목적이 이거.} 측면 라벨이 키워드 매칭으로 \emph{합성} 되어 노이즈가 큰데, 별점은 사용자가 \emph{직접} 매긴 깨끗한 ground truth. 별점 회귀를 보조로 두면 BERT가 \emph{과도하게 키워드 매칭에 맞추는} 걸 막아 일반화에 도움.
+\textbf{이 장의 주된 목적이 이거.} 항목 라벨이 키워드 매칭으로 \emph{합성} 되어 노이즈가 큰데, 별점은 사용자가 \emph{직접} 매긴 깨끗한 ground truth. 별점 회귀를 보조로 두면 BERT가 \emph{과도하게 키워드 매칭에 맞추는} 걸 막아 일반화에 도움.
 \end{quote}
 
 \medskip\noindent\textbf{데이터 효율}
@@ -185,7 +185,7 @@ BERT는 12-24 layer로 \emph{그리} 깊지 않아 이 목적은 약합니다. C
 
 \medskip\noindent\textbf{운영 시점의 멀티태스크}
 
-추론 시점에 \emph{두 task 결과가 모두 필요} 한 경우 --- 한 번의 forward로 측면 분류 + 별점 예측을 동시에 받기. 엄밀히 말하면 \emph{auxiliary} 가 아니라 \emph{joint training} 이 됩니다.
+추론 시점에 \emph{두 task 결과가 모두 필요} 한 경우 --- 한 번의 forward로 항목 분류 + 별점 예측을 동시에 받기. 엄밀히 말하면 \emph{auxiliary} 가 아니라 \emph{joint training} 이 됩니다.
 
 \begin{quote}
 \ref{ch:14}장는 \emph{auxiliary} 패턴이라 추론 시 보조 헤드를 \emph{호출하지 않습니다}. 별점 회귀는 학습 정규화 용도로만 사용. 운영에서 별점 예측이 필요하면 \emph{auxiliary} 가 아니라 \emph{joint multi-task} 를 의도적으로 설계.
@@ -200,7 +200,7 @@ BERT는 12-24 layer로 \emph{그리} 깊지 않아 이 목적은 약합니다. C
 \begin{itemize}
 \tightlist
 \item
-  \textbf{(1) 정규화}: 합성 측면 라벨의 노이즈를 깨끗한 별점 신호로 정규화 --- 주된 효과
+  \textbf{(1) 정규화}: 합성 항목 라벨의 노이즈를 깨끗한 별점 신호로 정규화 --- 주된 효과
 \item
   \textbf{(2) 데이터 효율}: 별점은 Yelp 데이터에 \emph{이미} 있어 추가 라벨링 비용 0
 \end{itemize}
@@ -241,7 +241,7 @@ BERT 자체가 \emph{MLM + NSP (Next Sentence Prediction)} 이라는 멀티태�
 
 \begin{equation}
 \label{eq:ch14-01}
-L = \underbrace{\frac{1}{N \cdot K}\sum_{i,k}\text{BCE}(z_{i,k}^{main}, y_{i,k}^{main})}_{L_\text{main}: \text{측면 BCE per-label}} + \lambda \cdot \underbrace{\frac{1}{N}\sum_{i}(z_{i}^{aux} - y_{i}^{aux})^2}_{L_\text{aux}: \text{별점 MSE}}
+L = \underbrace{\frac{1}{N \cdot K}\sum_{i,k}\text{BCE}(z_{i,k}^{main}, y_{i,k}^{main})}_{L_\text{main}: \text{항목 BCE per-label}} + \lambda \cdot \underbrace{\frac{1}{N}\sum_{i}(z_{i}^{aux} - y_{i}^{aux})^2}_{L_\text{aux}: \text{별점 MSE}}
 \end{equation}
 
 식~\eqref{eq:ch14-01}은 정답 라벨과 예측 확률 사이의 Binary Cross-Entropy를 정의합니다.
@@ -249,7 +249,7 @@ L = \underbrace{\frac{1}{N \cdot K}\sum_{i,k}\text{BCE}(z_{i,k}^{main}, y_{i,k}^
 \begin{itemize}
 \tightlist
 \item
-  \(z^\text{main} \in \mathbb{R}^5\) --- 측면 logit 5개, sigmoid 후 BCE.
+  \(z^\text{main} \in \mathbb{R}^5\) --- 항목 logit 5개, sigmoid 후 BCE.
 \item
   \(z^\text{aux} \in \mathbb{R}\) --- 별점 회귀 logit (활성화 없음, 직접 MSE).
 \item
@@ -277,7 +277,7 @@ $\lambda$ & 의미 & 효과 (예상) \\
 
 이 장에선 \textbf{$\lambda=1$} 로 학습하고 $\lambda=0$ baseline과 비교. 실무에선 validation set에서 $\lambda$를 grid search (0.1, 0.3, 1, 3, 10).
 
-\textbf{숫자로 감 잡기 (단일 샘플)} --- 측면 multi-hot \(\mathbf{y}^\text{main} = [1, 0, 1, 0, 1]\), 별점 보조 라벨 \(y^\text{aux} = 0.75\) (4★/4):
+\textbf{숫자로 감 잡기 (단일 샘플)} --- 항목 multi-hot \(\mathbf{y}^\text{main} = [1, 0, 1, 0, 1]\), 별점 보조 라벨 \(y^\text{aux} = 0.75\) (4★/4):
 
 \begin{booktable}{14장 손실 노트 표}{tab:ch14-06}
 \begin{adjustbox}{max width=\textwidth}
@@ -402,12 +402,12 @@ GPU:            Tesla T4
 
 \section{데이터 준비}
 
-\ref{ch:13}장의 측면 합성 라벨을 그대로 쓰고, \textbf{별점 보조 회귀 라벨} 을 추가합니다. 별점은 1-5 정수지만 회귀 헤드와 MSE를 자연스럽게 쓰기 위해 \emph{0-1 스케일} 로 변환만 해 둡니다 (학습 정규화 효과를 위한 데이터 가공이 아니라, 단순히 단위만 맞추는 작업).
+\ref{ch:13}장의 항목 합성 라벨을 그대로 쓰고, \textbf{별점 보조 회귀 라벨} 을 추가합니다. 별점은 1-5 정수지만 회귀 헤드와 MSE를 자연스럽게 쓰기 위해 \emph{0-1 스케일} 로 변환만 해 둡니다 (학습 정규화 효과를 위한 데이터 가공이 아니라, 단순히 단위만 맞추는 작업).
 
 \begin{itemize}
 \tightlist
 \item
-  메인 라벨 \(\mathbf{y}^\text{main} \in \{0, 1\}^5\) --- 측면 multi-hot.
+  메인 라벨 \(\mathbf{y}^\text{main} \in \{0, 1\}^5\) --- 항목 multi-hot.
 \item
   보조 라벨 \(y^\text{aux} = \text{label} / 4 \in [0, 1]\) --- 1★ → 0.0, 5★ → 1.0.
 \end{itemize}
@@ -1195,7 +1195,7 @@ column_a    column_b    column_c
   \inlinecode{delta} ≈ 0 --- 별 영향 없음 (보조 신호가 메인 표현에 의미 없는 추가).
 \end{itemize}
 
-별점은 측면 분포와 \emph{부분적으로} 상관 (긍정 측면 → 높은 별점) 이라 \emph{작은 양의 delta} 가 자연스러운 결과. 0.5\%p 정도면 노이즈일 수 있고, 1-2\%p 면 의미 있는 효과.
+별점은 항목 분포와 \emph{부분적으로} 상관 (긍정 항목 → 높은 별점) 이라 \emph{작은 양의 delta} 가 자연스러운 결과. 0.5\%p 정도면 노이즈일 수 있고, 1-2\%p 면 의미 있는 효과.
 
 
 
@@ -1298,9 +1298,9 @@ plt.show()
 \begin{itemize}
 \tightlist
 \item
-  \textbf{별점과 상관이 강한 측면} (food, service): 보조 별점 회귀 학습이 \emph{긍정/부정 신호} 를 잘 잡으면 도움이 됩니다. 작은 양의 delta 기대.
+  \textbf{별점과 상관이 강한 항목} (food, service): 보조 별점 회귀 학습이 \emph{긍정/부정 신호} 를 잘 잡으면 도움이 됩니다. 작은 양의 delta 기대.
 \item
-  \textbf{별점과 상관이 약한 측면} (location, price): 별점 신호가 \emph{직접적 도움} 이 안 됨. delta가 0 근처거나 약간 음수일 수 있음.
+  \textbf{별점과 상관이 약한 항목} (location, price): 별점 신호가 \emph{직접적 도움} 이 안 됨. delta가 0 근처거나 약간 음수일 수 있음.
 \item
   \textbf{분산이 큰 라벨} --- eval 표본이 적어 F1 자체가 노이즈가 큼. delta 도 의미 해석 조심.
 \end{itemize}
@@ -1520,7 +1520,7 @@ class DistilBertForSequenceClassification:
 \begin{itemize}
 \tightlist
 \item
-  메인: 측면 분류 (긍정 측면 vs 부정 측면)
+  메인: \ref{ch:13}장의 5개 항목 multi-label 셋업 그대로
 \item
   보조: \emph{반대로} 라벨링된 별점 (1★=좋음, 5★=나쁨 --- 라벨링 실수 시나리오)
 \end{itemize}
@@ -1535,7 +1535,7 @@ class DistilBertForSequenceClassification:
   $\lambda$ 를 키울수록 메인 metric 이 \emph{떨어짐}
 \end{itemize}
 
-해결: 보조 task가 메인과 같은 방향 신호인지 \emph{간단한 sklearn baseline} 부터 확인. 별점이 측면 분류와 양의 상관이면 보조로 쓸 만함.
+해결: 보조 task가 메인과 같은 방향 신호인지 \emph{간단한 sklearn baseline} 부터 확인. 별점이 항목 분류와 양의 상관이면 보조로 쓸 만함.
 
 \end{faqBox}
 
@@ -1550,7 +1550,7 @@ class DistilBertForSequenceClassification:
 좋은 조건 & 예시 \\
 \midrule
 
-\emph{메인과 양의 상관} & 측면 분류 ↔ 별점, 감성 분류 ↔ 이모지 사용 \\
+\emph{메인과 양의 상관} & 항목 분류 ↔ 별점, 감성 분류 ↔ 이모지 사용 \\
 \emph{학습 데이터가 \emph{공짜로} 있음} & 메타데이터(별점, 작성일, 길이) --- 라벨링 비용 0 \\
 \emph{연속적이고 안정적인 신호} & float regression, 순서형 점수 \\
 \emph{메인보다 \emph{덜 복잡} 한 task} & 회귀 \textless{} 분류, 단어 vs 문장 \\

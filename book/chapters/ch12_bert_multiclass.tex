@@ -76,7 +76,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 5 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
 11 & DistilBERT 파인튜닝 & \inlinecode{AutoTokenizer.from\_pretrained(...)} & Yelp 이진화 & \inlinecode{Linear(H,\ 2)} & softmax & \inlinecode{CrossEntropyLoss} \\
 \textbf{12 ← 여기} & DistilBERT 파인튜닝 & 같음 & \textbf{Yelp 5클래스} & \textbf{\inlinecode{Linear(H,\ 5)}} & softmax & \inlinecode{CrossEntropyLoss} \\
-13 (다음) & DistilBERT 파인튜닝 & 같음 & Yelp + 측면 키워드 (5라벨 multi-label) & \inlinecode{Linear(H,\ 5)} & sigmoid (per-label) & \inlinecode{BCEWithLogitsLoss} (per-label) \\
+13 (다음) & DistilBERT 파인튜닝 & 같음 & Yelp + 항목 키워드 (5라벨 multi-label) & \inlinecode{Linear(H,\ 5)} & sigmoid (per-label) & \inlinecode{BCEWithLogitsLoss} (per-label) \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -1301,13 +1301,13 @@ def tokenize_wrong(batch):
 \begin{itemize}
 \tightlist
 \item
-  같은 BERT, 같은 데이터에 \emph{측면(food/service/price/ambiance/location) 키워드 자동 라벨링} 추가
+  같은 BERT, 같은 데이터에 \emph{항목(food/service/price/ambiance/location) 키워드 자동 라벨링} 추가
 \item
   \inlinecode{num\_labels=5} 그대로 (\ref{ch:12}장과 같음), 단 \inlinecode{problem\_type="multi\_label\_classification"} 으로 전환
 \item
   Activation은 (per-label) sigmoid, Loss는 (per-label) \inlinecode{BCEWithLogitsLoss}
 \item
-  한 리뷰에 \emph{여러 측면이 동시에 등장} 할 수 있음 --- single-label과 본질적으로 다른 task
+  한 리뷰에 \emph{여러 항목이 동시에 등장} 할 수 있음 --- single-label과 본질적으로 다른 task
 \item
   \ref{ch:06}장의 sklearn \inlinecode{OneVsRestClassifier(LogisticRegression)} 의 BERT 버전
 \end{itemize}

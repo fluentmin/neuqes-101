@@ -6,7 +6,7 @@
 
 \markboth{BERT 다중 라벨 분류 (Multi-label \& Per-label BCE)}{BERT 다중 라벨 분류 (Multi-label \& Per-label BCE)}
 
-\chaptermeta{13_bert_multilabel/13_bert_multilabel.ipynb}{https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/13_bert_multilabel/13_bert_multilabel.ipynb}{Yelp 측면 합성 라벨을 BERT의 라벨별 sigmoid와 BCE로 학습}
+\chaptermeta{13_bert_multilabel/13_bert_multilabel.ipynb}{https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/13_bert_multilabel/13_bert_multilabel.ipynb}{Yelp 항목 합성 라벨을 BERT의 라벨별 sigmoid와 BCE로 학습}
 
 
 
@@ -44,7 +44,7 @@
 
 \index{0공동 활성@공동 활성}
 
-\index{0측면 라벨@측면 라벨}
+\index{0항목 라벨@항목 라벨}
 
 \index{0해밍 손실@해밍 손실}
 
@@ -62,7 +62,7 @@
 
 \index{1binary relevance@binary relevance}
 
-\index{0측면 키워드@측면 키워드}
+\index{0항목 키워드@항목 키워드}
 
 \index{0조건부 확률@조건부 확률}
 
@@ -81,11 +81,11 @@
 Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 \midrule
 
-6 & \inlinecode{OneVsRestClassifier(LogisticRegression())} & \inlinecode{TfidfVectorizer()} & Yelp + 측면 키워드 합성 & (5차원) & sigmoid (각각) & \inlinecode{BCEWithLogitsLoss} per-label \\
+6 & \inlinecode{OneVsRestClassifier(LogisticRegression())} & \inlinecode{TfidfVectorizer()} & Yelp + 항목 키워드 합성 & (5차원) & sigmoid (각각) & \inlinecode{BCEWithLogitsLoss} per-label \\
 10 & DistilBERT 파인튜닝 & \inlinecode{AutoTokenizer.from\_pretrained(...)} & Yelp 이진화 & \inlinecode{Linear(H,\ 1)} & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
 12 & DistilBERT 파인튜닝 & 같음 & Yelp 5클래스 & \inlinecode{Linear(H,\ 5)} & softmax & \inlinecode{CrossEntropyLoss} \\
-\textbf{13 ← 여기} & DistilBERT 파인튜닝 & 같음 & \textbf{Yelp + 측면 키워드 합성} & \textbf{\inlinecode{Linear(H,\ 5)}} & \textbf{sigmoid (per-label)} & \textbf{\inlinecode{BCEWithLogitsLoss} (per-label)} \\
-14 (다음) & DistilBERT 파인튜닝 & 같음 & Yelp + 측면 + 별점 보조 & \inlinecode{Linear(H,\ 5)} 메인 + \inlinecode{Linear(H,\ 1)} 보조 & sigmoid + 없음 & \inlinecode{BCE(per-label)} + $\lambda\cdot$\inlinecode{MSE} \\
+\textbf{13 ← 여기} & DistilBERT 파인튜닝 & 같음 & \textbf{Yelp + 항목 키워드 합성} & \textbf{\inlinecode{Linear(H,\ 5)}} & \textbf{sigmoid (per-label)} & \textbf{\inlinecode{BCEWithLogitsLoss} (per-label)} \\
+14 (다음) & DistilBERT 파인튜닝 & 같음 & Yelp + 항목 + 별점 보조 & \inlinecode{Linear(H,\ 5)} 메인 + \inlinecode{Linear(H,\ 1)} 보조 & sigmoid + 없음 & \inlinecode{BCE(per-label)} + $\lambda\cdot$\inlinecode{MSE} \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -281,13 +281,13 @@ GPU:            Tesla T4
 
 \section{데이터 준비}
 
-Yelp 리뷰엔 multi-label 정답이 없습니다. \ref{ch:06}장에서처럼 5개 측면(aspect)별 키워드 사전을 만들어 텍스트에서 매칭 --- 어떤 키워드라도 등장하면 해당 측면을 1로 활성. 5차원 multi-hot 벡터가 합성됩니다.
+Yelp 리뷰엔 multi-label 정답이 없습니다. \ref{ch:06}장에서처럼 5개 항목(aspect)별 키워드 사전을 만들어 텍스트에서 매칭 --- 어떤 키워드라도 등장하면 해당 항목을 1로 활성. 5차원 multi-hot 벡터가 합성됩니다.
 
 \begin{booktable}{13장 데이터 준비 표}{tab:ch13-04}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
-측면 & 의미 & 키워드 예시 \\
+항목 & 의미 & 키워드 예시 \\
 \midrule
 
 \inlinecode{food} & 음식의 맛/메뉴 & food, meal, dish, taste, delicious, ... \\
@@ -301,7 +301,7 @@ Yelp 리뷰엔 multi-label 정답이 없습니다. \ref{ch:06}장에서처럼 5�
 \end{booktable}
 
 \begin{quote}
-\textbf{합성의 한계} --- 키워드 매칭은 \emph{언급한 측면} 만 잡고 \emph{언급한 측면이 긍정인지 부정인지} 는 알 수 없습니다. 또 \emph{키워드 없이} 측면이 표현된 경우(예: “10 minutes wait” → service)도 놓칩니다. 이 한계는 장 끝에서 솔직히 짚습니다.
+\textbf{합성의 한계} --- 키워드 매칭은 \emph{언급한 항목} 만 잡고 \emph{언급한 항목이 긍정인지 부정인지} 는 알 수 없습니다. 또 \emph{키워드 없이} 항목이 표현된 경우(예: “10 minutes wait” → service)도 놓칩니다. 이 한계는 장 끝에서 솔직히 짚습니다.
 \end{quote}
 
 
@@ -758,6 +758,82 @@ macro avg        ...       ...       ...        ...
 
 
 
+\subsection{샘플 단위 해석}
+
+평가 metric(F1, hamming loss, AUC)은 전체 평균이라 모델이 \emph{한 리뷰를 보고 어떻게 판단했는지} 바로 보이지 않습니다. 본격적인 분포 그림으로 가기 전에, 평가 셋에서 정답 항목이 많은 샘플과 적은 샘플을 하나씩 골라 5차원 출력을 문장 단위로 읽어보겠습니다.
+
+\Needspace{10\baselineskip}
+\begin{lstlisting}
+n_active = labels.sum(axis=1)
+idx_many = int(np.argmax(n_active))
+idx_few = int(np.argmin(n_active))
+
+texts = list(eval_full["text"])
+sample_ids = [
+    ("many active labels", idx_many),
+    ("few active labels", idx_few),
+]
+\end{lstlisting}
+
+\noindent\emph{위 코드는 평가 셋에서 비교할 샘플 두 개를 고르는 단계입니다. \inlinecode{labels.sum(axis=1)} 는 각 리뷰에 활성된 정답 항목 수를 세고, \inlinecode{idx\_many}와 \inlinecode{idx\_few}는 각각 가장 많은 경우와 가장 적은 경우의 위치를 저장합니다.}
+
+\Needspace{11\baselineskip}
+\begin{lstlisting}[firstnumber=10]
+for label_kind, idx in sample_ids:
+    print("=" * 78)
+    print(f"sample #{idx}  ({label_kind})")
+    print("=" * 78)
+    text_preview = texts[idx][:320]
+    suffix = "..." if len(texts[idx]) > 320 else ""
+    print(f"text: {text_preview}{suffix}")
+    print()
+    print(f"{'label':>10}  {'true':>6}  {'prob':>8}  {'pred':>6}  match")
+
+    for k, label_name in enumerate(ASPECTS):
+        true_value = int(labels[idx, k])
+        prob_value = float(probs[idx, k])
+        pred_value = int(preds[idx, k])
+        match = "yes" if true_value == pred_value else "no"
+        print(
+            f"  {label_name:>9}  {true_value:>6}  "
+            f"{prob_value:>8.4f}  {pred_value:>6}  {match}"
+        )
+\end{lstlisting}
+
+\noindent\emph{반복문 안에서는 항목별 정답, 확률, 예측값을 한 줄씩 출력합니다. 코드 식별자 \inlinecode{ASPECTS}는 그대로 두지만, 본문에서는 이를 항목 라벨 목록으로 읽으면 됩니다.}
+
+\Needspace{8\baselineskip}
+\begin{lstlisting}[firstnumber=30]
+    pred_active = [
+        a for k, a in enumerate(ASPECTS) if preds[idx, k]
+    ]
+    true_active = [
+        a for k, a in enumerate(ASPECTS) if labels[idx, k]
+    ]
+    print()
+    print(f"  predicted: {pred_active}")
+    print(f"  true:      {true_active}")
+    print()
+\end{lstlisting}
+
+\noindent\textbf{출력 형태.}
+\begin{lstlisting}[style=bookoutput]
+sample #...  (many active labels)
+text: ...
+     label    true      prob    pred  match
+       food       1    0.9123       1  yes
+    service       0    0.2441       0  yes
+  predicted: [...]
+  true:      [...]
+\end{lstlisting}
+\par\vspace{0.9em}
+
+\textbf{읽는 법} --- \inlinecode{true} 컬럼은 키워드 합성으로 만든 정답 multi-hot입니다. \inlinecode{prob}는 모델이 각 항목에 대해 독립적으로 낸 sigmoid 확률이고, 합이 1일 필요가 없습니다. \inlinecode{pred}는 지금 기준으로 \inlinecode{prob >= 0.5} 를 적용한 결과입니다. 마지막의 \inlinecode{predicted: [...]} 와 \inlinecode{true: [...]} 를 비교하면 모델이 한 리뷰에서 어떤 항목을 맞혔고 무엇을 놓쳤는지 한눈에 볼 수 있습니다.
+
+이 표 같은 샘플별 비교를 평가 셋 전체에 대해 집계한 값이 앞에서 본 micro/macro F1입니다. micro는 모든 샘플과 항목 위치를 한꺼번에 세고, macro는 항목별 F1을 먼저 구한 뒤 평균을 냅니다. 활성률이 낮은 항목이 전체 평균 속에 묻히는지 확인하려면 macro 지표와 이런 샘플 단위 해석을 같이 보는 습관이 좋습니다.
+
+
+
 \subsection{라벨별 확률 분포}
 
 \ref{ch:10}장에서 봤던 \emph{확률 공간 KDE} 를 5개 라벨에 대해 \emph{각각} 그립니다. 라벨이 \emph{독립} 이라는 multi-label의 본질이 시각적으로 드러나는 그림입니다 --- 라벨마다 학습 난이도와 분리도가 \emph{다를 수} 있습니다.
@@ -1134,7 +1210,7 @@ plt.show()
 \includegraphics[width=0.88\linewidth]{assets/figures/ch13_f1_compare.png}
 \end{bookfigurelabel}
 
-\textbf{그림 읽기} --- 그림~\ref{fig:ch13-f1-compare}는 라벨별 F1을 sklearn OvR 기준선과 BERT 모델 사이에서 비교합니다. 라벨마다 막대 차이가 다르면, BERT의 문맥 이해가 모든 측면 라벨에 동일하게 도움이 되는 것은 아니라는 점을 읽을 수 있습니다.
+\textbf{그림 읽기} --- 그림~\ref{fig:ch13-f1-compare}는 라벨별 F1을 sklearn OvR 기준선과 BERT 모델 사이에서 비교합니다. 라벨마다 막대 차이가 다르면, BERT의 문맥 이해가 모든 항목 라벨에 동일하게 도움이 되는 것은 아니라는 점을 읽을 수 있습니다.
 
 
 
@@ -1151,7 +1227,7 @@ plt.show()
   BERT가 \emph{지는 라벨} 도 있을 수 있음 --- 키워드가 \emph{결정적} 인 라벨에서 sklearn은 \emph{완벽} 한 매칭, BERT는 \emph{근사} 라 약간의 noise가 들어감.
 \end{itemize}
 
-\textbf{합성 라벨의 본질적 한계} --- 이 비교는 \emph{키워드 매칭으로 만든 라벨} 위에서의 비교. 실제 사람-annotated multi-label 데이터에선 BERT 격차가 훨씬 큼 (단어 빈도로 안 잡히는 미묘한 측면 인식이 BERT의 강점).
+\textbf{합성 라벨의 본질적 한계} --- 이 비교는 \emph{키워드 매칭으로 만든 라벨} 위에서의 비교. 실제 사람-annotated multi-label 데이터에선 BERT 격차가 훨씬 큼 (단어 빈도로 안 잡히는 미묘한 항목 인식이 BERT의 강점).
 
 
 
@@ -1377,12 +1453,12 @@ def tokenize_wrong(batch):
 
 \begin{previewBox}{미리보기: 다음 장}
 
-\textbf{\ref{ch:14}장. BERT Auxiliary Loss --- 측면 분류 + 별점 보조 회귀}
+\textbf{\ref{ch:14}장. BERT Auxiliary Loss --- 항목 분류 + 별점 보조 회귀}
 
 \begin{itemize}
 \tightlist
 \item
-  메인 task: \ref{ch:13}장의 multi-label 측면 분류 (\inlinecode{num\_labels=5} + BCE per-label) --- \emph{완전히 동일}
+  메인 task: \ref{ch:13}장의 multi-label 항목 분류 (\inlinecode{num\_labels=5} + BCE per-label) --- \emph{완전히 동일}
 \item
   추가: \emph{보조 헤드} \inlinecode{Linear(H,\ 1)} 로 별점 점수 회귀 (별점 정규화 0-1)
 \item

@@ -96,7 +96,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 3 & \inlinecode{LogisticRegression()} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (1차원) & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
 4 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
 5 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
-6 & \inlinecode{OneVsRestClassifier(LogisticRegression())} & \inlinecode{TfidfVectorizer()} & Yelp + 측면 합성 & (5차원) & per-label sigmoid & per-label \inlinecode{BCEWithLogitsLoss} \\
+6 & \inlinecode{OneVsRestClassifier(LogisticRegression())} & \inlinecode{TfidfVectorizer()} & Yelp + 항목 합성 & (5차원) & per-label sigmoid & per-label \inlinecode{BCEWithLogitsLoss} \\
 \textbf{7 ← 여기} & \inlinecode{pipeline("sentiment-analysis")} & \inlinecode{AutoTokenizer.from\_pretrained(...)} & 간단 영어 예시 & \textbf{사전학습 헤드} & softmax & --- (추론만) \\
 \bottomrule
 \end{tabular}

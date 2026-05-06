@@ -36,7 +36,7 @@
 
 \index{0임계값 조정@임계값 조정}
 
-\index{0측면 라벨@측면 라벨}
+\index{0항목 라벨@항목 라벨}
 
 
 \index{1per-label sigmoid@per-label sigmoid}
@@ -75,7 +75,7 @@
 
 \index{0독립 라벨@독립 라벨}
 
-\index{0측면 키워드@측면 키워드}
+\index{0항목 키워드@항목 키워드}
 
 \index{0라벨 불균형@라벨 불균형}
 
@@ -96,7 +96,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 3 & \inlinecode{LogisticRegression()} & \inlinecode{TfidfVectorizer()} & Yelp 이진화 & (1차원) & sigmoid & \inlinecode{BCEWithLogitsLoss} \\
 4 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 이진화 (\ref{ch:03}장과 동일) & (2차원) & softmax & \inlinecode{CrossEntropyLoss} \\
 5 & \inlinecode{LogisticRegression()} (multinomial 자동) & \inlinecode{TfidfVectorizer()} & Yelp 5클래스 & (5차원) & softmax & \inlinecode{CrossEntropyLoss} \\
-\textbf{6 ← 여기} & \inlinecode{OneVsRestClassifier(LogisticRegression())} & \inlinecode{TfidfVectorizer()} & Yelp + 측면 키워드 합성 & (5차원) & \textbf{sigmoid (각각 독립)} & \textbf{\inlinecode{BCEWithLogitsLoss} per-label} \\
+\textbf{6 ← 여기} & \inlinecode{OneVsRestClassifier(LogisticRegression())} & \inlinecode{TfidfVectorizer()} & Yelp + 항목 키워드 합성 & (5차원) & \textbf{sigmoid (각각 독립)} & \textbf{\inlinecode{BCEWithLogitsLoss} per-label} \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -123,7 +123,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 Activation & softmax 한 번 (합 = 1 강제) & \textbf{per-label sigmoid} (라벨끼리 독립) \\
 Loss & \inlinecode{CrossEntropyLoss} & \textbf{per-label \inlinecode{BCEWithLogitsLoss} 평균} \\
 OvR 사용 방식 & K개 sigmoid → \textbf{argmax로 한 라벨 선택} & K개 sigmoid \textbf{그대로} (argmax 없음, 각자 임계값 0.5와 비교) \\
-데이터 & 별점 5클래스 & \textbf{Yelp + 측면 키워드 합성} (5개 측면) \\
+데이터 & 별점 5클래스 & \textbf{Yelp + 항목 키워드 합성} (5개 항목) \\
 토크나이저 & TF-IDF & TF-IDF (그대로) \\
 \bottomrule
 \end{tabular}
@@ -279,15 +279,15 @@ metric        value
 
 
 
-\section{실습 1: 측면 라벨 합성}
+\section{실습 1: 항목 라벨 합성}
 
-Yelp 데이터에는 multi-label 정답이 없으므로 \textbf{5개 측면(aspect)} 별 키워드 사전을 만들어 매칭합니다.
+Yelp 데이터에는 multi-label 정답이 없으므로 \textbf{5개 항목(aspect)} 별 키워드 사전을 만들어 매칭합니다.
 
-\begin{booktable}{측면 라벨 합성 예시}{tab:ch06-label-examples}
+\begin{booktable}{항목 라벨 합성 예시}{tab:ch06-label-examples}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
-측면 & 의미 & 키워드 예시 \\
+항목 & 의미 & 키워드 예시 \\
 \midrule
 
 \inlinecode{food} & 음식의 맛/메뉴 & food, meal, dish, taste, delicious, ... \\
@@ -300,7 +300,7 @@ Yelp 데이터에는 multi-label 정답이 없으므로 \textbf{5개 측면(aspe
 \end{adjustbox}
 \end{booktable}
 
-각 리뷰 텍스트에 대해 \emph{어떤 키워드라도} 등장하면 해당 측면을 1로 활성화 --- 5차원 multi-hot 벡터가 됩니다. \textbf{이 합성의 한계} 는 장 끝에서 솔직히 짚습니다.
+각 리뷰 텍스트에 대해 \emph{어떤 키워드라도} 등장하면 해당 항목을 1로 활성화 --- 5차원 multi-hot 벡터가 됩니다. \textbf{이 합성의 한계} 는 장 끝에서 솔직히 짚습니다.
 
 
 
@@ -846,7 +846,7 @@ threshold  subset_acc  hamming  micro_F1  macro_F1
 
 \section{합성의 한계 --- 솔직한 한계 짚기}
 
-이 장의 학습 결과가 너무 좋아 보일 수 있습니다 (subset accuracy, micro F1 모두 매우 높음). 그 이유는 \textbf{모델이 \emph{키워드 매칭 규칙} 자체를 학습} 하기 때문입니다 --- 우리가 정한 사전을 다시 거꾸로 풀어내고 있을 뿐, 진짜 측면 추출 능력을 입증한 게 아닙니다.
+이 장의 학습 결과가 너무 좋아 보일 수 있습니다 (subset accuracy, micro F1 모두 매우 높음). 그 이유는 \textbf{모델이 \emph{키워드 매칭 규칙} 자체를 학습} 하기 때문입니다 --- 우리가 정한 사전을 다시 거꾸로 풀어내고 있을 뿐, 진짜 항목 추출 능력을 입증한 게 아닙니다.
 
 실제 multi-label 문제에서 부딪히는 것들:
 
@@ -860,7 +860,7 @@ threshold  subset_acc  hamming  micro_F1  macro_F1
 \item
   \textbf{정답에 노이즈가 있음} --- 우리 라벨 자체가 진짜 정답이 아닌 휴리스틱이라, 모델 성능을 이 정답에 비교하는 건 결국 “모델이 휴리스틱을 얼마나 따라 했나”를 잴 뿐.
 \item
-  \textbf{빈 라벨}: 모든 측면이 0인 샘플도 있음 (\texttt{\{n\_labels\_per\_sample\ ==\ 0).sum()} 건). 실제 multi-label 데이터에선 보통 최소 한 라벨은 보장.
+  \textbf{빈 라벨}: 모든 항목이 0인 샘플도 있음 (\texttt{\{n\_labels\_per\_sample\ ==\ 0).sum()} 건). 실제 multi-label 데이터에선 보통 최소 한 라벨은 보장.
 \end{enumerate}
 
 \textbf{그럼 왜 합성을 쓰나?} --- 학습 코드의 \emph{형태} 와 \emph{평가 지표 해석} 을 익히는 게 이 장의 목적이기 때문입니다. \ref{ch:12}장 BERT multi-label에서 \textbf{같은 합성 라벨} 을 그대로 사용하므로 비교가 일관되게 됩니다. 진짜 multi-label 데이터(예: GoEmotions, Reuters)는 라벨이 사람 손으로 만들어져 있어 비용이 큽니다.
@@ -968,7 +968,7 @@ Loss & CrossEntropy & per-label BCE 평균 \\
 \item
   \textbf{버린다}: “라벨이 없으면 학습 신호가 없다”는 가정. 합성 데이터에서 빈 라벨 비율이 너무 크면 고려.
 \item
-  \textbf{“기타” 라벨 추가}: K+1번째 라벨을 만들어 “어느 측면도 안 맞음”을 명시적으로 표현. 데이터셋 설계 결정.
+  \textbf{“기타” 라벨 추가}: K+1번째 라벨을 만들어 “어느 항목도 안 맞음”을 명시적으로 표현. 데이터셋 설계 결정.
 \end{enumerate}
 
 \Needspace{5\baselineskip}
@@ -1106,7 +1106,7 @@ OneVsRestClassifier(SVC(probability=True)).fit(X, y_multihot)
 
 \section{오류 실험 (선택)}
 
-같은 데이터를 multi-class로 잘못 풀면 어떻게 될까요? 측면이 가장 강한 것 \emph{하나} 만 정답으로 골라보고 (argmax) multinomial LogReg를 학습합니다.
+같은 데이터를 multi-class로 잘못 풀면 어떻게 될까요? \emph{가장 강하게 활성된 항목 하나} 만 정답으로 골라보고 (argmax) multinomial LogReg를 학습합니다.
 
 \Needspace{11\baselineskip}
 \begin{lstlisting}
@@ -1121,7 +1121,7 @@ acc_pseudo = (model_pseudo.predict(X_pseudo[4000:]) == y_pseudo_class[4000:]).me
 display(pd.DataFrame([{"metric": "pseudo_multiclass_accuracy", "value": acc_pseudo}]))
 \end{lstlisting}
 
-힌트: 한 리뷰에 여러 측면이 동시에 있을 때 \emph{하나만} 정답으로 골라 학습하면 정보가 사라집니다. 정답이 임의 선택이라 모델이 어느 라벨을 골라야 할지 모호해지고, multi-label 결과보다 정보가 적은 모델이 됩니다.
+힌트: 한 리뷰에 여러 항목이 동시에 있을 때 \emph{하나만} 정답으로 골라 학습하면 정보가 사라집니다. 정답이 임의 선택이라 모델이 어느 라벨을 골라야 할지 모호해지고, multi-label 결과보다 정보가 적은 모델이 됩니다.
 
 
 
