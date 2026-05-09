@@ -4,6 +4,11 @@
 \input{preamble/style}
 \input{preamble/index-terms}
 
+%% A1 표지 — book/cover/hfcover.sty (TikZ 기반, B5 트림에 맞춰 그림)
+%% standalone 모드 아님 — book preamble 의 geometry/본문 폰트는 그대로 두고
+%% \drawcover 와 cover-only 매크로폰트만 가져옴
+\usepackage{cover/hfcover}
+
 \title{Hugging Face로 시작하는 텍스트 분석 입문}
 \author{황윤구}
 \date{}

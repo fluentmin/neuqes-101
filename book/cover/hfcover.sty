@@ -1,0 +1,261 @@
+%%==============================================================
+%% hfcover.sty — Cover A1 template for "Hugging Face 입문"
+%%
+%% Reproduces the A1 cover layout:
+%%   - B5 page (176×250 mm)
+%%   - Yellow header band with white dot grid + ghost "HF"
+%%   - Floating title card straddling the seam
+%%   - 4-axis chips grid + author + 🤗 mark
+%%
+%% Engine:  XeLaTeX (uses fontspec + xeCJK for Korean)
+%% Pkgs:    tikz, fontspec, xeCJK, geometry, anyfontsize
+%%==============================================================
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{hfcover}[2026/05/09 HF 입문서 cover A1]
+
+%% Package options ---------------------------------------------
+%% Default: book-mode — geometry / 본문 폰트 셋업은 호출 측 (book/main.tex) 이
+%% 이미 갖고 있다고 가정하고 건너뜀.  cover-only 매크로폰트 (\hfDisplay /
+%% \hfMono / \hfPen / \hfCJKDisplay) 만 새로 정의.
+%%
+%% \usepackage[standalone]{hfcover} → standalone 모드 — 자체 geometry +
+%% \setmainfont 설정 (단독 예제 standalone-example.tex 용).
+\newif\if@hfcoverstandalone
+\@hfcoverstandalonefalse
+\DeclareOption{standalone}{\@hfcoverstandalonetrue}
+\ProcessOptions\relax
+
+\RequirePackage{tikz}
+\RequirePackage{fontspec}
+\RequirePackage{anyfontsize}
+\RequirePackage{xcolor}
+\if@hfcoverstandalone
+  %% standalone 모드만 xeCJK 로드 + B5 geometry. book 모드에선 호출 측이
+  %% 이미 kotex 같은 한글 처리 시스템을 갖고 있다고 가정 (xeCJK + kotex
+  %% 가 동시 로드되면 \pgf@selectfontorig 무한 재귀로 빌드 실패).
+  \RequirePackage{xeCJK}
+  \RequirePackage[paperwidth=176mm,paperheight=250mm,
+                  margin=15mm,top=20mm]{geometry}
+\fi
+%% shadows.blur 라이브러리는 book/preamble (kotex + sansmath + fontspec) 과
+%% 무한 재귀 (\pgf@selectfontorig)를 일으켜 비활성. 표지 카드 그림자는 아래
+%% \drawcover 안에서 *오프셋 단순 사각형* 두 장으로 부드럽게 흉내냄.
+\usetikzlibrary{positioning,calc,patterns}
+
+%%-- Brand palette (Hugging Face yellow + warm cream) ----------
+\definecolor{hfPaper}     {HTML}{FFFDF6}
+\definecolor{hfInk}       {HTML}{1F1F1F}
+\definecolor{hfInkTwo}    {HTML}{3A3A3A}
+\definecolor{hfInkThree} {HTML}{6E6E6E}
+\definecolor{hfRule}      {HTML}{E5E0CE}
+\definecolor{hfAccent}    {HTML}{FF9D00}  % HF orange
+\definecolor{hfAccentTwo} {HTML}{FFD21E}  % HF yellow
+\definecolor{hfAccentSoft}{HTML}{FFF1C2}
+
+%%-- Fonts -----------------------------------------------------
+%% Body / display: Nanum Gothic (regular + extra-bold for titles)
+%% Mono: Nanum Gothic Coding   |  Pen accent: Nanum Pen Script
+%%
+%% Family name 이 시스템마다 다름:
+%%   macOS (brew --cask font-nanum-gothic)  → "NanumGothic"     (공백 없음)
+%%   Linux (apt fonts-nanum)                → "Nanum Gothic"    (공백 있음)
+%% \IfFontExistsTF 로 자동 선택. 둘 다 없으면 fontspec 가 실패하며 알려줌.
+\IfFontExistsTF{NanumGothic}{%
+  %% macOS brew 패턴 — 공백 없는 이름
+  \if@hfcoverstandalone
+    \setmainfont{NanumGothic}[Scale=1.0, BoldFont=NanumGothic ExtraBold]
+    \setCJKmainfont{NanumGothic}[BoldFont=NanumGothic ExtraBold]
+  \fi
+  \newfontfamily\hfDisplay{NanumGothic}[BoldFont=NanumGothic ExtraBold]
+  \newfontfamily\hfMono{NanumGothicCoding}
+}{%
+  %% Linux apt 패턴 또는 macOS 시스템 자산 — 공백 있는 이름
+  \if@hfcoverstandalone
+    \setmainfont{Nanum Gothic}[Scale=1.0, BoldFont=Nanum Gothic ExtraBold]
+    \setCJKmainfont{Nanum Gothic}[BoldFont=Nanum Gothic ExtraBold]
+  \fi
+  \newfontfamily\hfDisplay{Nanum Gothic}[BoldFont=Nanum Gothic ExtraBold]
+  \newfontfamily\hfMono{Nanum Gothic Coding}
+}%
+\newfontfamily\hfPen{Nanum Pen Script}
+
+%%-- Customisation hooks (override before \drawcover) ----------
+\newcommand{\hfTitleLineOne}{텍스트 분석을 위한}
+\newcommand{\hfTitleLineTwo}{Hugging Face 입문}
+\newcommand{\hfSubtitle}{손으로 따라가며 익히는 텍스트 분류 · 20챕터}
+\newcommand{\hfRunMark}{HF · 101}
+\newcommand{\hfVersionMark}{v1.0 · 2026}
+\newcommand{\hfBandKicker}{Hugging Face 입문 커리큘럼 · 20챕터}
+\newcommand{\hfAuthor}{황윤구}
+\newcommand{\hfBlurb}{%
+  sklearn에서 시작해 DistilBERT, KLUE-BERT,\\
+  그리고 직접 학습한 토크나이저까지.\\
+  {\color{hfInkThree}모델·태스크·Loss·토크나이저 — 네 축으로 추적한다.}%
+}
+
+%%-- Axis chips (key/value pairs rendered in 2×2 grid) ---------
+\newcommand{\hfAxisOneK}{MODEL}
+\newcommand{\hfAxisOneV}{sklearn $\to$ DistilBERT $\to$ KLUE $\to$ small BERT}
+\newcommand{\hfAxisTwoK}{TASK}
+\newcommand{\hfAxisTwoV}{Reg $\to$ Binary $\to$ Multi-class $\to$ Multi-label}
+\newcommand{\hfAxisThreeK}{LOSS}
+\newcommand{\hfAxisThreeV}{MSE $\to$ BCE $\to$ CE $\to$ +Aux}
+\newcommand{\hfAxisFourK}{TOKEN}
+\newcommand{\hfAxisFourV}{TF-IDF $\to$ WordPiece $\to$ 워드 $\to$ 형태소}
+
+%%-- The cover --------------------------------------------------
+%% Coordinates use the page in mm. B5 page = 176 × 250 mm.
+%% Origin (0,0) is the bottom-left of the page (TikZ default).
+%% Layout corresponds to the on-screen mock at 660×940 px:
+%%   px → mm  ≈  factor 0.2667  (176 / 660)
+%%
+\newcommand{\drawcover}{%
+  \begin{tikzpicture}[remember picture, overlay,
+                     every node/.style={inner sep=0pt, outer sep=0pt}]
+    %% page background (paper)
+    \fill[hfPaper] (current page.south west) rectangle (current page.north east);
+
+    %% -- top yellow band (height 75mm from top) --------------
+    \begin{scope}
+      \clip ($(current page.north west)+(0,-75mm)$) rectangle (current page.north east);
+      \fill[hfAccent] ($(current page.north west)+(0,-75mm)$) rectangle (current page.north east);
+      %% white dot pattern
+      \foreach \x in {0,4,...,200}{%
+        \foreach \y in {0,4,...,80}{%
+          \fill[white, opacity=0.18]
+            ($(current page.north west)+(\x mm,-\y mm)$) circle (0.35mm);
+        }
+      }
+      %% ghost HF letters (lower-right of band)
+      \node[anchor=north east, inner sep=0pt,
+            text=white, opacity=0.10]
+            at ($(current page.north east)+(8mm,12mm)$)
+            {\hfDisplay\fontsize{280pt}{280pt}\selectfont\bfseries HF};
+    \end{scope}
+
+    %% running mark (top of band) ----------------------------
+    \node[anchor=north west, text=hfPaper]
+      at ($(current page.north west)+(15mm,-12mm)$)
+      {\hfMono\fontsize{9pt}{11pt}\selectfont\hfRunMark};
+    \node[anchor=north east, text=hfPaper, opacity=0.85]
+      at ($(current page.north east)+(-15mm,-12mm)$)
+      {\hfMono\fontsize{9pt}{11pt}\selectfont\hfVersionMark};
+
+    %% kicker line near the bottom of the band ---------------
+    \node[anchor=south west, text=hfPaper]
+      at ($(current page.north west)+(15mm,-72mm)$)
+      {\hfPen\fontsize{22pt}{22pt}\selectfont\hfBandKicker};
+
+    %% -- title card (straddles the seam) ---------------------
+    %% Card frame: 144mm wide × ≈58mm tall, top edge at -61mm
+    \coordinate (cardNW) at ($(current page.north west)+(15mm,-61mm)$);
+    \coordinate (cardSE) at ($(current page.north west)+(161mm,-119mm)$);
+    %% drop shadow — shadows.blur 라이브러리 대신 오프셋 사각형 두 장으로
+    %% 단계적 농도 차이를 만들어 부드러운 느낌. 라이브러리 호출 안 해서
+    %% kotex 와의 폰트 hook 충돌도 피함.
+    \fill[black, opacity=0.18]
+      ($(cardNW)+(0.6mm,-2.4mm)$) rectangle ($(cardSE)+(0.6mm,-2.4mm)$);
+    \fill[black, opacity=0.10]
+      ($(cardNW)+(1.2mm,-3.4mm)$) rectangle ($(cardSE)+(1.2mm,-3.4mm)$);
+    %% card body
+    \fill[hfPaper] (cardNW) rectangle (cardSE);
+    \draw[hfRule, line width=0.3pt] (cardNW) rectangle (cardSE);
+    %% top accent strip (ink)
+    \fill[hfInk]
+      ($(cardNW)+(0,0)$) rectangle ($(cardNW)+(146mm,-1.6mm)$);
+
+    %% eyebrow
+    \node[anchor=north west, text=hfAccent]
+      at ($(cardNW)+(9mm,-7mm)$)
+      {\hfMono\fontsize{8.5pt}{10pt}\selectfont 교과서 · TEXTBOOK};
+
+    %% main title — line 1 (smaller, ink)
+    \node[anchor=north west, text=hfInk]
+      at ($(cardNW)+(9mm,-13mm)$)
+      {\hfDisplay\fontsize{18pt}{20pt}\selectfont\bfseries\hfTitleLineOne};
+
+    %% main title — line 2 (larger, accent)
+    \node[anchor=north west, text=hfAccent]
+      at ($(cardNW)+(9mm,-22mm)$)
+      {\hfDisplay\fontsize{26pt}{28pt}\selectfont\bfseries\hfTitleLineTwo};
+
+    %% accent rule + subtitle
+    \fill[hfAccent] ($(cardNW)+(9mm,-47mm)$) rectangle ($(cardNW)+(19mm,-47.6mm)$);
+    \node[anchor=north west, text=hfInkTwo, text width=120mm]
+      at ($(cardNW)+(22mm,-45mm)$)
+      {\hfDisplay\fontsize{9pt}{12pt}\selectfont\bfseries\hfSubtitle};
+
+    %% -- blurb -----------------------------------------------
+    \node[anchor=north west, text=hfInk, text width=130mm]
+      at ($(current page.north west)+(15mm,-138mm)$)
+      {\hfDisplay\fontsize{10.5pt}{15pt}\selectfont\hfBlurb};
+
+    %% -- 4-axis chips grid (2 cols × 2 rows) -----------------
+    \begin{scope}[every node/.style={anchor=north west, inner sep=0pt}]
+      \def\colA{15mm}\def\colB{91mm}
+      \def\rowA{180mm}\def\rowB{197mm}
+      %% top borders
+      \draw[hfRule, line width=0.3pt]
+        ($(current page.north west)+(\colA,-\rowA)$) -- ++(72mm,0);
+      \draw[hfRule, line width=0.3pt]
+        ($(current page.north west)+(\colB,-\rowA)$) -- ++(72mm,0);
+      \draw[hfRule, line width=0.3pt]
+        ($(current page.north west)+(\colA,-\rowB)$) -- ++(72mm,0);
+      \draw[hfRule, line width=0.3pt]
+        ($(current page.north west)+(\colB,-\rowB)$) -- ++(72mm,0);
+      %% row 1
+      \node[text=hfAccent]
+        at ($(current page.north west)+(\colA,-\rowA)$)
+        {\hfMono\fontsize{7.5pt}{9pt}\selectfont\hfAxisOneK};
+      \node[text=hfInkTwo]
+        at ($(current page.north west)+(\colA,-\rowA-3.5mm)$)
+        {\hfMono\fontsize{7pt}{9pt}\selectfont\hfAxisOneV};
+      \node[text=hfAccent]
+        at ($(current page.north west)+(\colB,-\rowA)$)
+        {\hfMono\fontsize{7.5pt}{9pt}\selectfont\hfAxisTwoK};
+      \node[text=hfInkTwo]
+        at ($(current page.north west)+(\colB,-\rowA-3.5mm)$)
+        {\hfMono\fontsize{7pt}{9pt}\selectfont\hfAxisTwoV};
+      %% row 2
+      \node[text=hfAccent]
+        at ($(current page.north west)+(\colA,-\rowB)$)
+        {\hfMono\fontsize{7.5pt}{9pt}\selectfont\hfAxisThreeK};
+      \node[text=hfInkTwo]
+        at ($(current page.north west)+(\colA,-\rowB-3.5mm)$)
+        {\hfMono\fontsize{7pt}{9pt}\selectfont\hfAxisThreeV};
+      \node[text=hfAccent]
+        at ($(current page.north west)+(\colB,-\rowB)$)
+        {\hfMono\fontsize{7.5pt}{9pt}\selectfont\hfAxisFourK};
+      \node[text=hfInkTwo]
+        at ($(current page.north west)+(\colB,-\rowB-3.5mm)$)
+        {\hfMono\fontsize{7pt}{9pt}\selectfont\hfAxisFourV};
+    \end{scope}
+
+    %% -- author + mark (footer, divided by ink rule) ----------
+    \fill[hfInk]
+      ($(current page.north west)+(15mm,-220mm)$)
+      rectangle ($(current page.north west)+(161mm,-220.6mm)$);
+    \node[anchor=north west, text=hfInkThree]
+      at ($(current page.north west)+(15mm,-225mm)$)
+      {\hfMono\fontsize{8pt}{10pt}\selectfont 지은이};
+    \node[anchor=north west, text=hfInk]
+      at ($(current page.north west)+(15mm,-230mm)$)
+      {\hfDisplay\fontsize{13pt}{14pt}\selectfont\bfseries\hfAuthor};
+    %% 🤗 — falls back to text "HF" if emoji font unavailable
+    \node[anchor=north east, text=hfInk]
+      at ($(current page.north west)+(161mm,-227mm)$)
+      {\hfDisplay\fontsize{30pt}{30pt}\selectfont\bfseries HF};
+  \end{tikzpicture}
+}
+
+%% ------------------------------------------------------------
+%% \makehfcover{<title-line-1>}{<title-line-2>}{<subtitle>}
+%% ------------------------------------------------------------
+\newcommand{\makehfcover}[3]{%
+  \renewcommand{\hfTitleLineOne}{#1}%
+  \renewcommand{\hfTitleLineTwo}{#2}%
+  \renewcommand{\hfSubtitle}{#3}%
+  \begin{titlepage}\drawcover\end{titlepage}%
+}
+
+\endinput

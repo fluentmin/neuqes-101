@@ -1,0 +1,41 @@
+%%==============================================================
+%% main.tex — minimal example using hfcover.sty (A1 cover)
+%%
+%% Build:
+%%   xelatex main.tex
+%%
+%% Required system fonts (install via Google Fonts or apt):
+%%   - Nanum Gothic, Nanum Gothic ExtraBold
+%%   - Nanum Gothic Coding
+%%   - Nanum Pen Script
+%%==============================================================
+\documentclass[11pt]{book}
+
+%% standalone 옵션이 B5 trim (176×250 mm) + 본문 Nanum Gothic 셋업까지 함께 처리
+\usepackage[standalone]{hfcover}
+
+\begin{document}
+
+%% -- A1 cover --------------------------------------------------
+%% Use the defaults …
+\drawcover\clearpage
+
+%% … or override the title strings:
+\renewcommand{\hfTitleLineOne}{텍스트 분석을 위한}
+\renewcommand{\hfTitleLineTwo}{Hugging Face 입문}
+\renewcommand{\hfSubtitle}{손으로 따라가며 익히는 텍스트 분류 · 20챕터}
+\renewcommand{\hfAuthor}{황윤구}
+
+%% Or in one shot:
+% \makehfcover{텍스트 분석을 위한}{Hugging Face 입문}%
+%   {손으로 따라가며 익히는 텍스트 분류 · 20챕터}
+
+%% -- body matter (placeholder) ---------------------------------
+\frontmatter
+\tableofcontents
+
+\mainmatter
+\chapter{TF-IDF로 시작하기}
+이 장에서는 TF-IDF로부터 텍스트 표현을 시작한다 …
+
+\end{document}

@@ -1,4 +1,5 @@
 build/
+!build/cover-a1-preview.pdf
 *.aux
 *.fdb_latexmk
 *.fls
@@ -10,3 +11,4 @@ build/
 *.toc
 *.xdv
 *.pdf
+!cover-a1-preview.pdf
