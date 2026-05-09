@@ -327,14 +327,24 @@
   \phasedivider{#1}{#2}{#3}{#4}{#5}%
 }
 
+%% \chapline — 디자인의 phase-page 하단 chapter chip 그리드 한 칸. 디자인은
+%% 4 컬럼 그리드지만 LaTeX에선 minipage stretch 로 flow + 끝에 자동 wrap.
+%% paper 색 텍스트 (dark phase-page 배경 위) — kicker (mono 모노) + 디스플레이.
 \newcommand{\chapline}[3]{%
-  \noindent
-  \makebox[20mm][l]{\itshape\small\color{\taphasecolor{\thetaphasecur}}#1}%
-  {\sffamily\bfseries\color{taInk}#2}%
-  {\sffamily\color{taSubtext}\ \,\textbf{·}\,\ #3}\par
-  \vspace{6pt}%
+  \begin{minipage}[t]{42mm}%
+    \raggedright
+    \color{hfPaper!85!black}%
+    {\hfMono\fontsize{7.5pt}{9pt}\selectfont\color{hfPaper!55!black}#1}\par
+    \vspace{1pt}
+    {\hfDisplay\bfseries\fontsize{9.5pt}{11pt}\selectfont\color{hfPaper}#2}\par
+    \vspace{0.5pt}
+    {\hfMono\fontsize{7pt}{8.5pt}\selectfont\color{hfPaper!50!black}#3}\par
+  \end{minipage}\hspace{2mm}\ignorespaces
 }
 
+%% phase-divider — 디자인의 PagePhase 매칭. dark ink 풀-페이지 배경 위에
+%% pen-script kicker + 모뉴멘탈 serif 타이틀 + 디스플레이 설명 + 하단 phase
+%% indicator + chapter chip strip (#5 의 \chapline 들).
 \newcommand{\phasedivider}[5]{%
   \setcounter{taphasecur}{#1}%
   \cleardoublepage
@@ -346,52 +356,69 @@
   \fi
   \thispagestyle{empty}
   \begin{tikzpicture}[remember picture, overlay]
-    \fill[taPaper]
+    %% full-page dark background (hfInk = #1F1F1F)
+    \fill[hfInk]
       (current page.north west) rectangle (current page.south east);
-    \fill[\taphasecolor{#1}]
-      (current page.north west) rectangle ([yshift=-2.5mm]current page.north east);
-    \node[anchor=north west, text=taSubtext, font=\sffamily\fontsize{7}{9}\selectfont]
-      at ([xshift=20mm, yshift=-15mm]current page.north west)
-      {HUGGING FACE 텍스트 분석 입문};
-    \node[anchor=north east, text=taSubtext, font=\sffamily\fontsize{7}{9}\selectfont]
-      at ([xshift=-20mm, yshift=-15mm]current page.north east)
-      {0\the\value{taphasecur}\,/\,04};
-    \draw[taInk, line width=0.3pt, opacity=0.18]
-      ([xshift=20mm, yshift=-19mm]current page.north west) --
-      ([xshift=-20mm, yshift=-19mm]current page.north east);
-    \node[anchor=center, text=taSubtext, font=\sffamily\fontsize{10}{12}\selectfont]
-      at ([yshift=-50mm]current page.north)
-      {P\,H\,A\,S\,E};
-    \node[anchor=center, text=\taphasecolor{#1}, font=\bfseries\fontsize{120}{120}\selectfont]
-      at ([yshift=-95mm]current page.north)
-      {#1};
-    \node[anchor=center, text=taInk, font=\bfseries\fontsize{30}{34}\selectfont]
-      at ([yshift=-130mm]current page.north) {#2};
-    \node[anchor=center, text=taSlate, font=\fontsize{11}{13}\selectfont]
-      at ([yshift=-138mm]current page.north) {#3};
-    \node[anchor=center, text=taSlateMute, font=\itshape\fontsize{10}{12}\selectfont]
-      at ([yshift=-144mm]current page.north) {#4};
-    \draw[\taphasecolor{#1}, line width=1.2pt]
-      ([xshift=-7mm, yshift=-150mm]current page.north) -- ++(14mm, 0);
-    \node[anchor=north, inner sep=0pt]
-      at ([yshift=-160mm]current page.north)
-      {\begin{minipage}{120mm}#5\end{minipage}};
-    \foreach \i in {0, 1, 2, 3} {
-      \pgfmathsetmacro{\xpos}{(\i - 1.5) * 6}
-      \ifnum\i=#1\relax
-        \fill[\taphasecolor{#1}]
-          ([xshift=\xpos mm, yshift=-220mm]current page.north) circle (1.5pt);
-      \else
-        \draw[taSubtext, line width=0.4pt, opacity=0.5]
-          ([xshift=\xpos mm, yshift=-220mm]current page.north) circle (1.1pt);
-      \fi
-    }
-    \node[anchor=center, text=taSubtext, font=\sffamily\fontsize{7}{9}\selectfont]
-      at ([yshift=-228mm]current page.north)
-      {PHASE #1\ \ \textbf{·}\ \ #2};
+
+    %% 상단 eyebrow 라인 — 좌: PART OPENER · phase note, 우: chapter range
+    \node[anchor=north west, text=hfPaper, opacity=0.55,
+          font=\hfMono\fontsize{7.5pt}{9pt}\selectfont]
+      at ([xshift=20mm, yshift=-18mm]current page.north west)
+      {PART OPENER \ \textbf{·}\ \ Phase #1};
+    \node[anchor=north east, text=hfPaper, opacity=0.50,
+          font=\hfMono\fontsize{7.5pt}{9pt}\selectfont]
+      at ([xshift=-18mm, yshift=-18mm]current page.north east)
+      {#4};
+
+    %% Pen-script kicker (handwritten, accent-soft cream)
+    \node[anchor=west, text=hfAccentSoft, opacity=0.85,
+          font=\hfPen\fontsize{22pt}{22pt}\selectfont]
+      at ([xshift=20mm, yshift=-65mm]current page.north west)
+      {이제부터,};
+
+    %% 모뉴멘탈 타이틀 — Nanum Gothic ExtraBold, paper color.
+    %% 긴 한국어 제목이 어색한 위치에서 끊기지 않도록 폭은 넓게(160mm), 폰트는 약간 작게.
+    \node[anchor=north west, text=hfPaper, text width=160mm,
+          font=\hfDisplay\bfseries\fontsize{44pt}{52pt}\selectfont]
+      at ([xshift=20mm, yshift=-78mm]current page.north west)
+      {#2};
+
+    %% 짧은 액센트 룰 (accent orange)
+    \draw[hfAccent, line width=1.4pt]
+      ([xshift=20mm, yshift=-128mm]current page.north west) -- ++(20mm, 0);
+
+    %% 설명 라인 (한국어 부제 + 영어 secondary)
+    \node[anchor=north west, text=hfPaper, opacity=0.85, text width=140mm,
+          font=\hfDisplay\fontsize{12pt}{18pt}\selectfont]
+      at ([xshift=20mm, yshift=-138mm]current page.north west)
+      {#3\\[2pt]\textit{\textcolor{hfPaper!55!black}{#4}}};
+
+    %% 하단 영역 ─ horizontal rule + PHASE label + 큰 phase number + dots
+    \draw[hfPaper, line width=0.4pt, opacity=0.30]
+      ([xshift=20mm, yshift=-185mm]current page.north west) --
+      ([xshift=-18mm, yshift=-185mm]current page.north east);
+
+    \node[anchor=north west, text=hfPaper, opacity=0.55,
+          font=\hfMono\fontsize{7.5pt}{9pt}\selectfont]
+      at ([xshift=20mm, yshift=-192mm]current page.north west)
+      {PHASE};
+    \node[anchor=north west, text=hfPaper,
+          font=\hfDisplay\bfseries\fontsize{52pt}{52pt}\selectfont]
+      at ([xshift=20mm, yshift=-200mm]current page.north west)
+      {0#1};
+    \node[anchor=base west, text=hfPaper, opacity=0.40,
+          font=\hfMono\fontsize{12pt}{12pt}\selectfont]
+      at ([xshift=42mm, yshift=-218mm]current page.north west)
+      {/04};
+
+    %% chapter chip strip (#5 안의 \chapline 들이 자동 정렬)
+    \node[anchor=north west, inner sep=0pt]
+      at ([xshift=66mm, yshift=-198mm]current page.north west)
+      {\begin{minipage}{90mm}\setlength{\parskip}{6pt}\raggedright #5\end{minipage}};
   \end{tikzpicture}
   \cleardoublepage
 }
+
 
 \newcommand{\textbookcover}{%
   \begin{titlepage}
