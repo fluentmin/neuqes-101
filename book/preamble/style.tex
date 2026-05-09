@@ -34,12 +34,21 @@
 \usepackage{designsystem}
 
 \makeindex
+% TOC 스타일 — 디자인 시안의 PageTOC 패턴.
+% 챕터 번호는 mono 액센트(orange), 본문 제목은 ink, 페이지 번호는 mono.
 \setlength{\cftpartnumwidth}{5.0em}
 \renewcommand{\cftpartfont}{\sffamily\bfseries\color{taInk}}
 \renewcommand{\cftpartpagefont}{\sffamily\bfseries\color{taInk}}
 \setlength{\cftchapnumwidth}{2.8em}
 \setlength{\cftsecnumwidth}{4.2em}
 \setlength{\cftsubsecnumwidth}{5.0em}
+\renewcommand{\cftchapfont}{\sffamily\bfseries\color{taInk}}
+\renewcommand{\cftchappagefont}{\ttfamily\color{taInk}}
+\renewcommand{\cftsecfont}{\sffamily\color{taSubtext}}
+\renewcommand{\cftsecpagefont}{\ttfamily\color{taSubtext}}
+\renewcommand{\cftsubsecfont}{\sffamily\color{taSlateMute}}
+\renewcommand{\cftsubsecpagefont}{\ttfamily\color{taSlateMute}}
+\renewcommand{\cftdotsep}{1.4}
 
 \setmainfont{NanumMyeongjo-Regular.ttf}[
   Path = /Users/yoon-gu/Library/Fonts/,
@@ -78,20 +87,26 @@
 \renewcommand{\headrule}{\hbox to\headwidth{\color{taInk}\leaders\hrule height \headrulewidth\hfill}}
 \renewcommand{\footrulewidth}{0pt}
 
+% HF Hub 디자인 시안의 .h1/.h2/.h3 타이포에 맞춰 재구성.
+% 챕터: 얇은 200-weight 거대 숫자 + h1 (Nanum Gothic ExtraBold, 28pt).
+% 섹션 (h2): 16pt sans bold + 좌측 짧은 액센트 막대.
+% 서브섹션 (h3): 12pt sans bold, 색은 ink-2.
 \titleformat{\chapter}[display]
-  {\rmfamily\bfseries\Huge\color{taInk}}
-  {\thechapter 장}
-  {12pt}
-  {\Huge}
+  {\sffamily\color{taInk}}
+  {\fontsize{96pt}{96pt}\selectfont\fontseries{l}\selectfont
+   \color{taSlate}\thechapter}
+  {-6pt}
+  {\sffamily\bfseries\fontsize{28pt}{34pt}\selectfont\color{taInk}}
+  [\vspace{4pt}{\color{taSlate}\rule{20mm}{1.4pt}}]
 \titleformat{\section}
-  {\rmfamily\bfseries\Large\color{taInk}}
-  {\thesection}{0.8em}{}
+  {\sffamily\bfseries\fontsize{16pt}{20pt}\selectfont\color{taInk}}
+  {\thesection}{0.6em}{}
 \titleformat{\subsection}
-  {\rmfamily\bfseries\large\color{taInk}}
-  {\thesubsection}{0.8em}{}
+  {\sffamily\bfseries\fontsize{12pt}{16pt}\selectfont\color{taSubtext}}
+  {\thesubsection}{0.6em}{}
 \titlespacing*{\chapter}{0pt}{-4pt}{28pt}
-\titlespacing*{\section}{0pt}{20pt}{8pt}
-\titlespacing*{\subsection}{0pt}{14pt}{6pt}
+\titlespacing*{\section}{0pt}{18pt}{6pt}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
 
 \setlist{itemsep=2pt,topsep=4pt}
 \providecommand{\tightlist}{%

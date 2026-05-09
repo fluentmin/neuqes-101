@@ -1,28 +1,30 @@
 % themes/slate.sty
-% Cool Slate theme tokens for the text analysis manuscript.
+% HF Hub theme tokens for the text analysis manuscript.
+% (이름은 slate 그대로지만 팔레트는 디자인 시안의 HF Hub 토큰을 따름:
+%  warm cream paper + HF 오렌지/옐로 액센트 + warm-gray ink scale.)
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{themes/slate}[2026/05/04 v0.1 Cool Slate theme]
+\ProvidesPackage{themes/slate}[2026/05/09 v0.2 HF Hub palette]
 
 \RequirePackage{xcolor}
 
-% Base surface and text tokens.
-\definecolor{taPaper}{HTML}{ECEEED}
-\definecolor{taPaperDeep}{HTML}{D5D9D8}
-\definecolor{taInk}{HTML}{1B2733}
-\definecolor{taSubtext}{HTML}{4F5A6A}
-\definecolor{taSlateMute}{HTML}{6B7986}
-\definecolor{taTrack}{HTML}{1B2733}
+% Surface + ink scale (디자인의 :root 토큰).
+\definecolor{taPaper}     {HTML}{FFFDF6}  % --paper
+\definecolor{taPaperDeep} {HTML}{E5E0CE}  % --rule (cream rule / chip bg)
+\definecolor{taInk}       {HTML}{1F1F1F}  % --ink
+\definecolor{taSubtext}   {HTML}{3A3A3A}  % --ink-2
+\definecolor{taSlateMute} {HTML}{6E6E6E}  % --ink-3
+\definecolor{taTrack}     {HTML}{1F1F1F}
 
-% Main accent tokens.
-\definecolor{taSlate}{HTML}{4F6D8C}
-\definecolor{taSlateLight}{HTML}{6E8AA6}
+% Accents (HF 오렌지 / 옐로).
+\definecolor{taSlate}     {HTML}{FF9D00}  % --accent (HF orange)
+\definecolor{taSlateLight}{HTML}{FFD21E}  % --accent-2 (HF yellow)
 
-% Phase tokens.
-\definecolor{taPhaseZero}{HTML}{8DA3B8}
-\definecolor{taPhaseOne}{HTML}{5E7D9C}
-\definecolor{taPhaseTwo}{HTML}{3F5E80}
-\definecolor{taPhaseThree}{HTML}{243F62}
+% Phase 토큰은 의미 단위로 다시 매핑.
+\definecolor{taPhaseZero} {HTML}{FFF1C2}  % accent-soft (preview / box bg)
+\definecolor{taPhaseOne}  {HTML}{FF9D00}  % code rule = main accent
+\definecolor{taPhaseTwo}  {HTML}{8A3A1C}  % warning rust
+\definecolor{taPhaseThree}{HTML}{1F1F1F}  % deep ink
 
 % Numeric aliases for TikZ key-value usage.
 \colorlet{taPhase0}{taPhaseZero}
