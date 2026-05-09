@@ -84,7 +84,7 @@
 
 \section{변화추적표}
 
-\begin{booktable}{8장 변화추적표}{tab:ch08-01}
+\begin{booktable}{변화추적표}{tab:ch08-01}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lllllll@{}}
 \toprule
@@ -106,7 +106,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 
 \section{변경점: \ref{ch:07}장 대비}
 
-\begin{booktable}{8장 변경점 요약}{tab:ch08-02}
+\begin{booktable}{변경점 요약}{tab:ch08-02}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -133,7 +133,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 
 WordPiece가 출력하는 시퀀스 길이는 입력 텍스트마다 다릅니다. 그런데 모델은 \textbf{고정된 shape의 텐서 배치} 를 받아야 하므로, 이 둘 사이를 맞추는 세 가지 옵션이 있습니다.
 
-\begin{booktable}{8장 토크나이저 노트 표}{tab:ch08-03}
+\begin{booktable}{토크나이저 노트 표}{tab:ch08-03}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -841,7 +841,7 @@ for i, batch in enumerate(dyn_loader):
 
 \textbf{정적 vs 동적 padding 비교}
 
-\begin{booktable}{8장 DataCollator 표}{tab:ch08-04}
+\begin{booktable}{DataCollator 표}{tab:ch08-04}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lllll@{}}
 \toprule
@@ -859,7 +859,7 @@ for i, batch in enumerate(dyn_loader):
 
 \subsection{\texorpdfstring{다양한 \inlinecode{DataCollator} 종류}{다양한 DataCollator 종류}}
 
-\begin{booktable}{8장 다양한 DataCollator 종류 표}{tab:ch08-05}
+\begin{booktable}{다양한 DataCollator 종류 표}{tab:ch08-05}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -951,7 +951,7 @@ for batch in loader:
 
 \subsubsection{두 패턴의 매핑}
 
-\begin{booktable}{8장 학습 코드와의 연결 표}{tab:ch08-06}
+\begin{booktable}{학습 코드와의 연결 표}{tab:ch08-06}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1175,7 +1175,7 @@ print(
 
 같은 \inlinecode{DataCollatorForLanguageModeling} 에 \textbf{\inlinecode{mlm=False}} 만 주면 GPT 같은 \emph{autoregressive 사전학습} 용 collator가 됩니다. 차이는 단순합니다.
 
-\begin{booktable}{8장 CLM 입력 구성 표}{tab:ch08-07}
+\begin{booktable}{CLM 입력 구성 표}{tab:ch08-07}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1403,7 +1403,7 @@ Running the cell in Colab prints the corresponding string or table.
 
 \subsection{\texorpdfstring{\inlinecode{datasets}}{datasets}}
 
-\begin{booktable}{8장 datasets 표}{tab:ch08-08}
+\begin{booktable}{datasets 표}{tab:ch08-08}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1423,7 +1423,7 @@ Running the cell in Colab prints the corresponding string or table.
 
 \subsection{\texorpdfstring{\inlinecode{transformers} 토크나이저 옵션}{transformers 토크나이저 옵션}}
 
-\begin{booktable}{8장 transformers 토크나이저 옵션 표}{tab:ch08-09}
+\begin{booktable}{transformers 토크나이저 옵션 표}{tab:ch08-09}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}ll@{}}
 \toprule
@@ -1443,7 +1443,7 @@ Running the cell in Colab prints the corresponding string or table.
 
 \subsection{PyTorch 데이터 도구}
 
-\begin{booktable}{8장 PyTorch 데이터 도구 표}{tab:ch08-10}
+\begin{booktable}{PyTorch 데이터 도구 표}{tab:ch08-10}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}ll@{}}
 \toprule
