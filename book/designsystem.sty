@@ -354,6 +354,30 @@
 \newcounter{taphasecur}
 \newif\ifregisterphasepart
 
+% \hfphasebreak — Phase 본문 (\phasepart #2) 안에서 줄바꿈 위치를 표시.
+% phase divider 페이지에선 \\ 로 두 줄, TOC 에선 공백 + \mbox 로 한 줄 유지.
+% Robust 로 선언해 \addcontentsline 의 .toc 쓰기 단계에서 미리 펼쳐지지 않게.
+\DeclareRobustCommand{\hfphasebreak}{\\}
+
+% TOC 의 Phase 행을 렌더하는 매크로 — 디자인의 PageTOC 그룹 헤더.
+% 시각: ink 박스 위 옐로 mono "Phase N" + sans bold 본문 + 모노 ink-3 secondary.
+% hyperref PDF bookmark 용 평문은 \texorpdfstring 으로 분리.
+\newcommand{\tocphase}[3]{%
+  \texorpdfstring{%
+    \begingroup
+    %% TOC 에선 \hfphasebreak 을 공백으로 펼치고 \mbox 로 감싸 줄바꿈 차단.
+    \renewcommand{\hfphasebreak}{ }%
+    {\setlength{\fboxsep}{2.5pt}%
+     \mbox{\colorbox{taInk}{\sffamily\bfseries\fontsize{7.5pt}{9pt}\selectfont
+      \color{taSlateLight}\,Phase~#1\,}}}%
+    \quad
+    \mbox{\sffamily\bfseries\fontsize{11pt}{13pt}\selectfont\color{taInk}#2}%
+    \quad
+    {\sffamily\fontsize{8pt}{10pt}\selectfont\color{taSlateMute}#3}%
+    \endgroup
+  }{Phase #1: #2}%
+}
+
 \newcommand{\phasepart}[5]{%
   \registerphaseparttrue
   \phasedivider{#1}{#2}{#3}{#4}{#5}%
@@ -382,7 +406,10 @@
   \cleardoublepage
   \ifregisterphasepart
     \refstepcounter{part}%
-    \addcontentsline{toc}{part}{\protect\numberline{Part~\thepart}Phase #1: #2}%
+    %% TOC 엔트리: 디자인의 PageTOC 그룹 헤더 (Phase 칩 + 본문 + 모노 secondary).
+    %% 실제 렌더링은 \tocphase 매크로가 담당하고, hyperref bookmark 용
+    %% 평문은 texorpdfstring 두 번째 인자가 제공.
+    \addcontentsline{toc}{part}{\protect\tocphase{#1}{#2}{#3}}%
     \markboth{Phase #1. #2}{Phase #1. #2}%
     \registerphasepartfalse
   \fi

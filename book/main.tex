@@ -19,7 +19,8 @@
 \input{frontmatter/cover}
 \input{frontmatter/titlepage}
 \input{frontmatter/preface}
-\setcounter{tocdepth}{1}
+% TOC 는 디자인 시안의 PageTOC 패턴 — 챕터 단위만 노출 (Phase 그룹 헤더 + 챕터 행).
+\setcounter{tocdepth}{0}
 \tableofcontents
 \cleardoublepage
 \addcontentsline{toc}{chapter}{그림 목록}
@@ -49,7 +50,7 @@
 \input{chapters/ch06_sklearn_multilabel}
 
 \phasepart{1}
-  {BERT 기반\\태스크 재정식화}
+  {BERT 기반\hfphasebreak 태스크 재정식화}
   {DistilBERT · Trainer로 Loss와 Head 재해석}
   {BERT-based Reformulation · Loss \& Head with Trainer}
   {

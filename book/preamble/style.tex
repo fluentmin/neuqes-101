@@ -35,20 +35,39 @@
 
 \makeindex
 % TOC 스타일 — 디자인 시안의 PageTOC 패턴.
-% 챕터 번호는 mono 액센트(orange), 본문 제목은 ink, 페이지 번호는 mono.
-\setlength{\cftpartnumwidth}{5.0em}
-\renewcommand{\cftpartfont}{\sffamily\bfseries\color{taInk}}
-\renewcommand{\cftpartpagefont}{\sffamily\bfseries\color{taInk}}
-\setlength{\cftchapnumwidth}{2.8em}
-\setlength{\cftsecnumwidth}{4.2em}
-\setlength{\cftsubsecnumwidth}{5.0em}
+% 디자인은 챕터 단위만 노출 + Phase 별 그룹 헤더 (tag chip + mono note + rule).
+% 따라서 tocdepth=0 으로 섹션 숨김, Part 행과 챕터 행만 렌더.
+\setcounter{tocdepth}{0}
+
+% 차례 타이틀: "Contents" → "차례", 위에 액센트 eyebrow.
+\renewcommand{\contentsname}{차례}
+\renewcommand{\cfttoctitlefont}{%
+  \hfill\sffamily\bfseries\fontsize{30pt}{36pt}\selectfont\color{taInk}}
+\renewcommand{\cftaftertoctitle}{\hfill\par
+  \vspace{2pt}{\hfill\sffamily\footnotesize\bfseries\color{taSlate}%
+   CONTENTS · 차례\par}\vspace{14pt}}
+
+% Part = Phase 그룹 헤더 (디자인의 tag chip + mono note + rule).
+% phasedivider 의 addcontentsline 에서 #1 = "Phase 0", title = "기초 다지기 · sklearn으로 본질"
+% 형태로 들어옴. 부분의 chip + 본문은 \cftpartfont 안에서 렌더.
+\setlength{\cftbeforepartskip}{18pt}
+\setlength{\cftpartnumwidth}{0pt}
+\renewcommand{\cftpartpresnum}{\hspace{-3em}}
+\renewcommand{\cftpartaftersnumb}{}
+\renewcommand{\cftpartfont}{\sffamily\small\bfseries\color{taSubtext}}
+\renewcommand{\cftpartleader}{\hfill}
+\renewcommand{\cftpartpagefont}{\ttfamily\color{taSubtext}}
+\renewcommand{\cftpartafterpnum}{\par
+  \vspace{4pt}\noindent{\color{taPaperDeep}\rule{\linewidth}{0.6pt}}\par
+  \vspace{2pt}}
+
+% 챕터 행: mono accent 번호 + sans bold 제목 + 점선 leader + mono 페이지 번호.
+\setlength{\cftchapnumwidth}{2.6em}
 \renewcommand{\cftchapfont}{\sffamily\bfseries\color{taInk}}
 \renewcommand{\cftchappagefont}{\ttfamily\color{taInk}}
-\renewcommand{\cftsecfont}{\sffamily\color{taSubtext}}
-\renewcommand{\cftsecpagefont}{\ttfamily\color{taSubtext}}
-\renewcommand{\cftsubsecfont}{\sffamily\color{taSlateMute}}
-\renewcommand{\cftsubsecpagefont}{\ttfamily\color{taSlateMute}}
-\renewcommand{\cftdotsep}{1.4}
+\renewcommand{\cftchapleader}{\color{taPaperDeep}\cftdotfill{\cftchapdotsep}\color{taInk}}
+\renewcommand{\cftchapdotsep}{1.6}
+\renewcommand{\cftdotsep}{1.6}
 
 \setmainfont{NanumMyeongjo-Regular.ttf}[
   Path = /Users/yoon-gu/Library/Fonts/,
