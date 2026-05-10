@@ -42,11 +42,26 @@
 \renewcommand{\listfigurename}{그림 목록}
 \renewcommand{\listtablename}{표 목록}
 
+% 디자인의 .fig-cap / .tbl-cap 패턴:
+% 라벨 ("그림 N.M", "표 N.M") = 모노 액센트 작은 글씨, 본문 = 작은 ink-2.
+\DeclareCaptionFont{taLabelFont}{\sffamily\footnotesize\bfseries\color{taSlate}}
+\DeclareCaptionFont{taBodyFont}{\rmfamily\footnotesize\color{taSubtext}}
+\captionsetup{
+  labelsep=quad,
+  labelfont={taLabelFont},
+  textfont={taBodyFont},
+  skip=6pt
+}
 \captionsetup[table]{
   justification=centering,
   singlelinecheck=true,
-  labelfont=bf,
-  font=small,
+  position=above,
+  skip=6pt
+}
+\captionsetup[figure]{
+  justification=raggedright,
+  singlelinecheck=false,
+  position=below,
   skip=6pt
 }
 

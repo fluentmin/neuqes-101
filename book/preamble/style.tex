@@ -69,6 +69,31 @@
 \renewcommand{\cftchapdotsep}{1.6}
 \renewcommand{\cftdotsep}{1.6}
 
+% 그림 목록 / 표 목록 — 차례와 동일한 헤더 + 작은 mono ink-3 번호 + sans 캡션 + mono 페이지.
+\renewcommand{\cftloftitlefont}{%
+  \hfill\sffamily\bfseries\fontsize{30pt}{36pt}\selectfont\color{taInk}}
+\renewcommand{\cftafterloftitle}{\hfill\par
+  \vspace{2pt}{\hfill\sffamily\footnotesize\bfseries\color{taSlate}%
+   FIGURES · 그림 목록\par}\vspace{14pt}}
+\renewcommand{\cftlottitlefont}{%
+  \hfill\sffamily\bfseries\fontsize{30pt}{36pt}\selectfont\color{taInk}}
+\renewcommand{\cftafterlottitle}{\hfill\par
+  \vspace{2pt}{\hfill\sffamily\footnotesize\bfseries\color{taSlate}%
+   TABLES · 표 목록\par}\vspace{14pt}}
+
+\setlength{\cftfignumwidth}{3.2em}
+\renewcommand{\cftfigfont}{\sffamily\small\color{taSubtext}}
+\renewcommand{\cftfigpresnum}{\ttfamily\color{taSlateMute}}
+\renewcommand{\cftfigpagefont}{\ttfamily\small\color{taSubtext}}
+\renewcommand{\cftfigleader}{\color{taPaperDeep}\cftdotfill{\cftfigdotsep}\color{taSubtext}}
+\renewcommand{\cftfigdotsep}{2}
+\setlength{\cfttabnumwidth}{3.2em}
+\renewcommand{\cfttabfont}{\sffamily\small\color{taSubtext}}
+\renewcommand{\cfttabpresnum}{\ttfamily\color{taSlateMute}}
+\renewcommand{\cfttabpagefont}{\ttfamily\small\color{taSubtext}}
+\renewcommand{\cfttableader}{\color{taPaperDeep}\cftdotfill{\cfttabdotsep}\color{taSubtext}}
+\renewcommand{\cfttabdotsep}{2}
+
 \setmainfont{NanumMyeongjo-Regular.ttf}[
   Path = /Users/yoon-gu/Library/Fonts/,
   BoldFont = NanumMyeongjo-Bold.ttf,
