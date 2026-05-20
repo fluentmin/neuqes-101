@@ -1,0 +1,47 @@
+name: 아이디어/메모
+description: 아직 챕터나 원고 작업으로 확정되지 않은 커리큘럼 아이디어
+title: "[Idea] "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        아직 구체적인 작업으로 정리되지 않은 생각을 남기는 템플릿입니다.
+        나중에 챕터/원고/인프라 이슈로 쪼갤 수 있게 핵심만 적어도 괜찮습니다.
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 아이디어
+      placeholder: "무엇을 정리하거나 실험해보고 싶나요?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 관련 영역
+      options:
+        - 커리큘럼 흐름
+        - 새 챕터
+        - 기존 챕터 개선
+        - 출판 원고
+        - 실무 인프라
+        - 실험/벤치마크
+        - 기타
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 왜 중요한가요?
+      placeholder: "독자나 원고에 어떤 도움이 될지 적어주세요."
+
+  - type: textarea
+    id: next
+    attributes:
+      label: 다음 액션 후보
+      placeholder: |
+        - 조사:
+        - 노트북:
+        - 원고:
+        - 이슈 분리:

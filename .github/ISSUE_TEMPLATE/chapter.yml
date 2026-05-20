@@ -1,0 +1,63 @@
+name: 챕터 추가/개선
+description: 새 챕터 제안, 기존 챕터 내용 개선, 변화추적표 변경 요청
+title: "[Chapter] "
+labels: ["chapter", "content"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        이 저장소는 챕터마다 **한 가지 변화**만 다루는 Hugging Face 입문 커리큘럼입니다.
+        새 챕터나 기존 챕터 변경을 제안할 때는 모델/태스크/Loss/토크나이저 중 어떤 축이 바뀌는지 먼저 적어주세요.
+
+  - type: input
+    id: chapter
+    attributes:
+      label: 대상 챕터
+      description: 예) Ch 13, Ch 15 후보, Phase 3 전체
+      placeholder: "Ch "
+    validations:
+      required: true
+
+  - type: dropdown
+    id: change_axis
+    attributes:
+      label: 변화 축
+      description: 한 챕터 안에서는 원칙적으로 한 축만 바뀝니다.
+      options:
+        - 모델 축
+        - 태스크 축
+        - Loss 축
+        - 토크나이저 축
+        - 데이터/언어 축
+        - 설명/구성 개선
+        - 아직 모름
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안 내용
+      description: 어떤 내용을 추가/수정하면 좋은지 적어주세요.
+      placeholder: |
+        - 현재 문제:
+        - 제안:
+        - 독자가 얻는 것:
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: 제약과 검증 포인트
+      description: T4 30분, fp16, max_length, batch size, 데이터 크기 등 고려할 점이 있으면 적어주세요.
+      placeholder: |
+        - Colab T4 30분 이내:
+        - bf16 사용 금지:
+        - 기존 챕터와의 차이:
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 참고 자료
+      description: 관련 노트북, 문서, 이슈, 논문, 코드 링크가 있으면 적어주세요.

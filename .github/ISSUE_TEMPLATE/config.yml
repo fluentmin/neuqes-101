@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Colab 실행 환경 기본값
+    url: https://github.com/yoon-gu/neuqes-101#학습-환경
+    about: 이 저장소의 기본 실행 환경은 Google Colab T4 GPU, 챕터당 30분 이내입니다.
