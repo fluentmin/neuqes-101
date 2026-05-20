@@ -1,0 +1,63 @@
+name: 노트북 실행/검증
+description: Colab 실행 실패, 출력 이상, T4 30분 초과, 노트북 검증 결과 공유
+title: "[Notebook] "
+labels: ["notebook", "validation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        노트북은 **Google Colab T4 GPU(16GB VRAM)** 에서 챕터당 30분 이내 실행되는 것을 기준으로 합니다.
+        실패한 셀과 에러 메시지를 가능한 한 그대로 붙여주세요.
+
+  - type: input
+    id: notebook
+    attributes:
+      label: 대상 노트북
+      placeholder: "예: 13_bert_multilabel/13_bert_multilabel.ipynb"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 실행 환경
+      options:
+        - Google Colab T4
+        - Google Colab CPU
+        - Google Colab 기타 GPU
+        - 로컬 Mac
+        - 로컬/서버 CUDA GPU
+        - Cloud VM
+        - JupyterHub / Kubernetes Pod
+        - 기타
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 증상
+      placeholder: |
+        - 어느 셀에서 발생했나요?
+        - 실제 에러/출력은 무엇인가요?
+        - 기대한 동작은 무엇인가요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: resource
+    attributes:
+      label: 리소스 정보
+      description: 가능하면 실행 당시 CPU RAM, GPU VRAM, 디스크 상태를 적어주세요.
+      placeholder: |
+        - GPU:
+        - VRAM 사용량:
+        - CPU RAM:
+        - Storage:
+        - 실행 시간:
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 에러 로그 / 스크린샷
+      render: shell

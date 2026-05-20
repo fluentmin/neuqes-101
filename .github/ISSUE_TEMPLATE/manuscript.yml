@@ -1,0 +1,56 @@
+name: 출판 원고/LaTeX
+description: book/ 원고, PDF, 조판, 표/그림/색인, 용어 윤문 관련 이슈
+title: "[Book] "
+labels: ["book", "latex"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        `book/` 원고는 챕터 노트북을 출판용 LaTeX로 옮긴 결과물입니다.
+        용어, 코드 블록, 출력, 표/그림, 색인, PDF 조판 문제를 여기에 적어주세요.
+
+  - type: input
+    id: location
+    attributes:
+      label: 위치
+      description: PDF 쪽수, 장/절, 파일 경로 등을 적어주세요.
+      placeholder: "예: PDF p. 248, 13장 평가 절, book/chapters/ch13_bert_multilabel.tex"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 유형
+      options:
+        - 용어/윤문
+        - 코드 블록/출력
+        - 표
+        - 그림/캡션/ref
+        - 색인
+        - 목차/Part/Phase 구조
+        - PDF 빌드
+        - 디자인 시스템/테마
+        - 기타
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: 문제 또는 제안
+      placeholder: |
+        - 현재 보이는 모습:
+        - 원하는 방향:
+        - 참고 이미지/문구:
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 기준
+      placeholder: |
+        - XeLaTeX 빌드 성공
+        - 그림/표가 본문에서 \ref로 참조됨
+        - 용어가 README/노트북/book에서 일관됨

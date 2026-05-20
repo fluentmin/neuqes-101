@@ -74,7 +74,7 @@
 
 \section{변화추적표}
 
-\begin{booktable}{13장 변화추적표}{tab:ch13-01}
+\begin{booktable}{변화추적표}{tab:ch13-01}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lllllll@{}}
 \toprule
@@ -97,7 +97,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 
 \section{변경점: \ref{ch:12}장 대비}
 
-\begin{booktable}{13장 변경점 요약}{tab:ch13-02}
+\begin{booktable}{변경점 요약}{tab:ch13-02}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -154,7 +154,7 @@ L = \frac{1}{N \cdot K}\sum_{i=1}^{N}\sum_{k=1}^{K}\left[ y_{i,k} \log \sigma(z_
 
 \textbf{숫자로 감 잡기 (K=5, 정답 multi-hot \(\mathbf{y} = [1, 0, 1, 0, 1]\))} --- logits 별 손실 분해:
 
-\begin{booktable}{13장 손실 노트 표}{tab:ch13-03}
+\begin{booktable}{손실 노트}{tab:ch13-03}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lllll@{}}
 \toprule
@@ -283,7 +283,7 @@ GPU:            Tesla T4
 
 Yelp 리뷰엔 multi-label 정답이 없습니다. \ref{ch:06}장에서처럼 5개 항목(aspect)별 키워드 사전을 만들어 텍스트에서 매칭 --- 어떤 키워드라도 등장하면 해당 항목을 1로 활성. 5차원 multi-hot 벡터가 합성됩니다.
 
-\begin{booktable}{13장 데이터 준비 표}{tab:ch13-04}
+\begin{booktable}{데이터 준비}{tab:ch13-04}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1233,7 +1233,7 @@ plt.show()
 
 \section{이 장에 등장한 라이브러리·함수}
 
-\begin{booktable}{13장 새로 등장한 라이브러리}{tab:ch13-05}
+\begin{booktable}{새로 등장한 라이브러리}{tab:ch13-05}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1311,7 +1311,7 @@ thresholds = [best_threshold(probs[:, k], labels[:, k])[0] for k in range(K)]
 
 기술적으론 됩니다. 단점이 큽니다.
 
-\begin{booktable}{13장 FAQ 표}{tab:ch13-06}
+\begin{booktable}{FAQ}{tab:ch13-06}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule

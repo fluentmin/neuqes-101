@@ -64,7 +64,7 @@
 
 \section{변화추적표}
 
-\begin{booktable}{11장 변화추적표}{tab:ch11-01}
+\begin{booktable}{변화추적표}{tab:ch11-01}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lllllll@{}}
 \toprule
@@ -88,7 +88,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Activation & Loss \\
 
 \section{변경점: \ref{ch:10}장 대비}
 
-\begin{booktable}{11장 변경점 요약}{tab:ch11-02}
+\begin{booktable}{변경점 요약}{tab:ch11-02}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -134,7 +134,7 @@ L = -\frac{1}{N}\sum_{i=1}^{N}\log \hat p_{i, y_i} \quad\text{where}\quad \hat p
 
 \textbf{숫자로 감 잡기 (binary, K=2)} --- 정답이 클래스 1, logits를 \((z_0, z_1)\) 로 두면:
 
-\begin{booktable}{11장 손실 노트 표}{tab:ch11-03}
+\begin{booktable}{손실 노트}{tab:ch11-03}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -392,7 +392,7 @@ print(f"id2label:             {model.config.id2label}")
 
 \textbf{파라미터 수 비교 --- 방식 A vs 방식 B}
 
-\begin{booktable}{11장 모델 로드 표}{tab:ch11-04}
+\begin{booktable}{모델 로드}{tab:ch11-04}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -692,7 +692,7 @@ print(classification_report(
 
 이전 장(\ref{ch:10}장)의 결과 파일에 의존하지 않도록, 같은 데이터·같은 hyperparams·같은 seed로 방식 A를 \emph{바로 여기서} 한 번 더 학습합니다. 변하는 것은 \textbf{모델 셋업과 라벨 형식뿐} (\ref{ch:10}장에서 본 그대로):
 
-\begin{booktable}{11장 방식 A/B 비교 표}{tab:ch11-05}
+\begin{booktable}{방식 A/B 비교}{tab:ch11-05}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1045,7 +1045,7 @@ print(f"  both wrong:             {both_wrong:.1%}")
 
 \section{이 장에 등장한 라이브러리·함수}
 
-\begin{booktable}{11장 새로 등장한 라이브러리}{tab:ch11-06}
+\begin{booktable}{새로 등장한 라이브러리}{tab:ch11-06}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1102,7 +1102,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
 
 \begin{faqBox}{Q2. (이론) \ref{ch:04}장의 sklearn 동등성 시연(\inlinecode{predict\_proba} 일치)과 \ref{ch:11}장의 BERT 동등성 시연(scatter plot) 의 차이는?}
 
-\begin{booktable}{11장 FAQ 표}{tab:ch11-07}
+\begin{booktable}{FAQ}{tab:ch11-07}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule

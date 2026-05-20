@@ -1,0 +1,64 @@
+name: HF 인프라/리소스
+description: CPU RAM, GPU VRAM, Storage, 캐시, cloud/on-prem/Colab 모니터링 가이드
+title: "[Infra] "
+labels: ["infra", "docs"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hugging Face 실습을 여러 인프라 환경에서 안정적으로 돌리기 위한 리소스 활용/모니터링 이슈입니다.
+        CPU RAM, GPU VRAM, Storage, HF cache, Colab/cloud/on-prem 차이를 기록해주세요.
+
+  - type: dropdown
+    id: resource_type
+    attributes:
+      label: 리소스 유형
+      options:
+        - GPU VRAM
+        - CPU RAM
+        - Storage / HF cache
+        - 데이터 로딩 / streaming
+        - 모니터링
+        - Cloud 환경
+        - on-prem / JupyterHub / Kubernetes
+        - Colab
+        - 기타
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 배경
+      placeholder: |
+        - 어떤 환경에서 필요한가요?
+        - 어떤 리소스가 병목인가요?
+        - 독자가 어떤 실무 감각을 얻으면 좋을까요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: topics
+    attributes:
+      label: 정리하면 좋을 내용
+      placeholder: |
+        - batch size / gradient accumulation / max_length 조정
+        - fp16/bf16 선택 기준
+        - nvidia-smi, RAM, disk, cache 경로 확인
+        - Cloud metric / Pod limit / PVC 확인
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: 예시 명령/코드
+      render: shell
+      placeholder: |
+        nvidia-smi
+        df -h
+        du -sh ~/.cache/huggingface
+
+  - type: textarea
+    id: related
+    attributes:
+      label: 관련 챕터/이슈
+      placeholder: "예: Ch 9-14, #6, #9"
