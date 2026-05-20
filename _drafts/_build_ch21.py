@@ -266,15 +266,59 @@ config = GPT2Config(
     resid_pdrop=0.1, embd_pdrop=0.1, attn_pdrop=0.1,
 )
 
-model = GPT2LMHeadModel(config)
+model = GPT2LMHeadModel(config).to(device)   # 학습 전 generation 시연용으로 미리 GPU 로
 n_params = model.num_parameters()
 print(f"#params           : {n_params/1e6:.2f} M")
 print(f"weight tying      : {config.tie_word_embeddings}  (lm_head ↔ wte 공유)")
 print(f"fp32 weight size  : {n_params * 4 / 1024**2:.2f} MiB\n")
 print(model)""")
 
+# ----- 학습 전 generation (sanity check) -----
+md(r"""## 5. 학습 *전* generation — 비교 기준선
+
+prototype 검증의 핵심: **학습 전 / 학습 후의 생성 결과 차이가 명확한가**. \
+무작위 초기화된 모델은 통계적으로 *어느 토큰이든 거의 균등한 확률* 로 뽑으니, \
+생성 텍스트가 영어와 거리가 먼 byte 조각 / 의미 없는 짧은 단어들의 나열이 나옵니다.
+
+같은 prompt 와 같은 sampling 설정을 학습 *전* / *후* 모두에서 호출해 두면, \
+loss 곡선 없이도 학습이 *진짜로* 일어났는지 정성적으로 확인 가능.""")
+
+code(r"""PROMPTS = [
+    "Once upon a time,",
+    "There was a little girl named Lily.",
+    "The cat and the dog were best friends.",
+]
+GEN_KWARGS = dict(max_new_tokens=80, do_sample=True, temperature=0.8, top_k=50)
+
+@torch.no_grad()
+def generate_text(prompt: str, **kwargs):
+    enc = tokenizer(prompt, return_tensors="pt").to(model.device)
+    out = model.generate(
+        **enc,
+        pad_token_id=tokenizer.pad_token_id,
+        eos_token_id=tokenizer.eos_token_id,
+        **kwargs,
+    )
+    return tokenizer.decode(out[0], skip_special_tokens=True)
+
+# 재현성: 학습 전/후 sampling 결과를 비교하려면 같은 seed 에서 출발
+torch.manual_seed(SEED)
+model.eval()
+before_outputs = []
+print("=" * 70)
+print("UNTRAINED model — random initial weights 의 generation")
+print("=" * 70)
+for p in PROMPTS:
+    text = generate_text(p, **GEN_KWARGS)
+    before_outputs.append(text)
+    print(f"\n[prompt] {p}")
+    print(text)
+model.train()""")
+
+
+
 # ----- 9. 학습 -----
-md(r"""## 5. `Trainer` 로 학습
+md(r"""## 6. `Trainer` 로 학습
 
 BERT 챕터들과 *완전히 같은* 패턴 — 바뀌는 건 모델 클래스와 `mlm=False` 두 곳뿐.
 
@@ -372,43 +416,32 @@ ax2.grid(True, alpha=0.3); ax2.legend()
 
 plt.tight_layout(); plt.show()""")
 
-# ----- 10. 생성 -----
-md(r"""## 6. `model.generate()` 로 생성
+# ----- 10. 학습 후 generation + before/after 비교 -----
+md(r"""## 7. 학습 *후* generation + before/after 비교
 
-학습된 모델에 prompt 를 주고 `model.generate(do_sample=True, ...)` 로 이어지는 텍스트를 sampling.
+같은 `PROMPTS` / `GEN_KWARGS` 로 학습 후의 모델에서 다시 생성하고, \
+§5 의 학습 전 결과와 나란히 비교합니다. **prototype 합격 기준**은 단순합니다 — \
+학습 *후* 텍스트가 *전* 보다 명확히 영어 문장에 가까워졌는가.""")
 
-- `temperature` ↓ → 보수적, ↑ → 다양
-- `top_k` → 상위 k 개만 후보
-- `top_p` (nucleus) → 누적 확률 p 까지의 후보만 (top_k 대안)""")
+code(r"""torch.manual_seed(SEED)
+model.eval()
+after_outputs = []
+print("=" * 70)
+print("TRAINED model — generation after Trainer.train()")
+print("=" * 70)
+for p in PROMPTS:
+    text = generate_text(p, **GEN_KWARGS)
+    after_outputs.append(text)
+    print(f"\n[prompt] {p}")
+    print(text)""")
 
-code(r"""model.eval()
-
-@torch.no_grad()
-def generate_text(prompt: str, max_new_tokens=120, temperature=0.8, top_k=50, top_p=None):
-    enc = tokenizer(prompt, return_tensors="pt").to(model.device)
-    out = model.generate(
-        **enc,
-        max_new_tokens=max_new_tokens,
-        do_sample=True,
-        temperature=temperature,
-        top_k=top_k,
-        top_p=top_p,
-        pad_token_id=tokenizer.pad_token_id,
-        eos_token_id=tokenizer.eos_token_id,
-    )
-    return tokenizer.decode(out[0], skip_special_tokens=True)
-
-prompts = [
-    "Once upon a time,",
-    "There was a little girl named Lily.",
-    "The cat and the dog were best friends.",
-]
-
-for p in prompts:
-    print("=" * 70)
-    print("[prompt]", p)
-    print("-" * 70)
-    print(generate_text(p, max_new_tokens=120, temperature=0.8, top_k=50))
+code(r"""# before / after 나란히 — prototype 합격 여부를 눈으로 판단
+for p, before, after in zip(PROMPTS, before_outputs, after_outputs):
+    print("=" * 78)
+    print(f"PROMPT  : {p}")
+    print("-" * 78)
+    print(f"BEFORE  : {before[len(p):].strip()[:300]}")
+    print(f"AFTER   : {after[len(p):].strip()[:300]}")
     print()""")
 
 # ----- 11. 변형 -----
@@ -426,7 +459,7 @@ configs = [
 for c in configs:
     print("=" * 70)
     print(f"[{c['label']}]")
-    print(generate_text(prompt, max_new_tokens=80,
+    print(generate_text(prompt, max_new_tokens=80, do_sample=True,
                         temperature=c["temperature"], top_k=c["top_k"], top_p=c["top_p"]))
     print()""")
 
@@ -495,7 +528,7 @@ attention_mask 를 함께 만들어 줍니다.
 이번 셋업은 표준 CLM 이라 `Trainer` 가 깔끔합니다.""")
 
 # ----- 13. 다음 단계 -----
-md(r"""## 🚀 다음 단계 (prototype 검증 후)
+md(r"""## 8. 다음 단계 (prototype 검증 후)
 
 이 노트북이 T4 30 분 안에 정상 돌고 grammatical 한 생성이 나오면, 다음 분할로 정식 챕터화:
 
@@ -508,8 +541,9 @@ md(r"""## 🚀 다음 단계 (prototype 검증 후)
 
 prototype 검증 체크리스트:
 - [ ] T4 에서 25-30 분 안에 끝까지 실행되는가
-- [ ] eval loss 가 학습 중 *단조감소* 하는가 (대략 7 → 3-4)
-- [ ] 생성된 문장이 *grammatical* 한가 (반복·횡설수설 아님)
+- [ ] **§5 (학습 전) vs §7 (학습 후) generation 차이가 명확한가** — 가장 중요. \
+  학습 후가 영어 단어·구조에 *눈에 띄게* 가까워지면 합격
+- [ ] eval loss 가 학습 중 단조감소 (참고용, 대략 7 → 3-4)
 - [ ] peak VRAM 이 T4 16 GiB 안에 충분히 들어오는가 (예상 < 3 GiB)
 - [ ] BPE 토크나이저가 합리적으로 단어를 쪼개는가""")
 
