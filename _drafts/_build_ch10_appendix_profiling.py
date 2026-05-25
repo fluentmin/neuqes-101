@@ -340,9 +340,10 @@ with profile(activities=activities, schedule=schedule(wait=1, warmup=1, active=3
 
 print(prof_inf.key_averages().table(sort_by=time_key, row_limit=10))""")
 
-md(r"""### 6-1. 학습 step vs 추론 forward — 시간 비교
+md(r"""### 6-1. 시간 구성 — 학습 step vs 추론 forward
 
-추론은 forward 만이라 학습 step(forward+backward+optimizer)보다 훨씬 짧습니다.""")
+학습 step 은 forward + **backward + optimizer** 인데, 추론은 **forward 뿐** 입니다. \
+누적 막대로 "추론은 학습의 어느 한 조각만" 이라는 게 한눈에 보입니다.""")
 
 code(r"""def time_inference(n_steps=10, batch_size=BATCH_SIZE):
     model.eval()
@@ -357,22 +358,29 @@ code(r"""def time_inference(n_steps=10, batch_size=BATCH_SIZE):
     return t / n_steps * 1e3
 
 infer_ms = time_inference(n_steps=10)
-train_ms = sum(train_phases.values())
-print(f"train step (fwd+bwd+opt) : {train_ms:6.1f} ms")
-print(f"inference (fwd only)     : {infer_ms:6.1f} ms")
-print(f"→ inference 가 train step 의 {infer_ms/train_ms*100:.0f}% 시간")
+fwd, bwd, opt = train_phases["forward"], train_phases["backward"], train_phases["optimizer"]
+train_total = fwd + bwd + opt
+print(f"train step : {train_total:6.1f} ms  (fwd {fwd:.1f} + bwd {bwd:.1f} + opt {opt:.1f})")
+print(f"inference  : {infer_ms:6.1f} ms  (fwd only)")
+print(f"→ 추론이 학습 step 의 {infer_ms/train_total*100:.0f}% 시간")
 
-fig, ax = plt.subplots(figsize=(7, 3))
-ax.barh(["train (fwd+bwd+opt)"], [train_ms], color="tab:blue", label="train step")
-ax.barh(["inference (fwd only)"], [infer_ms], color="tab:cyan", label="inference")
-for i, v in enumerate([train_ms, infer_ms]):
-    ax.text(v, i, f" {v:.1f} ms", va="center")
-ax.set_xlabel("ms"); ax.set_title("Train step vs inference time (same batch)")
+fig, ax = plt.subplots(figsize=(8, 3))
+ax.barh(["train"], [fwd], color="tab:blue", label="forward")
+ax.barh(["train"], [bwd], left=[fwd], color="tab:orange", label="backward")
+ax.barh(["train"], [opt], left=[fwd + bwd], color="tab:green", label="optimizer")
+ax.barh(["inference"], [infer_ms], color="tab:cyan", label="inference (fwd only)")
+ax.text(train_total, 0, f" {train_total:.1f} ms", va="center")
+ax.text(infer_ms, 1, f" {infer_ms:.1f} ms", va="center")
+ax.set_xlabel("ms / step")
+ax.set_title("Time composition — train step vs inference (same batch)")
+ax.legend(loc="lower right", fontsize=8)
 plt.tight_layout(); plt.show()""")
 
-md(r"""### 6-2. peak 메모리 — 학습 vs 추론 (GPU)
+md(r"""### 6-2. 메모리 구성 — 무엇이 VRAM 을 차지하나
 
-학습은 backward 용 activation 을 보관해 peak 가 큽니다. 추론은 `inference_mode` 라 보관 안 함 → 훨씬 작음.""")
+학습 peak = **weight + gradient + optimizer state(Adam m,v) + activation**. \
+추론 peak = **weight + 소량 activation** (`inference_mode` 라 grad/graph 없음). \
+파라미터 수로 weight/grad/optimizer 의 고정분을 계산하고, 나머지를 activation 으로 근사해 누적 막대로 봅니다.""")
 
 code(r"""if CUDA:
     b = {k: v.to(device) for k, v in next(iter(eval_loader)).items()}
@@ -388,11 +396,133 @@ code(r"""if CUDA:
         model(**b); sync()
     infer_peak = torch.cuda.max_memory_allocated() / 1024**2
 
-    print(f"train  peak VRAM : {train_peak:7.1f} MiB")
-    print(f"infer  peak VRAM : {infer_peak:7.1f} MiB")
-    print(f"→ inference 가 train 의 {infer_peak/train_peak*100:.0f}%  ({train_peak/infer_peak:.1f}x 절약)")
+    # 고정분 계산 (fp32 기준): weight = P*4B, grad = P*4B, Adam(m,v) = P*8B
+    P = model.num_parameters()
+    w = P * 4 / 1024**2
+    g = P * 4 / 1024**2
+    adam = P * 8 / 1024**2
+    act_tr = max(0.0, train_peak - (w + g + adam))   # 나머지를 activation 으로 근사
+    act_in = max(0.0, infer_peak - w)
+
+    print(f"train peak : {train_peak:7.1f} MiB")
+    print(f"infer peak : {infer_peak:7.1f} MiB   → 추론이 학습의 {train_peak/infer_peak:.1f}x 적게")
+
+    from matplotlib.patches import Patch
+    fig, ax = plt.subplots(figsize=(7, 4))
+    # train stacked
+    ax.bar("train", w, color="tab:blue")
+    ax.bar("train", g, bottom=w, color="tab:orange")
+    ax.bar("train", adam, bottom=w + g, color="tab:green")
+    ax.bar("train", act_tr, bottom=w + g + adam, color="tab:red")
+    # inference stacked
+    ax.bar("inference", w, color="tab:blue")
+    ax.bar("inference", act_in, bottom=w, color="tab:red")
+    handles = [
+        Patch(color="tab:blue", label="weights"),
+        Patch(color="tab:orange", label="gradients (train only)"),
+        Patch(color="tab:green", label="optimizer Adam m,v (train only)"),
+        Patch(color="tab:red", label="activation (approx)"),
+    ]
+    ax.legend(handles=handles, fontsize=8)
+    ax.set_ylabel("VRAM (MiB)")
+    ax.set_title("Memory composition — train vs inference")
+    plt.tight_layout(); plt.show()
 else:
-    print("CUDA 환경에서만 peak VRAM 비교가 의미 있습니다 (현재:", device.type, ")")""")
+    train_peak = infer_peak = None
+    print("CUDA 환경에서만 메모리 구성 비교가 의미 있습니다 (현재:", device.type, ")")""")
+
+md(r"""### 6-3. `batch_size` 스윕 — 패턴 차이가 가장 잘 드러나는 곳
+
+같은 batch_size 라도 추론은 throughput 이 높고 VRAM 이 완만하게 증가합니다 → **같은 GPU 로 추론은 훨씬 큰 batch** 가능. \
+학습/추론을 batch 별로 재서 두 곡선으로 겹쳐 봅니다.""")
+
+code(r"""def sweep_train_vs_infer(batch_sizes=(8, 16, 32, 64, 128)):
+    rows = []
+    for bs in batch_sizes:
+        loader_bs = DataLoader(eval_ds, batch_size=bs, shuffle=False)
+        try:
+            b = {k: v.to(device) for k, v in next(iter(loader_bs)).items()}
+            # --- train ---
+            model.train()
+            out = model(**b); out.loss.backward()
+            optimizer.step(); optimizer.zero_grad(set_to_none=True); sync()   # warmup
+            if CUDA:
+                torch.cuda.reset_peak_memory_stats()
+            t0 = time.perf_counter()
+            for _ in range(3):
+                out = model(**b); out.loss.backward()
+                optimizer.step(); optimizer.zero_grad(set_to_none=True)
+            sync(); tr_ms = (time.perf_counter() - t0) / 3 * 1e3
+            tr_pk = torch.cuda.max_memory_allocated() / 1024**2 if CUDA else float("nan")
+            # --- inference ---
+            model.eval()
+            with torch.inference_mode():
+                model(**b); sync()
+                if CUDA:
+                    torch.cuda.reset_peak_memory_stats()
+                t0 = time.perf_counter()
+                for _ in range(3):
+                    model(**b)
+                sync(); in_ms = (time.perf_counter() - t0) / 3 * 1e3
+            in_pk = torch.cuda.max_memory_allocated() / 1024**2 if CUDA else float("nan")
+
+            rows.append(dict(bs=bs, train_thr=bs / tr_ms * 1e3, infer_thr=bs / in_ms * 1e3,
+                             train_pk=tr_pk, infer_pk=in_pk))
+            print(f"bs={bs:4d} | train {bs/tr_ms*1e3:7.0f} s/s {tr_pk:7.0f} MiB | "
+                  f"infer {bs/in_ms*1e3:7.0f} s/s {in_pk:7.0f} MiB")
+        except torch.cuda.OutOfMemoryError:
+            if CUDA:
+                torch.cuda.empty_cache()
+            print(f"bs={bs:4d} | OOM")
+            break
+    return rows
+
+sweep_rows = sweep_train_vs_infer()""")
+
+code(r"""import pandas as pd
+
+sw = pd.DataFrame(sweep_rows)
+fig, axes = plt.subplots(1, 2, figsize=(13, 4))
+
+axes[0].plot(sw["bs"], sw["train_thr"], "o-", color="tab:blue", label="train")
+axes[0].plot(sw["bs"], sw["infer_thr"], "s-", color="tab:cyan", label="inference")
+axes[0].set_xscale("log", base=2); axes[0].set_xticks(sw["bs"]); axes[0].set_xticklabels(sw["bs"])
+axes[0].set_xlabel("batch_size"); axes[0].set_ylabel("throughput (samples/sec)")
+axes[0].set_title("Throughput — train vs inference"); axes[0].grid(True, alpha=0.3); axes[0].legend()
+
+if CUDA:
+    axes[1].plot(sw["bs"], sw["train_pk"], "o-", color="tab:blue", label="train")
+    axes[1].plot(sw["bs"], sw["infer_pk"], "s-", color="tab:cyan", label="inference")
+    axes[1].set_xscale("log", base=2); axes[1].set_xticks(sw["bs"]); axes[1].set_xticklabels(sw["bs"])
+    axes[1].set_xlabel("batch_size"); axes[1].set_ylabel("peak VRAM (MiB)")
+    axes[1].set_title("Peak VRAM — train vs inference"); axes[1].grid(True, alpha=0.3); axes[1].legend()
+else:
+    axes[1].text(0.5, 0.5, "VRAM panel needs CUDA", ha="center", va="center"); axes[1].axis("off")
+
+plt.tight_layout(); plt.show()""")
+
+md(r"""### 6-4. 패턴 분석 — 학습 vs 추론
+
+| 측면 | 학습 (train) | 추론 (inference) |
+|---|---|---|
+| 연산 | forward + **backward + optimizer** | **forward only** |
+| 시간 비중 | backward ≈ forward 의 ~2배 (지배적) | forward 전부 |
+| autograd graph | 생성·보관 | `inference_mode` 로 미생성 |
+| 메모리 구성 | weight + grad + optimizer(Adam m,v) + activation | weight + 소량 activation |
+| peak VRAM | 큼 (4종 전부) | 작음 (대략 1/3-1/4) |
+| batch 한계 | 작음 (OOM 빠름) | 큼 (같은 GPU 로 몇 배) |
+| throughput | 낮음 | 높음 |
+| 주 병목 | backward 커널, activation 메모리 | forward 커널, 결과 `.cpu()` 전송 |
+
+**왜 이렇게 갈리나**
+- 학습은 backward 를 위해 forward 의 중간 activation 을 *전부 보관* → 메모리가 batch 에 비례해 가파르게 증가
+- optimizer state(Adam 의 m, v)는 파라미터당 2배라 weight 의 약 3배가 *고정 비용* 으로 항상 잡힘
+- 추론은 `inference_mode` 에서 graph·activation 을 안 만들어 weight + 한 구간 activation 만 → 메모리가 완만
+
+**실무 함의**
+- 추론 서빙은 학습보다 *작은* GPU 로 가능하고, batch 를 크게 잡아 throughput 을 끌어올림
+- 학습 OOM 우선순위: `fp16` → batch↓ + `gradient_accumulation` → gradient checkpointing(activation↓) → ZeRO(optimizer state 분산)
+- 추론 OOM 은 드물지만, batch 가 매우 크면 결과 텐서(`.cpu()` 전)가 누적되니 주의""")
 
 # ----- 7. FLOPS / params -----
 md(r"""## 7. 도구 ③ FLOPS / params
