@@ -1,6 +1,7 @@
 # 10_bert_binary_sigmoid — BERT Binary 방식 A (sigmoid + BCE)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/10_bert_binary_sigmoid/10_bert_binary_sigmoid.ipynb)
+[![Open In Colab — 본 노트북](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/10_bert_binary_sigmoid/10_bert_binary_sigmoid.ipynb)
+[![Open In Colab — 부록: 성능 프로파일러](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/10_bert_binary_sigmoid/appendix_profiling.ipynb)
 
 ## 한 줄 목표
 Ch 4(sklearn binary on softmax)에서 본 *두 방식 동등성* 의 BERT 버전을 시작합니다. 이번 챕터는 **방식 A** — `num_labels=1` + `sigmoid` + `BCEWithLogitsLoss` 패턴을 BERT로 학습합니다. 다음 Ch 11에서 같은 데이터로 **방식 B** (softmax + CE)를 학습한 뒤 두 결과를 비교합니다.
@@ -31,6 +32,10 @@ Google Colab **T4 GPU 필수**. 약 10분 (모델 다운로드 + 2 에폭 + 평�
 | 11 (다음) | 같음 | 같음 | (2차원) | softmax | `CrossEntropyLoss` |
 
 전체 20챕터 표는 [루트 README](../README.md#챕터별-변화추적표)를 참고하세요.
+
+## 부록 노트북
+
+📒 **[appendix_profiling.ipynb](./appendix_profiling.ipynb)** — 성능 프로파일러 사용법 투어. 이 챕터의 DistilBERT binary 학습 위에 **PyTorch Profiler** (key_averages 테이블 · schedule · profile_memory · record_function · forward/backward/optimizer breakdown · chrome trace), **Accelerate `ProfileKwargs`**, **FLOPS/params** 측정을 하나씩 켜 봅니다. "도구를 켜고 출력을 읽어 병목(compute / DataLoader / memory)을 진단하는 법"이 목표. 본 챕터 흐름과는 별도, 시간 될 때 추천.
 
 ## 다음 챕터
 [11_bert_binary_softmax](../11_bert_binary_softmax/) — 같은 데이터·모델·골격에서 *방식 B*(softmax+CE)로 학습. 이번 챕터의 저장 결과와 직접 비교.
