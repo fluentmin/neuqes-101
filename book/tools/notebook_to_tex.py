@@ -383,6 +383,54 @@ CHAPTERS = [
             "별점 보조 회귀",
         ),
     ),
+    Chapter(
+        15,
+        "ko_binary",
+        "한국어 BERT 이진 분류 (Korean Binary Classification)",
+        "한국어 BERT 이진 분류 (Korean Binary Classification)",
+        "Ch 11의 softmax 이진 분류 셋업을 NSMC와 klue/bert-base로 재현",
+        (
+            "Korean BERT",
+            "KLUE-BERT",
+            "klue/bert-base",
+            "NSMC",
+            "Korean WordPiece",
+            "CrossEntropyLoss",
+            "single_label_classification",
+            "binary classification",
+            "한국어 BERT",
+            "한국어 WordPiece",
+            "네이버 영화 리뷰",
+            "한국어 이진 분류",
+            "감성 분류",
+            "샘플 단위 해석",
+        ),
+    ),
+    Chapter(
+        16,
+        "ko_multiclass",
+        "한국어 BERT 다중 클래스 분류 (Korean Multi-class Classification)",
+        "한국어 BERT 다중 클래스 분류 (Korean Multi-class Classification)",
+        "KLUE-YNAT 7분류로 한국어 BERT softmax 헤드를 K=7까지 확장",
+        (
+            "KLUE-YNAT",
+            "Korean BERT",
+            "KLUE-BERT",
+            "klue/bert-base",
+            "multi-class classification",
+            "CrossEntropyLoss",
+            "num_labels=7",
+            "confusion_matrix",
+            "top-1 probability",
+            "macro F1",
+            "한국어 BERT",
+            "한국어 다중 클래스 분류",
+            "뉴스 분류",
+            "혼동 행렬",
+            "최상위 확률",
+            "매크로 F1",
+        ),
+    ),
 ]
 
 
@@ -646,6 +694,39 @@ EXTRA_INDEXES = {
         "불확실성 가중치",
         "커스텀 데이터 콜레이터",
         "은닉 상태",
+    ),
+    15: (
+        "load_dataset",
+        "NSMC",
+        "klue/bert-base",
+        "AutoTokenizer",
+        "AutoModelForSequenceClassification",
+        "num_labels=2",
+        "CrossEntropyLoss",
+        "softmax",
+        "classification_report",
+        "roc_auc_score",
+        "한국어 WordPiece",
+        "감성 분석",
+        "네이버 영화 리뷰",
+        "확률 KDE",
+        "로짓 분포",
+    ),
+    16: (
+        "KLUE-YNAT",
+        "load_dataset(\"klue\", \"ynat\")",
+        "num_labels=7",
+        "problem_type=\"single_label_classification\"",
+        "CrossEntropyLoss",
+        "roc_auc_score",
+        "multi_class=\"ovr\"",
+        "confusion_matrix",
+        "seaborn.heatmap",
+        "top-1 probability",
+        "뉴스 분류",
+        "7분류",
+        "행 정규화 혼동 행렬",
+        "캘리브레이션",
     ),
 }
 
@@ -1183,6 +1264,8 @@ def polish_book_prose(latex: str) -> str:
         "12장. BERT Multi-class --- Yelp 5클래스": "12장. BERT 다중 클래스 분류 (Multi-class \\& CE)",
         "13장. BERT Multi-label --- Yelp 항목 키워드": "13장. BERT 다중 라벨 분류 (Multi-label \\& Per-label BCE)",
         "14장. BERT Auxiliary Loss --- 항목 분류 + 별점 보조 회귀 (Phase 1 클라이맥스)": "14장. 보조 손실과 멀티태스크 학습 (Auxiliary Loss)",
+        "15장. 한국어 BERT Binary --- NSMC": "15장. 한국어 BERT 이진 분류 (Korean Binary Classification)",
+        "16장. 한국어 BERT Multi-class --- KLUE-YNAT (뉴스 7분류)": "16장. 한국어 BERT 다중 클래스 분류 (Korean Multi-class Classification)",
         "Loss 노트": "손실 노트",
     }
     for before, after in replacements.items():
@@ -1362,6 +1445,30 @@ def clean_heading_title(title: str) -> str:
         "메인 metric 비교 --- λ=0 baseline vs λ=1 aux": "메인 지표 비교",
         "라벨별 F1 비교 --- 어느 항목이 보조 loss로 가장 도움받았나": "라벨별 F1 비교",
         "보조 task 자체는 얼마나 잘 학습됐나": "보조 태스크 평가",
+        "Loss 노트 --- Ch 11 그대로": "손실 노트",
+        "토크나이저 노트 --- Phase 2 의 핵심": "토크나이저 노트",
+        "토크나이저 비교 --- 같은 한국어 문장, 두 토크나이저": "토크나이저 비교",
+        "데이터 --- NSMC (네이버 영화 리뷰)": "데이터 준비",
+        "토큰화 --- Ch 11 패턴 그대로, 토크나이저만 한국어로": "토큰화",
+        "모델 로드 --- \\inlinecode{klue/bert-base} + binary 분류 헤드": "모델 로드",
+        "모델 로드 --- klue/bert-base + binary 분류 헤드": "모델 로드",
+        "학습 --- Ch 11 과 동일한 hyperparams": "학습",
+        "평가 --- softmax 확률 분포": "평가",
+        "메인 그림 --- 확률 공간 KDE (Ch 11 와 동일 패턴)": "확률 분포",
+        "보조 그림 --- logit 공간 KDE (z = z\\_1 - z\\_0)": "로짓 분포",
+        "보조 그림 --- logit 공간 KDE (z = z_1 - z_0)": "로짓 분포",
+        "샘플 단위 해석 --- 실제 한국어 리뷰가 어떻게 분류되나": "샘플 단위 해석",
+        "Loss 노트 --- \\inlinecode{CrossEntropyLoss} 가 K=7 에서 보이는 모습": "손실 노트",
+        "Loss 노트 --- CrossEntropyLoss 가 K=7 에서 보이는 모습": "손실 노트",
+        "데이터 --- KLUE-YNAT (뉴스 헤드라인 7분류)": "데이터 준비",
+        "토큰화 --- Ch 15 패턴 그대로": "토큰화",
+        "모델 로드 --- \\inlinecode{num\\_labels=7} 만 바뀜": "모델 로드",
+        "모델 로드 --- num\\_labels=7 만 바뀜": "모델 로드",
+        "학습 --- Ch 15 와 동일한 hyperparams": "학습",
+        "평가 --- softmax 확률 분포 + 혼동 패턴": "평가",
+        "혼동 행렬 --- 어디서 헷갈리는가": "혼동 행렬",
+        "Top-1 확률 분포 --- 모델 자신감 진단": "최상위 확률 분포",
+        "샘플 단위 해석 --- 실제 헤드라인이 어떻게 분류되나": "샘플 단위 해석",
     }
     title = re.sub(r"^\s*(?:[0-9]+(?:-[0-9]+)?|[0-9]+[A-Za-z]?)\.\s*", "", title)
     title = re.sub(r"^\s*Step\s+[0-9]+:\s*", "", title)
@@ -1451,6 +1558,7 @@ def polish_code_comments(source: str) -> str:
     source = source.replace("성공? coef_ shape", "학습 성공: coef_ shape")
     source = source.replace("OvR fit 성공!", "OvR 학습 성공")
     source = source.replace("실제 별점", "정답 별점")
+    source = source.replace("−", "-")
     return source
 
 
@@ -1568,7 +1676,7 @@ def display_math_to_numbered_equations(latex: str, chapter_number: int) -> str:
 
 def link_chapter_references(latex: str) -> str:
     """Turn prose references such as 3장 and 9-13장 into hyperlinked refs."""
-    single = r"(?:[1-9]|1[0-4])"
+    single = r"(?:[1-9]|1[0-6])"
     range_pat = re.compile(
         rf"(?<!ch:)(?<!ref\{{ch:)(?<!tab:ch)(?<!eq:ch)\b({single})\s*[-–]\s*({single})장"
     )
@@ -1591,6 +1699,9 @@ def link_chapter_references(latex: str) -> str:
         line = dot_pat.sub(lambda m: f"{ch_ref(m.group(1))}·{ch_ref(m.group(2))}장", line)
         line = single_pat.sub(lambda m: f"{ch_ref(m.group(1))}장", line)
         line = re.sub(r"\\href\{[^{}]+\}\{(\\ref\{ch:[0-9]{2}\}장[^{}]*)\}", r"\1", line)
+        line = line.replace("장 와", "장과")
+        line = line.replace("장 의", "장의")
+        line = line.replace("장 도", "장도")
         return line
 
     linked: list[str] = []

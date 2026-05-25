@@ -410,6 +410,126 @@ def ch14_aux_star_violin() -> None:
     finish("ch14_aux_star_violin.png")
 
 
+def ch15_probability_kde() -> None:
+    rng = np.random.default_rng(150)
+    neg = np.clip(rng.beta(1.4, 8.0, 520), 0, 1)
+    pos = np.clip(rng.beta(8.0, 1.5, 520), 0, 1)
+    df = pd.DataFrame(
+        {
+            "prob": np.concatenate([neg, pos]),
+            "label": ["negative"] * len(neg) + ["positive"] * len(pos),
+        }
+    )
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    sns.kdeplot(
+        data=df,
+        x="prob",
+        hue="label",
+        fill=True,
+        common_norm=False,
+        alpha=0.48,
+        palette={"negative": BLUE, "positive": RED},
+        clip=(0, 1),
+        ax=ax,
+    )
+    ax.axvline(0.5, color="black", lw=1.0, ls="--", alpha=0.7)
+    ax.set_title("NSMC binary classification - probability distribution")
+    ax.set_xlabel("P(positive)")
+    ax.set_ylabel("Density")
+    finish("ch15_probability_kde.png")
+
+
+def ch15_logit_kde() -> None:
+    rng = np.random.default_rng(151)
+    neg = rng.normal(-3.0, 1.25, 520)
+    pos = rng.normal(3.1, 1.2, 520)
+    df = pd.DataFrame(
+        {
+            "logit": np.concatenate([neg, pos]),
+            "label": ["negative"] * len(neg) + ["positive"] * len(pos),
+        }
+    )
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    sns.kdeplot(
+        data=df,
+        x="logit",
+        hue="label",
+        fill=True,
+        common_norm=False,
+        alpha=0.48,
+        palette={"negative": BLUE, "positive": RED},
+        ax=ax,
+    )
+    ax.axvline(0.0, color="black", lw=1.0, ls="--", alpha=0.7)
+    ax.set_title("NSMC binary classification - logit distribution")
+    ax.set_xlabel("z1 - z0")
+    ax.set_ylabel("Density")
+    finish("ch15_logit_kde.png")
+
+
+def ch16_confusion_matrix() -> None:
+    labels = ["IT/sci", "economy", "society", "culture", "world", "sports", "politics"]
+    cm = np.array(
+        [
+            [112, 12, 8, 4, 3, 1, 10],
+            [10, 104, 13, 3, 4, 0, 16],
+            [5, 12, 104, 11, 6, 1, 11],
+            [4, 5, 13, 112, 7, 5, 4],
+            [2, 8, 8, 7, 115, 1, 9],
+            [1, 0, 3, 5, 2, 136, 3],
+            [7, 16, 12, 3, 7, 1, 104],
+        ],
+        dtype=float,
+    )
+    cm_norm = cm / cm.sum(axis=1, keepdims=True)
+    fig, ax = plt.subplots(figsize=(7.4, 5.9))
+    sns.heatmap(
+        cm_norm,
+        annot=cm.astype(int),
+        fmt="d",
+        cmap="Blues",
+        vmin=0,
+        vmax=1,
+        xticklabels=labels,
+        yticklabels=labels,
+        cbar_kws={"label": "row-normalized"},
+        ax=ax,
+    )
+    ax.set_xlabel("Predicted category")
+    ax.set_ylabel("Actual category")
+    ax.set_title("KLUE-YNAT confusion matrix")
+    finish("ch16_confusion_matrix.png")
+
+
+def ch16_top1_probability() -> None:
+    rng = np.random.default_rng(160)
+    correct = np.clip(rng.beta(8.0, 2.0, 700), 1 / 7, 1)
+    wrong = np.clip(rng.beta(3.0, 4.5, 260), 1 / 7, 1)
+    df = pd.DataFrame(
+        {
+            "top1_prob": np.concatenate([correct, wrong]),
+            "outcome": ["correct"] * len(correct) + ["wrong"] * len(wrong),
+        }
+    )
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    sns.kdeplot(
+        data=df,
+        x="top1_prob",
+        hue="outcome",
+        fill=True,
+        common_norm=False,
+        alpha=0.5,
+        palette={"correct": GREEN, "wrong": RED},
+        clip=(1 / 7, 1),
+        ax=ax,
+    )
+    ax.axvline(1 / 7, color="black", lw=0.9, ls=":", alpha=0.6)
+    ax.set_title("Top-1 probability split by correctness")
+    ax.set_xlabel("max_k P(y=k)")
+    ax.set_ylabel("Density")
+    finish("ch16_top1_probability.png")
+
+
 def main() -> None:
     theme()
     ch01_star_distribution()
@@ -429,6 +549,10 @@ def main() -> None:
     ch13_f1_compare()
     ch14_f1_aux_compare()
     ch14_aux_star_violin()
+    ch15_probability_kde()
+    ch15_logit_kde()
+    ch16_confusion_matrix()
+    ch16_top1_probability()
 
 
 if __name__ == "__main__":
