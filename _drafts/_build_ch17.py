@@ -255,11 +255,13 @@ def make_multilabel(source_split, n_samples, seed):
     rng = np.random.default_rng(seed)
     n_src = len(source_split)
     # 짝지을 인덱스 2*n_samples 개 (중복 허용 — 소스가 부족할 때 대비)
-    idx = rng.integers(0, n_src, size=2 * n_samples)
+    # numpy.int64 로 datasets 컬럼을 인덱싱하면 TypeError → python int 로 캐스팅
+    idx = rng.integers(0, n_src, size=2 * n_samples).tolist()
     idx_a, idx_b = idx[:n_samples], idx[n_samples:]
 
-    src_text = source_split["text"]
-    src_label = source_split["label"]
+    # 컬럼을 미리 파이썬 list 로 (반복 인덱싱이 빠르고 타입 안전)
+    src_text = list(source_split["text"])
+    src_label = list(source_split["label"])
 
     texts, multi_hots, active_counts = [], [], []
     for a, b in zip(idx_a, idx_b):
@@ -730,10 +732,10 @@ $$z_k = w_k^\top h + b_k, \quad k = 1, \ldots, K$$
 
 ### Q5. (실무) 헤드라인 두 개 대신 *세 개* 를 결합하면 어떻게 되나요?
 
-활성 라벨 개수가 평균 -2.7 (충돌 고려) 로 늘어 *더 어려운* multi-label 이 됩니다. 코드 변경은 작습니다 — `make_multilabel` 에서 3개 인덱스를 뽑아 3개 위치를 1 로:
+활성 라벨 개수가 평균 약 2.7개 (충돌 고려) 로 늘어 *더 어려운* multi-label 이 됩니다. 코드 변경은 작습니다 — `make_multilabel` 에서 3개 인덱스를 뽑아 3개 위치를 1 로:
 
 ```python
-idx = rng.integers(0, n_src, size=3 * n_samples)
+idx = rng.integers(0, n_src, size=3 * n_samples).tolist()
 # ... 3개 짝 ca, cb, cc 의 위치를 multi-hot 에서 1 로
 ```
 
