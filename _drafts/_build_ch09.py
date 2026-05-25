@@ -602,7 +602,8 @@ md(r"""## 다음 챕터 예고
 nb = {
     "cells": cells,
     "metadata": {
-        "colab": {"provenance": [], "toc_visible": True},
+        "accelerator": "GPU",
+        "colab": {"provenance": [], "toc_visible": True, "gpuType": "T4"},
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
         "language_info": {"name": "python"},
     },

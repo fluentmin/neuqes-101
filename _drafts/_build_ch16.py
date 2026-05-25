@@ -178,15 +178,20 @@ print(f"label names: {ds['train'].features['label'].names}")
 # 클래스 분포
 import collections
 cnt = collections.Counter(ds["train"]["label"])
-LABEL_NAMES = ds["train"].features["label"].names
+LABEL_NAMES = ds["train"].features["label"].names   # KLUE-YNAT 원본 (한국어)
+# 출력·플롯은 영문으로 (matplotlib 한글 폰트 깨짐·조판 문제 방지)
+_KO2EN = {"IT과학": "IT/Science", "경제": "Economy", "사회": "Society",
+          "생활문화": "Life&Culture", "세계": "World", "스포츠": "Sports", "정치": "Politics"}
+LABEL_NAMES_EN = [_KO2EN.get(n, n) for n in LABEL_NAMES]
+
 print(f"\nClass distribution (train):")
-for k in range(len(LABEL_NAMES)):
+for k in range(len(LABEL_NAMES_EN)):
     n = cnt[k]
-    print(f"  {LABEL_NAMES[k]:>8}  (label {k}): {n:>5}  ({n / len(ds['train']):.1%})")
+    print(f"  {LABEL_NAMES_EN[k]:>13}  (label {k}): {n:>5}  ({n / len(ds['train']):.1%})")
 
 print(f"\nfirst 3 samples:")
 for ex in ds["train"].select(range(3)):
-    print(f"  label={ex['label']} ({LABEL_NAMES[ex['label']]:>8})  title={ex['title']!r}")""")
+    print(f"  label={ex['label']} ({LABEL_NAMES_EN[ex['label']]:>13})  title={ex['title']!r}")""")
 
 code(r"""# T4 30분 룰: 5K train / 1K eval (KLUE 의 validation split 에서 sample)
 SEED = 42
@@ -234,8 +239,8 @@ code(r"""model = AutoModelForSequenceClassification.from_pretrained(
     "klue/bert-base",
     num_labels=len(LABEL_NAMES),
     problem_type="single_label_classification",
-    id2label={i: name for i, name in enumerate(LABEL_NAMES)},
-    label2id={name: i for i, name in enumerate(LABEL_NAMES)},
+    id2label={i: name for i, name in enumerate(LABEL_NAMES_EN)},
+    label2id={name: i for i, name in enumerate(LABEL_NAMES_EN)},
 )
 
 def param_summary(m):
@@ -345,7 +350,7 @@ print(f"top-1 prob mean: correct={top1_prob[correct].mean():.4f}, wrong={top1_pr
 code(r"""# 클래스별 분류 리포트
 print(classification_report(
     labels, preds,
-    target_names=LABEL_NAMES,
+    target_names=LABEL_NAMES_EN,
     digits=4, zero_division=0,
 ))""")
 
@@ -362,8 +367,8 @@ fig, ax = plt.subplots(figsize=(8.5, 7))
 sns.heatmap(
     cm_norm, annot=cm, fmt="d",
     cmap="Blues", vmin=0, vmax=1,
-    xticklabels=LABEL_NAMES,
-    yticklabels=LABEL_NAMES,
+    xticklabels=LABEL_NAMES_EN,
+    yticklabels=LABEL_NAMES_EN,
     cbar_kws={"label": "row-normalized (recall)"}, ax=ax,
 )
 ax.set_xlabel("Predicted category")
@@ -582,7 +587,8 @@ md(r"""## 다음 챕터 예고
 nb = {
     "cells": cells,
     "metadata": {
-        "colab": {"provenance": [], "toc_visible": True},
+        "accelerator": "GPU",
+        "colab": {"provenance": [], "toc_visible": True, "gpuType": "T4"},
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
         "language_info": {"name": "python"},
     },

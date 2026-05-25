@@ -393,7 +393,8 @@ md(r"""## 정리
 nb = {
     "cells": cells,
     "metadata": {
-        "colab": {"provenance": [], "toc_visible": True},
+        "accelerator": "GPU",
+        "colab": {"provenance": [], "toc_visible": True, "gpuType": "T4"},
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
         "language_info": {"name": "python"},
     },
