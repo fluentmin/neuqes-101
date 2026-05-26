@@ -225,7 +225,10 @@ code(r"""ds = load_dataset("klue", "ynat")
 print(f"splits: {list(ds.keys())}")
 print(f"sizes: {[(k, len(v)) for k, v in ds.items()]}")
 
-LABEL_NAMES = ds["train"].features["label"].names
+LABEL_NAMES = ds["train"].features["label"].names   # KLUE-YNAT 원본 (한국어)
+# 출력·플롯은 영문으로 (matplotlib 한글 폰트 깨짐·조판 문제 방지)
+_KO2EN = {"IT과학": "IT/Science", "경제": "Economy", "사회": "Society", "생활문화": "Life&Culture", "세계": "World", "스포츠": "Sports", "정치": "Politics"}
+LABEL_NAMES_EN = [_KO2EN.get(n, n) for n in LABEL_NAMES]
 K = len(LABEL_NAMES)
 print(f"label names ({K}): {LABEL_NAMES}")
 
@@ -233,7 +236,7 @@ print(f"label names ({K}): {LABEL_NAMES}")
 ds = ds.rename_column("title", "text")
 print(f"\nfirst 2 raw samples:")
 for ex in ds["train"].select(range(2)):
-    print(f"  label={ex['label']} ({LABEL_NAMES[ex['label']]:>8})  text={ex['text']!r}")""")
+    print(f"  label={ex['label']} ({LABEL_NAMES_EN[ex['label']]:>8})  text={ex['text']!r}")""")
 
 # ----- 9. 합성 로직 -----
 md(r"""### 1-1. 두 헤드라인을 결합해 multi-label 샘플 합성
@@ -288,7 +291,7 @@ print(f"synthetic eval:  {len(eval_full)}")
 print(f"\nFirst synthetic sample:")
 print(f"  text:      {train_full[0]['text']}")
 print(f"  multi_hot: {train_full[0]['multi_hot']}")
-active0 = [LABEL_NAMES[k] for k in range(K) if train_full[0]['multi_hot'][k] > 0]
+active0 = [LABEL_NAMES_EN[k] for k in range(K) if train_full[0]['multi_hot'][k] > 0]
 print(f"  active categories: {active0}")""")
 
 code(r"""# 카테고리별 활성률 + 활성 라벨 개수 분포
@@ -297,7 +300,7 @@ Y_train = np.array(train_full["multi_hot"])
 print("Per-category activation rate (train):")
 for k in range(K):
     rate = Y_train[:, k].mean()
-    print(f"  {LABEL_NAMES[k]:>9} (label {k}): {rate:.1%}  ({int(Y_train[:, k].sum())} / {len(Y_train)})")
+    print(f"  {LABEL_NAMES_EN[k]:>9} (label {k}): {rate:.1%}  ({int(Y_train[:, k].sum())} / {len(Y_train)})")
 
 n_active = Y_train.sum(axis=1)
 print(f"\nMean active labels per sample: {n_active.mean():.2f}  (expected ~1.86: two draws, occasional collision)")
@@ -346,8 +349,8 @@ code(r"""model = AutoModelForSequenceClassification.from_pretrained(
     "klue/bert-base",
     num_labels=K,
     problem_type="multi_label_classification",   # ← BCEWithLogitsLoss per-label 자동 매핑
-    id2label={i: name for i, name in enumerate(LABEL_NAMES)},
-    label2id={name: i for i, name in enumerate(LABEL_NAMES)},
+    id2label={i: name for i, name in enumerate(LABEL_NAMES_EN)},
+    label2id={name: i for i, name in enumerate(LABEL_NAMES_EN)},
 )
 
 def param_summary(m):
@@ -452,13 +455,13 @@ preds  = (probs >= 0.5).astype(int)                 # (N, 7) multi-hot predictio
 print(f"logits shape: {logits.shape}")
 print(f"prob ranges per category:")
 for k in range(K):
-    print(f"  {LABEL_NAMES[k]:>9}: [{probs[:, k].min():.4f}, {probs[:, k].max():.4f}]  "
+    print(f"  {LABEL_NAMES_EN[k]:>9}: [{probs[:, k].min():.4f}, {probs[:, k].max():.4f}]  "
           f"true rate={labels[:, k].mean():.1%}, pred rate={preds[:, k].mean():.1%}")""")
 
 code(r"""# Per-category classification report
 print(classification_report(
     labels, preds,
-    target_names=LABEL_NAMES,
+    target_names=LABEL_NAMES_EN,
     digits=4, zero_division=0,
 ))""")
 
@@ -472,7 +475,7 @@ code(r"""sns.set_theme(style="whitegrid", context="talk")
 # Long-form DataFrame
 records = []
 for k in range(K):
-    name = LABEL_NAMES[k]
+    name = LABEL_NAMES_EN[k]
     for i in range(len(probs)):
         records.append({"category": name, "prob": probs[i, k], "label": int(labels[i, k])})
 df_long = pd.DataFrame(records)
@@ -531,7 +534,7 @@ for ax, M, title in [
 ]:
     sns.heatmap(
         M, annot=True, fmt=".2f", cmap="Blues", vmin=0, vmax=1,
-        xticklabels=LABEL_NAMES, yticklabels=LABEL_NAMES,
+        xticklabels=LABEL_NAMES_EN, yticklabels=LABEL_NAMES_EN,
         cbar_kws={"label": "conditional probability"}, ax=ax,
     )
     ax.set_title(title)
@@ -593,9 +596,9 @@ for label_kind, idx in samples:
         p = float(probs[idx, k])
         pr = int(preds[idx, k])
         ok = "O" if t == pr else "X"
-        print(f"  {LABEL_NAMES[k]:>9}  {t:>5}  {p:>8.4f}  {pr:>12}    {ok}")
-    true_active = [LABEL_NAMES[k] for k in range(K) if labels[idx, k]]
-    pred_active = [LABEL_NAMES[k] for k in range(K) if preds[idx, k]]
+        print(f"  {LABEL_NAMES_EN[k]:>9}  {t:>5}  {p:>8.4f}  {pr:>12}    {ok}")
+    true_active = [LABEL_NAMES_EN[k] for k in range(K) if labels[idx, k]]
+    pred_active = [LABEL_NAMES_EN[k] for k in range(K) if preds[idx, k]]
     print()
     print(f"  true:      {true_active}")
     print(f"  predicted: {pred_active}")
