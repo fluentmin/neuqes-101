@@ -168,9 +168,9 @@ md(r"""## 1. 🚀 데이터 — KLUE-YNAT (뉴스 헤드라인 7분류)
 | 5 | 스포츠 |
 | 6 | 정치 |
 
-`datasets.load_dataset("klue", "ynat")` 로 정상 로드 (parquet 기반).""")
+`datasets.load_dataset("klue/klue", "ynat")` 로 정상 로드 (parquet 기반).""")
 
-code(r"""ds = load_dataset("klue", "ynat")
+code(r"""ds = load_dataset("klue/klue", "ynat")
 print(f"splits: {list(ds.keys())}")
 print(f"sizes: {[(k, len(v)) for k, v in ds.items()]}")
 print(f"label names: {ds['train'].features['label'].names}")
@@ -464,7 +464,7 @@ md(r"""## 📦 이번 챕터에 등장한 라이브러리·함수
 
 | 이름 | 한 줄 설명 | 다음 챕터에서 |
 |---|---|---|
-| `load_dataset("klue", "ynat")` | KLUE 벤치마크 YNAT (한국어 뉴스 7분류) | Ch 17 에서 같은 데이터로 multi-label 합성 |
+| `load_dataset("klue/klue", "ynat")` | KLUE 벤치마크 YNAT (한국어 뉴스 7분류) | Ch 17 에서 같은 데이터로 multi-label 합성 |
 | `ds["train"].features["label"].names` | datasets.ClassLabel 의 사람-읽는 이름 | id2label 자동 매핑에 사용 |
 | `seaborn.heatmap(..., xticklabels=한국어)` | 혼동 행렬 한국어 라벨 표시 | Ch 17 도 사용 |
 | `sklearn.metrics.precision_recall_fscore_support(..., average="macro")` | 클래스별 평균 metric (불균형에 강함) | 분류 챕터마다 |

@@ -221,7 +221,7 @@ md(r"""## 1. 🚀 데이터 — KLUE-YNAT 결합으로 multi-label 합성
 
 > **합성 방식**: 샘플 A (카테고리 $c_A$) 와 샘플 B (카테고리 $c_B$) 를 뽑아 (1) 텍스트를 `" [SEP] "` 로 이어붙이고 (2) multi-hot 라벨에서 $c_A, c_B$ 두 위치를 1 로. 우연히 $c_A = c_B$ 면 활성 라벨은 1개뿐 (자연스러운 single-label 케이스도 일부 섞임).""")
 
-code(r"""ds = load_dataset("klue", "ynat")
+code(r"""ds = load_dataset("klue/klue", "ynat")
 print(f"splits: {list(ds.keys())}")
 print(f"sizes: {[(k, len(v)) for k, v in ds.items()]}")
 
@@ -837,7 +837,7 @@ Ch 16(한국어 multi-class, KLUE-YNAT 7분류)에서 *task 차원만* single-la
 **`BCEWithLogitsLoss` per-label** — Ch 13 과 같은 식. K=7 개 binary BCE 의 평균. Ch 16 의 `CrossEntropyLoss` 에서 전환.
 
 ## 데이터
-KLUE-YNAT (`load_dataset("klue", "ynat")`) 두 헤드라인 결합으로 합성 — 5K train / 1K eval. seed 고정(42). 평균 활성 라벨 -1.86개 (두 번 뽑아 가끔 충돌).
+KLUE-YNAT (`load_dataset("klue/klue", "ynat")`) 두 헤드라인 결합으로 합성 — 5K train / 1K eval. seed 고정(42). 평균 활성 라벨 -1.86개 (두 번 뽑아 가끔 충돌).
 
 ## 환경
 Google Colab **T4 GPU 필수**. 약 13분.
