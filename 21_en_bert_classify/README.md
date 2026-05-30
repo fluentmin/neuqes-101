@@ -3,14 +3,14 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/21_en_bert_classify/21_en_bert_classify.ipynb)
 
 ## 한 줄 목표
-Phase 3 의 세 번째 챕터. Ch 20 에서 *작은 BERT 를 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 fine-tune**. Ch 10 (DistilBERT, ~66M params, 수십억 토큰 사전학습) 과 같은 Yelp 이진 분류 셋업에 *우리가 만든 작은 BERT* (~10M params, Yelp 5K 문장 MLM) 를 붙여 두 결과를 나란히 비교 — *사전학습 규모* 가 downstream 정확도에 얼마나 차이를 만드는지 정량으로.
+Phase 3 의 세 번째 챕터. Ch 20 에서 *작은 BERT 를 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 fine-tune**. Ch 10 (DistilBERT, 약 66M params, 수십억 토큰 사전학습) 과 같은 Yelp 이진 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, Yelp 5K 문장 MLM) 를 붙여 두 결과를 나란히 비교 — *사전학습 규모* 가 downstream 정확도에 얼마나 차이를 만드는지 정량으로.
 
 self-contained 노트북: Ch 20 의 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 분류 fine-tune → Ch 10 결과와 비교. *MLM 없이 random init 으로 바로 분류* 하는 baseline 도 변형 셀에서 함께 학습해 *사전학습 자체의 순 효과* 도 분리.
 
 ## 다루는 핵심 개념
 - `BertForMaskedLM` → `BertForSequenceClassification` 헤드 교체 — 본체 (`embeddings + encoder + pooler`) 는 그대로, MLM head 떼고 분류 head (`Linear(256, 2)`) 부착
 - in-memory state_dict 전송: `cls_model.bert.load_state_dict(mlm_model.bert.state_dict())` — 디스크 없이 본체 가중치 복사
-- 같은 `BertConfig` (hidden=256, layer=4, head=4, intermediate=1024, ~10M params) 가 MLM 모델과 분류 모델 양쪽에 적용
+- 같은 `BertConfig` (hidden=256, layer=4, head=4, intermediate=1024, 약 10M params) 가 MLM 모델과 분류 모델 양쪽에 적용
 - 사전학습 효과의 *순 측정* — random init baseline 과 비교
 - **Ch 10 (DistilBERT 대규모 사전학습) vs Ch 21 (작은 BERT 자체 사전학습)** 의 정량 비교
 
@@ -31,10 +31,10 @@ Google Colab T4 GPU (fp16). 약 25분 (MLM 1 epoch 약 10-12분 + 분류 fine-tu
 
 | Ch | 모델 | 토크나이저 | 데이터 | Output | Loss |
 |---|---|---|---|---|---|
-| 10 | DistilBERT 파인튜닝 (~66M) | `bert-base-uncased` WordPiece | Yelp 이진화 | `Linear(H, 1)` | `BCEWithLogitsLoss` |
+| 10 | DistilBERT 파인튜닝 (약 66M) | `bert-base-uncased` WordPiece | Yelp 이진화 | `Linear(H, 1)` | `BCEWithLogitsLoss` |
 | 19 | — (토크나이저 학습 전용) | WordPiece + WordLevel (둘 다 직접 학습) | Yelp text + NSMC text | — | — |
 | 20 | 작은 BERT (직접, scratch) | `bert-base-uncased` 토크나이저 (가져옴) | Yelp text (라벨 무시) | MLM head | `CrossEntropyLoss` (masked) |
-| **21** | **Ch 20 사전학습 BERT + 분류 헤드 (~10M)** | (Ch 20과 동일) | **Yelp 이진화** | **`Linear(H, 2)`** | **`CrossEntropyLoss`** |
+| **21** | **Ch 20 사전학습 BERT + 분류 헤드 (약 10M)** | (Ch 20과 동일) | **Yelp 이진화** | **`Linear(H, 2)`** | **`CrossEntropyLoss`** |
 | 22 (다음) | 작은 BERT (직접, scratch) — 한국어 | `klue/bert-base` 토크나이저 (가져옴) | NSMC text | MLM head | `CrossEntropyLoss` (masked) |
 
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표)를 참고하세요.
@@ -43,11 +43,11 @@ Google Colab T4 GPU (fp16). 약 25분 (MLM 1 epoch 약 10-12분 + 분류 fine-tu
 
 | 차원 | Ch 10 (DistilBERT) | Ch 21 (small BERT scratch) | 비고 |
 |---|---|---|---|
-| 본체 파라미터 | ~66M | ~10M | Ch 21 은 1/6 작음 |
-| 사전학습 코퍼스 | Wikipedia + BookCorpus (~33억 토큰) | Yelp 5K 문장 (~70만 토큰) | 약 5000배 격차 |
+| 본체 파라미터 | 약 66M | 약 10M | Ch 21 은 1/6 작음 |
+| 사전학습 코퍼스 | Wikipedia + BookCorpus (약 33억 토큰) | Yelp 5K 문장 (약 70만 토큰) | 약 5000배 격차 |
 | 사전학습 시간 | TPU 수일 | T4 약 10-12분 | |
 | 분류 fine-tune 셋업 | (같음 — 5K/1K, batch 16, lr 2e-5, 2 epoch, fp16) | | 본체 외 통제 |
-| 기대 accuracy | ~92-95% | ~75-85% | 비교는 실측치로 |
+| 기대 accuracy | 약 92-95% | 약 75-85% | 비교는 실측치로 |
 
 격차가 *사전학습 규모의 가치* 를 정량으로 보여줍니다. 동시에 *작은 사전학습도 random init 보다는 분명히 낫다* 는 게 변형 셀의 결과.
 
