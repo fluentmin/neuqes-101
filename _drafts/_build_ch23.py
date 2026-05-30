@@ -49,15 +49,15 @@ def code(text: str):
 # ----- 1. Title -----
 md(r"""# Chapter 23. 작은 BERT 분류 — 한국어 NSMC 이진 (일반 도메인 사전학습 → 다른 도메인 fine-tune)
 
-**목표**: Phase 3 의 마지막 챕터. Ch 22 에서 *작은 한국어 BERT 를 일반 도메인 (한국어 Wikipedia) 으로 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 *완전히 다른 도메인 (NSMC 영화 리뷰)* 이진 분류로 fine-tune** 합니다. Ch 15 (`klue/bert-base`, 약 110M params, 약 8.4B 토큰 대규모 한국어 사전학습) 와 같은 NSMC 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, 한국어 위키 5K paragraphs MLM) 를 붙여 두 결과를 나란히 비교 — 둘 다 *일반 한국어 사전학습 → NSMC transfer* 라 비교가 *fair*, *사전학습 규모* 차이만 측정됩니다.
+**목표**: Phase 3 의 마지막 챕터. Ch 22 에서 *작은 한국어 BERT 를 일반 도메인 (한국어 Wikipedia) 으로 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 *완전히 다른 도메인 (NSMC 영화 리뷰)* 이진 분류로 fine-tune** 합니다. Ch 15 (`klue/bert-base`, 약 110M params, 약 8.4B 토큰 대규모 한국어 사전학습) 와 같은 NSMC 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, 한국어 위키 2K paragraphs × 3 epoch MLM) 를 붙여 두 결과를 나란히 비교 — 둘 다 *일반 한국어 사전학습 → NSMC transfer* 라 비교가 *fair*, *사전학습 규모* 차이만 측정됩니다.
 
-본 챕터의 강점: *위키 사전학습 → NSMC 분류 transfer* 가 **진짜 transfer**. 사전학습이 *task 도메인 (영화 리뷰) 자체* 를 본 적이 없는 일반 위키 본문으로 진행되어, *일반 표상 학습 → 다른 도메인 fine-tune* 의 정직한 메시지가 나옵니다. **두 데이터셋이 노트북 안에 공존** — MLM 용 한국어 Wikipedia (5K paragraphs) + 분류용 NSMC (5K/1K).
+본 챕터의 강점: *위키 사전학습 → NSMC 분류 transfer* 가 **진짜 transfer**. 사전학습이 *task 도메인 (영화 리뷰) 자체* 를 본 적이 없는 일반 위키 본문으로 진행되어, *일반 표상 학습 → 다른 도메인 fine-tune* 의 정직한 메시지가 나옵니다. **두 데이터셋이 노트북 안에 공존** — MLM 용 한국어 Wikipedia (2K paragraphs × 3 epoch) + 분류용 NSMC (5K/1K).
 
 self-contained 노트북: Ch 22 의 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 분류 fine-tune → Ch 15 결과와 비교 → random init baseline 비교. 한국어 챕터는 부록 없이 본문에서 직접 3-way 비교 (Ch 15 ref / Ch 23 ours + MLM / Ch 23 random init) 까지 끌어 갑니다.
 
 **환경**: Google Colab **T4 GPU 필수**.
 
-**예상 소요 시간**: 약 25-28분 (한국어 위키 다운로드·필터링 약 2분 + MLM 1 epoch 약 8-10분 + 분류 fine-tune 2 epoch 약 8-10분 + random baseline 2 epoch 약 5-7분 + 평가 약 2분)
+**예상 소요 시간**: 약 25-28분 (한국어 위키 다운로드·필터링 약 2분 + MLM 3 epoch 약 8-10분 + 분류 fine-tune 2 epoch 약 8-10분 + random baseline 2 epoch 약 5-7분 + 평가 약 2분)
 
 ---
 
@@ -114,7 +114,7 @@ md(r"""## 🔄 변경점 (Diff from Ch 22)
 
 | 단계 | 데이터셋 | 용도 |
 |---|---|---|
-| 3 §MLM 사전학습 | `wikimedia/wikipedia`, `20231101.ko` 5K paragraphs | self-supervised MLM (라벨 없음, 일반 위키 본문) |
+| 3 §MLM 사전학습 | `wikimedia/wikipedia`, `20231101.ko` 2K paragraphs × 3 epoch | self-supervised MLM (라벨 없음, 일반 위키 본문) |
 | 4-5 §분류 fine-tune | NSMC (e9t/nsmc GitHub raw TSV) 5K/1K | supervised 이진 분류 (긍정/부정 라벨) |
 
 같은 토크나이저 (`klue/bert-base`) 가 두 데이터셋의 모든 텍스트를 처리. 본체가 *일반 위키 어휘* 로 사전학습된 표상이 *영화 리뷰 비격식 구어체 토큰* 에 얼마나 잘 전이되는가가 본 챕터의 측정 대상.
@@ -341,7 +341,7 @@ md(r"""## 3. 🏗️ MLM 사전학습 — Ch 22 패턴 압축 재현 (한국어 
 
 **MLM 사전학습 데이터는 *분류용 NSMC 와 별도*** — `wikimedia/wikipedia` config `20231101.ko` paragraphs 5K 를 *새로 로드*. 본 챕터의 *진짜 transfer 메시지* — *일반 한국어 위키 사전학습 → NSMC 영화 리뷰 분류 transfer* 가 노트북 한 구조에 자연스럽게 들어맞도록 *두 데이터셋이 공존*. 같은 토크나이저 (`klue/bert-base`) 가 두 도메인을 모두 처리.
 
-같은 작은 `BertConfig` (hidden=256, layer=4, head=4, intermediate=1024) → `BertForMaskedLM(config)` random init → 한국어 Wikipedia paragraphs 5K MLM 1 epoch.""")
+같은 작은 `BertConfig` (hidden=256, layer=4, head=4, intermediate=1024) → `BertForMaskedLM(config)` random init → 한국어 Wikipedia paragraphs 2K MLM **3 epoch** (1 epoch 만으로는 본체 정렬이 약해 *random init 보다 못한* 결과가 나올 수 있음 — Ch 21 부록 패턴 따라 3 epoch).""")
 
 code(r"""# Ch 22 와 같은 작은 BERT 설정
 HIDDEN_SIZE         = 256
@@ -367,8 +367,8 @@ print(f"Small BERT config: hidden={HIDDEN_SIZE}, layer={NUM_HIDDEN_LAYERS}, head
 print(f"Total parameters:  {total:,}  ({total/1e6:.2f} M)")""")
 
 code(r"""# MLM 사전학습용 일반 도메인 코퍼스: 한국어 Wikipedia (분류용 NSMC 와 별도)
-N_MLM_TRAIN = 5000
-N_MLM_EVAL  = 500
+N_MLM_TRAIN = 2000
+N_MLM_EVAL  = 400
 
 print("downloading Korean Wikipedia (wikimedia/wikipedia, 20231101.ko)...")
 raw_wiki = load_dataset("wikimedia/wikipedia", "20231101.ko", split="train")
@@ -429,7 +429,7 @@ code(r"""mlm_collator = DataCollatorForLanguageModeling(
 md(r"""**`labels = -100` 한 줄 환기** — `DataCollatorForLanguageModeling` 이 가려지지 않은 자리에 `labels = -100` 을 채워 *해당 위치의 CE loss 를 무시*. 분류 fine-tune (다음 섹션) 에서는 -100 을 *전혀 사용하지 않습니다* — 모든 sample 에 *정답 라벨* (0/1) 이 명시되어 있기 때문. 같은 `-100` 트릭이 Phase 4 의 SFT (Ch 27) 에서 *prompt 자리* 를 가리는 정반대 자리로 다시 등장합니다 — 풀버전 표는 Ch 21 §3 *labels = -100 thread* 참조.""")
 
 code(r"""USE_FP16 = (DEVICE == "cuda")
-MLM_EPOCHS = 1   # Ch 22 의 2 epoch 중 1 epoch 만 (분류 fine-tune 시간 확보)
+MLM_EPOCHS = 3   # 1 epoch 은 본체 정렬이 약해 random init 보다 못한 경우 발생 — Ch 21 부록 패턴 따라 3 epoch 로
 
 mlm_args = TrainingArguments(
     output_dir="./ch23_mlm_output",
@@ -600,7 +600,7 @@ md(r"""## 5. 🔬 평가 — Ch 15 / Ch 21 과 같은 5종 metric + 학습 곡�
 `accuracy / precision / recall / F1 / AUC` 전부 같은 정의. 마지막에 confusion matrix 와 학습 곡선을 같이 그려 *본체 출발점 변화가 학습 동역학에 어떻게 드러나는지* 시각화.""")
 
 code(r"""cls_eval_metrics = cls_trainer.evaluate()
-print("Ch 23 small BERT (scratch MLM 1 epoch on Korean Wikipedia + NSMC fine-tune) — eval:")
+print("Ch 23 small BERT (scratch MLM 3 epoch on Korean Wikipedia + NSMC fine-tune) — eval:")
 for k, v in cls_eval_metrics.items():
     if k.startswith("eval_") and isinstance(v, float):
         print(f"  {k:>20}: {v:.4f}")""")
@@ -799,12 +799,12 @@ md(r"""**관찰 — *동일 transfer 패턴 안에서 사전학습 규모 격차
 
 전형적으로:
 - **Ch 15** (`klue/bert-base`, 약 110M, 약 8.4B 토큰 대규모 한국어 사전학습): accuracy 약 85-88%, AUC 약 0.92-0.94
-- **Ch 23 ours** (small BERT, 한국어 Wikipedia 5K paragraphs 사전학습): accuracy 약 65-75%, AUC 약 0.75-0.85
+- **Ch 23 ours** (small BERT, 한국어 Wikipedia 2K paragraphs × 3 epoch 사전학습): accuracy 약 65-75%, AUC 약 0.75-0.85
 - **Ch 23 random init** (사전학습 없음): accuracy 약 50-60%, AUC 약 0.55-0.70 — *NSMC 클래스 균형 (약 50/50)* 이라 random 도 우연히 50% 정도
 
 **Ch 15 vs Ch 23 ours**: accuracy 약 10-20%p 격차. 두 모델이 *같은 transfer 패턴* (일반 한국어 위키 → NSMC) 을 따르므로 격차의 거의 전부가 *사전학습 규모의 가치* — 약 8.4B 토큰의 *일반 한국어 지식* 이 `klue/bert-base` 본체에 압축되어 있어, NSMC 같은 *비격식 구어체 도메인* 에도 빠르게 적응합니다.
 
-**Ch 23 ours vs random init**: accuracy 약 10-20%p 격차. *사전학습이 분명히 도움* — 작은 일반 도메인 사전학습 (5K paragraphs, 1 epoch) 도 *random 보다는 일관되게 낫다*. 본체에 *기본 한국어 어휘·문맥 구조* 가 들어가면 NSMC 분류의 *기본 신호* (긍정/부정 단어들의 통계) 가 잡힙니다.
+**Ch 23 ours vs random init**: accuracy 약 5-15%p 격차 (사전학습이 분명히 도움). 다만 작은 데이터·작은 모델 환경에서는 *seed 분산* 이 커서 한 번의 run 결과로는 *우연히* random init 이 더 높게 나올 수도 있습니다. 본 챕터의 MLM 3 epoch 셋업은 *random 보다 일관되게 낫다* 는 결과를 만들기 위한 적정선 — 1 epoch 만으론 본체 정렬이 부족해 random init 의 더 큰 자유도가 분류에 *우연히* 더 적응할 수 있습니다. 본체에 *기본 한국어 어휘·문맥 구조* 가 충분히 들어가야 NSMC 분류의 *기본 신호* (긍정/부정 단어들의 통계) 가 잡힙니다.
 
 > NSMC 는 *짧은 한 줄 리뷰* 이고 *반어·맞춤법 흔들림·라벨 노이즈* 가 섞여 있어 영어 Yelp (Ch 21) 보다 *살짝 더 어려운* 데이터. 작은 모델 + 작은 사전학습 환경에서는 그 어려움이 더 두드러집니다.""")
 
@@ -828,7 +828,7 @@ md(r"""## 🎯 체크포인트 질문
 1. `BertForMaskedLM` 과 `BertForSequenceClassification` 둘 다 *내부에 같은 `BertModel`* 을 갖습니다. 두 모델 사이에서 *어떤 파라미터* 가 이어지고 *어떤 파라미터* 가 새로 학습되나요? (Ch 21 의 같은 질문을 한국어 환경에서 재확인)
 2. MLM 학습 첫 step 의 loss 가 약 10.37 인 반면, 분류 fine-tune 첫 step 의 loss 는 약 0.693 입니다. 이 차이가 모델의 학습 어려움 차이를 의미하나요? (힌트: K=vocab_size 약 32,000 vs K=2)
 3. Ch 23 ours 가 Ch 15 보다 *낮은 정확도* 를 보입니다. 이 격차가 (a) *모델 크기* 차이 (약 10M vs 약 110M), (b) *사전학습 데이터 양* 차이 (약 50만-80만 토큰 vs 약 8.4B 토큰) 중 어느 쪽 영향이 클까요? 둘 다 *한국어 일반 도메인 → NSMC transfer* 의 같은 패턴이라 *도메인 정합* 변수는 통제됨. 추가 실험으로 어떻게 (a) 와 (b) 를 분리할 수 있나요?
-4. *MLM 1 epoch* 와 *random init* baseline 의 정확도 차이가 *얼마나* 나오나요? 영어 Ch 21 의 패턴과 비교해 한국어 NSMC 환경이 더 극단적인지, 비슷한지 확인해 보세요.""")
+4. *MLM 3 epoch* 와 *random init* baseline 의 정확도 차이가 *얼마나* 나오나요? 차이가 작다면 *seed 분산* 안일 수 있습니다 — 한 번 더 run 해서 차이가 일관된지 확인. 영어 Ch 21 의 패턴 (위키 → Yelp transfer) 과 비교해 한국어 NSMC 환경이 더 극단적인지, 비슷한지도 함께 확인해 보세요.""")
 
 # ----- 16. FAQ -----
 md(r"""## ❓ FAQ
@@ -860,15 +860,15 @@ NSMC 의 *짧은 한 줄* 은 분류 신호가 *한두 단어에 집중* 됩니�
 | 차원 | klue/bert-base | 우리 작은 BERT |
 |---|---|---|
 | 본체 파라미터 | 약 110M | 약 10M (11x 작음) |
-| 사전학습 코퍼스 | 약 8.4B 토큰 (한국어 위키 + 모두의 말뭉치 + 뉴스 + 댓글) | 약 50만-80만 토큰 (위키 5K paragraphs) — *약 10,000x 격차* |
-| 사전학습 시간 | TPU 수일 | T4 약 8-10분 |
+| 사전학습 코퍼스 | 약 8.4B 토큰 (한국어 위키 + 모두의 말뭉치 + 뉴스 + 댓글) | 약 20만-30만 토큰 (위키 2K paragraphs × 3 epoch) — *약 30,000x 격차* |
+| 사전학습 시간 | TPU 수일 | T4 약 8-12분 |
 
-본 챕터의 *T4 30분 룰* 안에서 가능한 최대치는 *MLM 데이터 약 20K-30K paragraphs + 1 epoch* 정도. 그래도 *대규모 사전학습* 의 격차는 메우기 어렵습니다 — *데이터 규모 자체의 가치* 가 진짜 BERT 의 비밀.
+본 챕터의 *T4 30분 룰* 안에서 가능한 최대치는 *MLM 데이터 약 10K-15K paragraphs + 2 epoch* 정도. 그래도 *대규모 사전학습* 의 격차는 메우기 어렵습니다 — *데이터 규모 자체의 가치* 가 진짜 BERT 의 비밀.
 
 ```python
 # T4 30분 룰 안에서 격차 줄여 보기
-N_MLM_TRAIN = 20000          # 5K -> 20K
-MLM_EPOCHS = 1               # 1 epoch 유지 (시간 한계)
+N_MLM_TRAIN = 10000          # 2K -> 10K (5x)
+MLM_EPOCHS = 3               # 그대로 유지 (3 epoch 가 본체 정렬 적정선)
 # 또는 모델 키우기
 HIDDEN_SIZE = 384            # 256 -> 384, 약 18M params, T4 안 가능
 ```
@@ -998,7 +998,7 @@ README = """# 23_ko_bert_classify — 작은 BERT 분류 (한국어 NSMC 이진,
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/23_ko_bert_classify/23_ko_bert_classify.ipynb)
 
 ## 한 줄 목표
-Phase 3 의 마지막 챕터. Ch 22 에서 *작은 한국어 BERT 를 일반 도메인 (한국어 Wikipedia) 으로 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 *완전히 다른 도메인 (NSMC 영화 리뷰)* 이진 분류로 fine-tune**. Ch 15 (`klue/bert-base`, 약 110M params, 약 8.4B 토큰 대규모 한국어 사전학습) 와 같은 NSMC 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, 한국어 Wikipedia 5K paragraphs MLM) 를 붙여 두 결과를 나란히 비교 — 둘 다 *일반 한국어 사전학습 → NSMC transfer* 라 비교가 *fair*, *사전학습 규모* 차이만 측정됨. 본문에서 random init baseline 도 함께 비교해 *사전학습 효과 정량* 까지 끌어 갑니다.
+Phase 3 의 마지막 챕터. Ch 22 에서 *작은 한국어 BERT 를 일반 도메인 (한국어 Wikipedia) 으로 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 *완전히 다른 도메인 (NSMC 영화 리뷰)* 이진 분류로 fine-tune**. Ch 15 (`klue/bert-base`, 약 110M params, 약 8.4B 토큰 대규모 한국어 사전학습) 와 같은 NSMC 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, 한국어 Wikipedia 2K paragraphs × 3 epoch MLM) 를 붙여 두 결과를 나란히 비교 — 둘 다 *일반 한국어 사전학습 → NSMC transfer* 라 비교가 *fair*, *사전학습 규모* 차이만 측정됨. 본문에서 random init baseline 도 함께 비교해 *사전학습 효과 정량* 까지 끌어 갑니다.
 
 self-contained 노트북: 한국어 Wikipedia MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 NSMC 분류 fine-tune → random init baseline 비교 → 3-way 비교 (Ch 15 ref / Ch 23 ours / Ch 23 random).
 
@@ -1021,13 +1021,13 @@ self-contained 노트북: 한국어 Wikipedia MLM 학습을 1 epoch 짧게 재�
 
 | 단계 | 데이터셋 | 용도 |
 |---|---|---|
-| MLM 사전학습 | `wikimedia/wikipedia`, `20231101.ko` 5K paragraphs (eval 500) | self-supervised MLM, 일반 한국어 위키 본문 |
+| MLM 사전학습 | `wikimedia/wikipedia`, `20231101.ko` 2K paragraphs × 3 epoch (eval 400) | self-supervised MLM, 일반 한국어 위키 본문 |
 | 분류 fine-tune | NSMC (e9t/nsmc GitHub raw TSV) 5K train / 1K eval, seed 42 | supervised 이진 분류 (긍정/부정 라벨) |
 
-같은 토크나이저 (`klue/bert-base`) 가 두 도메인의 텍스트를 처리. `block_size=128` `group_texts` 패턴으로 MLM 1 epoch + NSMC 분류 fine-tune 2 epoch + random init baseline 2 epoch.
+같은 토크나이저 (`klue/bert-base`) 가 두 도메인의 텍스트를 처리. `block_size=128` `group_texts` 패턴으로 MLM 3 epoch + NSMC 분류 fine-tune 2 epoch + random init baseline 2 epoch.
 
 ## 환경
-Google Colab T4 GPU (fp16). 약 25-28분 (한국어 Wikipedia 다운로드·필터링 약 2분 + MLM 1 epoch 약 8-10분 + 분류 fine-tune 2 epoch 약 8-10분 + random baseline 2 epoch 약 5-7분 + 평가/시각화 약 2분).
+Google Colab T4 GPU (fp16). 약 25-28분 (한국어 Wikipedia 다운로드·필터링 약 2분 + MLM 3 epoch 약 8-10분 + 분류 fine-tune 2 epoch 약 8-10분 + random baseline 2 epoch 약 5-7분 + 평가/시각화 약 2분).
 
 ## 변화 추적
 

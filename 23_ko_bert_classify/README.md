@@ -3,7 +3,7 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/23_ko_bert_classify/23_ko_bert_classify.ipynb)
 
 ## 한 줄 목표
-Phase 3 의 마지막 챕터. Ch 22 에서 *작은 한국어 BERT 를 일반 도메인 (한국어 Wikipedia) 으로 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 *완전히 다른 도메인 (NSMC 영화 리뷰)* 이진 분류로 fine-tune**. Ch 15 (`klue/bert-base`, 약 110M params, 약 8.4B 토큰 대규모 한국어 사전학습) 와 같은 NSMC 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, 한국어 Wikipedia 5K paragraphs MLM) 를 붙여 두 결과를 나란히 비교 — 둘 다 *일반 한국어 사전학습 → NSMC transfer* 라 비교가 *fair*, *사전학습 규모* 차이만 측정됨. 본문에서 random init baseline 도 함께 비교해 *사전학습 효과 정량* 까지 끌어 갑니다.
+Phase 3 의 마지막 챕터. Ch 22 에서 *작은 한국어 BERT 를 일반 도메인 (한국어 Wikipedia) 으로 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 *완전히 다른 도메인 (NSMC 영화 리뷰)* 이진 분류로 fine-tune**. Ch 15 (`klue/bert-base`, 약 110M params, 약 8.4B 토큰 대규모 한국어 사전학습) 와 같은 NSMC 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, 한국어 Wikipedia 2K paragraphs × 3 epoch MLM) 를 붙여 두 결과를 나란히 비교 — 둘 다 *일반 한국어 사전학습 → NSMC transfer* 라 비교가 *fair*, *사전학습 규모* 차이만 측정됨. 본문에서 random init baseline 도 함께 비교해 *사전학습 효과 정량* 까지 끌어 갑니다.
 
 self-contained 노트북: 한국어 Wikipedia MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 NSMC 분류 fine-tune → random init baseline 비교 → 3-way 비교 (Ch 15 ref / Ch 23 ours / Ch 23 random).
 
@@ -26,13 +26,13 @@ self-contained 노트북: 한국어 Wikipedia MLM 학습을 1 epoch 짧게 재�
 
 | 단계 | 데이터셋 | 용도 |
 |---|---|---|
-| MLM 사전학습 | `wikimedia/wikipedia`, `20231101.ko` 5K paragraphs (eval 500) | self-supervised MLM, 일반 한국어 위키 본문 |
+| MLM 사전학습 | `wikimedia/wikipedia`, `20231101.ko` 2K paragraphs × 3 epoch (eval 400) | self-supervised MLM, 일반 한국어 위키 본문 |
 | 분류 fine-tune | NSMC (e9t/nsmc GitHub raw TSV) 5K train / 1K eval, seed 42 | supervised 이진 분류 (긍정/부정 라벨) |
 
-같은 토크나이저 (`klue/bert-base`) 가 두 도메인의 텍스트를 처리. `block_size=128` `group_texts` 패턴으로 MLM 1 epoch + NSMC 분류 fine-tune 2 epoch + random init baseline 2 epoch.
+같은 토크나이저 (`klue/bert-base`) 가 두 도메인의 텍스트를 처리. `block_size=128` `group_texts` 패턴으로 MLM 3 epoch + NSMC 분류 fine-tune 2 epoch + random init baseline 2 epoch.
 
 ## 환경
-Google Colab T4 GPU (fp16). 약 25-28분 (한국어 Wikipedia 다운로드·필터링 약 2분 + MLM 1 epoch 약 8-10분 + 분류 fine-tune 2 epoch 약 8-10분 + random baseline 2 epoch 약 5-7분 + 평가/시각화 약 2분).
+Google Colab T4 GPU (fp16). 약 25-28분 (한국어 Wikipedia 다운로드·필터링 약 2분 + MLM 3 epoch 약 8-10분 + 분류 fine-tune 2 epoch 약 8-10분 + random baseline 2 epoch 약 5-7분 + 평가/시각화 약 2분).
 
 ## 변화 추적
 
