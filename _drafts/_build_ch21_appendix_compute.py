@@ -1,17 +1,18 @@
 """Build 21_en_bert_classify/appendix_compute_budget.ipynb — fair-compute 비교.
 
-메인 챕터 (Ch 21) 의 *MLM 1 epoch 사전학습 + 분류 2 epoch fine-tune* 셋업을 기준으로,
-사전학습에 쓴 GPU 시간을 그대로 *분류 fine-tune 에 더 쓰면* 효과를 메울 수 있는지를
-정량으로 비교합니다.
+메인 챕터 (Ch 21) 는 *분류 시간 확보* 를 위해 MLM 을 1 epoch 만 돌리지만,
+부록은 fair-compute 비교가 핵심이라 MLM 을 3 epoch 까지 충분히 돌려
+사전학습 효과가 분명히 드러나도록 합니다. 그렇게 쓴 GPU 시간을 *분류 fine-tune 에 더 쓰면*
+효과를 메울 수 있는지를 정량으로 비교합니다.
 
 세 셋업:
-- 🅰️ A — MLM 1 epoch + 분류 fine-tune 2 epoch (메인과 동일, 부록 안에서 재현)
+- 🅰️ A — MLM 3 epoch + 분류 fine-tune 2 epoch (부록 기준선, 메인의 1 → 3)
 - 🅱️ B — 사전학습 없이 random init 분류 모델, T_A_total 만큼 분류 fine-tune 만
 - 🅲  C — 사전학습 없이 random init 분류 모델, 같은 2 epoch 만 (단순 baseline)
 
 부록 빌더는 메인 빌더 `_build_ch21.py` 와 같은 패턴 (cells / _cid / md / code / NOTEBOOK
-json dump) 을 따릅니다. T4 30분 룰을 지키기 위해 데이터를 살짝 줄여 (N_TRAIN=3000,
-N_EVAL=600) 세 셋업이 한 노트북 안에 들어가도록 했습니다.
+json dump) 을 따릅니다. T4 30분 룰을 지키기 위해 데이터를 줄여 (N_TRAIN=2000,
+N_EVAL=400) 세 셋업이 한 노트북 안에 들어가도록 했습니다.
 """
 import json
 from pathlib import Path
@@ -63,15 +64,15 @@ md(r"""# Chapter 21 부록 — fair-compute 비교 (사전학습 vs 더 긴 fine
 
 | 셋업 | 사전학습 | 분류 fine-tune | 의도 |
 |---|---|---|---|
-| 🅰️ **A** | MLM 1 epoch | 2 epoch | 메인 챕터 재현 (기준선) |
+| 🅰️ **A** | MLM 3 epoch | 2 epoch | 메인의 1 → 3 epoch (사전학습 효과를 충분히, 기준선) |
 | 🅱️ **B** | 없음 (random init) | **A 의 총 시간만큼** epoch 늘림 | **fair-compute** 비교 — 같은 GPU 예산을 fine-tune 에 몰아주면? |
 | 🅲 **C** | 없음 (random init) | 2 epoch (A 와 동일) | *순수 random init baseline* — 사전학습의 *순* 효과 |
 
 A vs C 는 *사전학습의 순 효과*, A vs B 는 *사전학습 vs compute 등가 fine-tune* 비교.
 
-**환경**: Google Colab T4 GPU 필수. 약 25-28분.
+**환경**: Google Colab T4 GPU 필수. 약 25-30분.
 
-**메인 챕터와의 관계** — 메인 챕터 안의 *MLM 1 epoch + 분류 2 epoch* 와 셋업 A 는 동일하지만, 부록은 *부록만으로 self-contained* 하게 다시 돌립니다 — 메인 노트북을 먼저 돌릴 필요 없음. 메인보다 데이터를 약간 줄였습니다 (`N_TRAIN=3000`, `N_EVAL=600`) — 세 셋업이 *부록 하나* 의 T4 30분 안에 들어가도록.
+**메인 챕터와의 관계** — 메인 챕터는 분류 시간 확보를 위해 MLM 을 1 epoch 로 줄였지만, 부록은 fair-compute 비교가 핵심이라 **MLM 1 → 3 epoch** 로 늘려 사전학습 효과가 분명히 드러나도록 했습니다. 그 대신 데이터를 메인의 5K/1K → 부록의 `N_TRAIN=2000, N_EVAL=400` 으로 줄여 *부록 하나* 의 T4 30분 안에 세 셋업이 모두 들어가도록 했습니다. 부록은 *부록만으로 self-contained* — 메인 노트북을 먼저 돌릴 필요 없음.
 
 ---""")
 
@@ -80,11 +81,11 @@ md(r"""## 🔄 셋업 비교 — A / B / C
 
 | 축 | 🅰️ A (메인 재현) | 🅱️ B (fair-compute) | 🅲 C (random baseline) |
 |---|---|---|---|
-| MLM 사전학습 | **1 epoch** | 없음 | 없음 |
+| MLM 사전학습 | **3 epoch** | 없음 | 없음 |
 | 분류 fine-tune epoch | 2 | **A 의 총 시간만큼 자동 산정** | 2 |
 | 본체 시작점 | MLM 가중치 | random init | random init |
 | 분류 head | random init | random init | random init |
-| 데이터 | Yelp 5K/1K (메인) → 본 부록은 **3K/600** | (같음) | (같음) |
+| 데이터 | Yelp 5K/1K (메인) → 본 부록은 **2K/400** | (같음) | (같음) |
 | 토크나이저 | `bert-base-uncased` | (같음) | (같음) |
 | 모델 본체 | 작은 BERT (hidden=256, layer=4) | (같음) | (같음) |
 | Loss | `CrossEntropyLoss` (K=2) | (같음) | (같음) |
@@ -147,15 +148,15 @@ elif DEVICE == "cpu":
     print("Warning: CPU runtime — all three setups will be very slow.")
     print("         Switch to Colab T4 runtime to keep the appendix under 30 minutes.")""")
 
-md(r"""### 데이터·모델 hyperparams — 메인과 통일, 데이터만 살짝 축소
+md(r"""### 데이터·모델 hyperparams — 메인과 통일, MLM 은 더 충분히
 
-메인 챕터의 hyperparams 를 그대로 쓰되, 데이터만 *부록 30분 룰* 안에 들어가도록 `N_TRAIN=3000, N_EVAL=600` 으로 줄였습니다. 작은 BERT 본체 구조 (hidden=256, layer=4, head=4) 와 학습률은 메인과 완전히 같음.""")
+메인 챕터는 *분류 fine-tune 시간 확보* 를 위해 MLM 을 1 epoch 으로 줄였지만, 부록은 fair-compute 비교가 핵심이라 **MLM 1 → 3 epoch** 로 늘려 사전학습 효과가 충분히 드러나도록 합니다. T4 30분 룰을 지키기 위해 데이터는 `N_TRAIN=2000, N_EVAL=400` 으로 축소 (메인 5K/1K → 부록 2K/400). 작은 BERT 본체 구조 (hidden=256, layer=4, head=4) 와 학습률은 메인과 완전히 같음.""")
 
 code(r"""SEED = 42
 
-# 데이터 — 부록은 메인보다 약간 작게 (T4 30분 안에 세 셋업 다 돌리기 위해)
-N_TRAIN_TEXT = 3000
-N_EVAL_TEXT  = 600
+# 데이터 — 부록은 MLM 을 3 epoch 까지 늘리므로 데이터를 더 줄여 시간 균형
+N_TRAIN_TEXT = 2000
+N_EVAL_TEXT  = 400
 BLOCK_SIZE     = 128
 MAX_LENGTH_CLS = 128
 
@@ -167,7 +168,8 @@ INTERMEDIATE_SIZE   = 1024
 MAX_POS_EMBED       = 256
 
 # MLM 사전학습 hyperparams (셋업 A 만 사용)
-MLM_EPOCHS = 1
+# 메인은 1 epoch — 분류 시간 확보용. 부록은 사전학습 효과를 충분히 보기 위해 3 epoch.
+MLM_EPOCHS = 3
 MLM_BATCH  = 32
 MLM_LR     = 5e-4
 
@@ -177,7 +179,7 @@ CLS_BATCH  = 16
 CLS_LR     = 2e-5
 
 # B 의 epoch 산정 시 상한 (T4 30분 룰을 한 번 더 보장)
-B_EPOCHS_CAP = 30
+B_EPOCHS_CAP = 20
 
 USE_FP16 = (DEVICE == "cuda")
 
@@ -195,7 +197,7 @@ print(f"fp16: {USE_FP16}")""")
 # ----- 4. 데이터 로드 -----
 md(r"""## 1. 📥 데이터·토크나이저 로드 — 메인 챕터와 같은 파이프라인
 
-`fancyzhx/yelp_polarity` 이진 분류. seed 42 로 shuffle 후 앞에서 `N_TRAIN_TEXT / N_EVAL_TEXT` 만 사용. 메인 챕터는 5K/1K, 부록은 3K/600.""")
+`fancyzhx/yelp_polarity` 이진 분류. seed 42 로 shuffle 후 앞에서 `N_TRAIN_TEXT / N_EVAL_TEXT` 만 사용. 메인 챕터는 5K/1K, 부록은 2K/400.""")
 
 code(r"""ds_raw = load_dataset("fancyzhx/yelp_polarity")
 print(f"splits: {list(ds_raw.keys())}")
@@ -290,9 +292,9 @@ def make_cls_trainer(model, epochs, run_name):
     )""")
 
 # ----- 5. 셋업 A -----
-md(r"""## 2. 🅰️ Setup A — MLM 1 epoch + 분류 fine-tune 2 epoch (메인 재현)
+md(r"""## 2. 🅰️ Setup A — MLM 3 epoch + 분류 fine-tune 2 epoch (사전학습 충분히)
 
-메인 챕터의 핵심 셋업을 그대로 재현합니다. `T_A_mlm` (MLM 학습 시간) 과 `T_A_cls` (분류 fine-tune 시간) 를 별도로 측정해 합쳐 `T_A_total` 을 만듭니다. 이 시간이 *셋업 B 의 compute budget* 입니다.""")
+메인 챕터의 핵심 셋업을 *MLM 만 1 → 3 epoch* 로 늘려 재현합니다 — 1 epoch 으로는 본체 표상이 덜 정렬돼서 fair-compute 비교 메시지가 약해지기 때문. `T_A_mlm` (MLM 학습 시간) 과 `T_A_cls` (분류 fine-tune 시간) 를 별도로 측정해 합쳐 `T_A_total` 을 만듭니다. 이 시간이 *셋업 B 의 compute budget* 입니다.""")
 
 code(r"""# ---- A-1. MLM 사전학습 ----
 mlm_config = BertConfig(
@@ -449,7 +451,7 @@ A vs C 비교는 *사전학습이 만든 차이* 그 자체. 시간이 아니라
 - A: MLM 본체 → 2 epoch fine-tune
 - C: random init → 2 epoch fine-tune
 
-A 가 C 보다 얼마나 높은지가 *MLM 1 epoch 의 순 효과*.""")
+A 가 C 보다 얼마나 높은지가 *MLM 3 epoch 의 순 효과*.""")
 
 code(r"""torch.manual_seed(SEED)
 cls_model_C = BertForSequenceClassification(build_cls_config())
@@ -534,13 +536,13 @@ md(r"""## 6. 🔎 해석 — 무엇을 읽어야 하나
 
 | 비교 | 의미 | 전형적 결과 |
 |---|---|---|
-| **A vs C** | *사전학습의 순 효과* (같은 epoch 의 두 출발점) | A 가 C 보다 accuracy 약 3-10%p 높음 — MLM 1 epoch 만으로도 본체 표상이 *분류에 유용한 방향* 으로 정렬 |
+| **A vs C** | *사전학습의 순 효과* (같은 epoch 의 두 출발점) | A 가 C 보다 accuracy 약 5-15%p 높음 — MLM 3 epoch 으로 본체 표상이 *분류에 유용한 방향* 으로 충분히 정렬 |
 | **A vs B** | *사전학습 vs 동일 compute fine-tune* | A 가 B 보다 *여전히* 높음. 다만 격차는 A vs C 보다 줄어듦 — fine-tune epoch 을 늘려도 *self-supervised 신호 결손* 이 메워지지 않음 |
 | **B vs C** | *fine-tune epoch 의 효과* (둘 다 random init) | B 가 C 보다 높음 — random init 도 epoch 늘리면 더 학습. 다만 *수렴 정체* 로 일찍 평탄해질 수 있음 |
 
 **왜 B 가 A 를 못 따라잡나** — 분류 task 의 *supervised 신호* 만으로는 *언어 구조 일반* 을 학습하기 어렵습니다. MLM 의 *비지도 self-supervised* 신호가 *모든 토큰 자리* 에 대해 *문맥 예측* 을 강제해 본체에 *언어 분포* 를 새기는 반면, 분류 신호는 *문장 단위로 0/1 한 비트* 만 줍니다. 같은 GPU 시간이라도 *학습 신호의 밀도* 가 다른 것.
 
-**작은 모델·작은 데이터에서 주의** — 본 부록처럼 데이터가 3K 정도면 *random init + 긴 fine-tune* 이 overfitting 에 빠져 B 의 train loss 는 떨어지는데 eval 은 평탄해질 수 있습니다. *큰 모델·큰 데이터* 일수록 사전학습의 가치가 더 명확하게 커집니다 (Ch 10 의 DistilBERT 가 그 정점).
+**작은 모델·작은 데이터에서 주의** — 본 부록처럼 데이터가 2K 정도면 *random init + 긴 fine-tune* 이 overfitting 에 빠져 B 의 train loss 는 떨어지는데 eval 은 평탄해질 수 있습니다. *큰 모델·큰 데이터* 일수록 사전학습의 가치가 더 명확하게 커집니다 (Ch 10 의 DistilBERT 가 그 정점).
 
 **T_A 안에서 MLM 비중** — `T_A_mlm / T_A_total` 이 클수록 *fair-compute 격차* 가 본질적입니다. 본 부록에서 MLM 비중은 약 `T_A_mlm / T_A_total` (위 셀의 출력 참고).""")
 
