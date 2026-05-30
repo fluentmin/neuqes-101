@@ -832,7 +832,7 @@ md(r"""**해석 가이드 — 사전학습이 만든 차이**
 
 > **세 모델의 격차가 정확히 *데이터 규모 + 모델 크기 + 학습 시간* 의 격차** — 우리 작은 BERT (10M, 위키 5K paragraphs, 2 epoch) → reference (110M, 약 8.4B tokens) 사이에 *데이터 수천 배, 파라미터 11배*. 그 격차가 top-5 의 *질적 차이* 로 정확히 드러납니다.
 
-이번 챕터의 작은 BERT 는 *한국어 위키 paragraphs 5K × 2 epoch* 로 학습한 *일반 도메인 mini BERT*. 위키 도메인은 직접 본 분포라 향상이 빠르지만, NSMC 영화 리뷰는 *다른 도메인* 이라 fine-tune 단계에서 적응이 필요합니다 — 이게 *진짜 사전학습 → fine-tune 패러다임* 의 핵심. Ch 23 에서 NSMC 이진 분류로 fine-tune 할 때 진짜 비교 — *우리가 직접 만든 작은 한국어 BERT (일반 도메인 5K, 약 10M)* vs *Ch 15 의 `klue/bert-base` (대규모 일반 코퍼스, 약 110M)* vs *random init baseline*.""")
+이번 챕터의 작은 BERT 는 *한국어 위키 paragraphs 5K × 2 epoch* 로 학습한 *일반 도메인 mini BERT*. 위키 도메인은 직접 본 분포라 향상이 빠르지만, NSMC 영화 리뷰는 *다른 도메인* 이라 fine-tune 단계에서 적응이 필요합니다 — 이게 *진짜 사전학습 → fine-tune 패러다임* 의 핵심. Ch 23 에서 NSMC 이진 분류로 fine-tune 할 때 진짜 비교 — *우리가 직접 만든 작은 한국어 BERT (일반 도메인 5K, 약 10M)* vs *Ch 15 의 `klue/bert-base` (대규모 일반 코퍼스, 약 110M)*.""")
 
 # ----- 15. 저장 -----
 md(r"""## 8. 💾 모델 저장 — Ch 23 에서 재사용
@@ -1032,8 +1032,9 @@ md(r"""## 다음 챕터 예고
 
 - 이번 챕터의 `./ch22_small_bert_mlm_ko` 체크포인트를 `AutoModelForSequenceClassification.from_pretrained(..., num_labels=2)` 로 로드 → MLM head 떼고 분류 헤드 부착
 - NSMC 이진 분류 fine-tune (Ch 15 와 같은 데이터·셋업) — *완전히 다른 도메인 transfer*
-- **핵심 비교**: 이번 작은 사전학습 BERT (약 10M params, 위키 5K paragraphs MLM) vs Ch 15 의 `klue/bert-base` (약 110M params, 대규모 일반 한국어 사전학습) vs random init
+- **핵심 비교**: 이번 작은 사전학습 BERT (약 10M params, 위키 5K paragraphs MLM) vs Ch 15 의 `klue/bert-base` (약 110M params, 대규모 일반 한국어 사전학습) — 2-way
 - 영어 Ch 20 → Ch 21 흐름의 *한국어 대칭본* — 같은 격차 패턴이 한국어 환경에서도 나오는지 검증
+- 추가로 *random init baseline* 비교 + *위키 → NSMC 의 negative transfer 분석* 은 Ch 23 부록 [`appendix_random_baseline.ipynb`](../23_ko_bert_classify/appendix_random_baseline.ipynb)
 
 > **변하는 축**: Phase 3 안에서 *task* 가 사전학습 (MLM) → 분류 (fine-tune) 로 전환. *파인튜닝* 의 의미는 **BERT 시대 = task 별 head 부착**. 본체는 그대로, downstream task 마다 새로 random init 된 작은 head 가 붙어 적응. Ch 23 에서 본격적으로 다시 짚어 봅니다.""")
 
@@ -1104,7 +1105,7 @@ Google Colab T4 GPU (fp16). 약 20-25분 (토크나이저 로드 + ko 위키 다
 `./ch22_small_bert_mlm_ko/` 폴더에 `config.json + model.safetensors + tokenizer.json + vocab.txt + ...` 저장. Ch 23 에서 `AutoModelForSequenceClassification.from_pretrained("./ch22_small_bert_mlm_ko", num_labels=2)` 한 줄로 *encoder body* 를 가져와 새 분류 헤드를 부착해 fine-tune.
 
 ## 다음 챕터
-[23_ko_bert_classify](../23_ko_bert_classify/) — 이번 챕터 사전학습 모델을 *완전히 다른 도메인 (NSMC 영화 리뷰)* 이진 분류로 fine-tune. **Ch 15 (`klue/bert-base` 대규모 한국어 사전학습 모델 fine-tune) 과 직접 비교** — 작은 사전학습 BERT (약 10M, 위키 5K paragraphs MLM) vs 표준 한국어 BERT (약 110M, 약 8.4B tokens 대규모 일반 코퍼스) vs random init baseline. 영어 Ch 20 → Ch 21 흐름의 한국어 대칭본 — *일반 사전학습 → 다른 도메인 fine-tune transfer* 메시지가 본 챕터의 클라이맥스.
+[23_ko_bert_classify](../23_ko_bert_classify/) — 이번 챕터 사전학습 모델을 *완전히 다른 도메인 (NSMC 영화 리뷰)* 이진 분류로 fine-tune. **Ch 15 (`klue/bert-base` 대규모 한국어 사전학습 모델 fine-tune) 과 직접 비교** — 작은 사전학습 BERT (약 10M, 위키 5K paragraphs MLM) vs 표준 한국어 BERT (약 110M, 약 8.4B tokens 대규모 일반 코퍼스) 2-way. 영어 Ch 20 → Ch 21 흐름의 한국어 대칭본 — *일반 사전학습 → 다른 도메인 fine-tune transfer* 메시지가 본 챕터의 클라이맥스. 추가로 [`appendix_random_baseline.ipynb`](../23_ko_bert_classify/appendix_random_baseline.ipynb) 에서 *random init baseline + negative transfer 분석*.
 """
 
 OUT_README.write_text(README, encoding="utf-8")
