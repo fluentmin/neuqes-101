@@ -60,7 +60,8 @@ Loss 축:    MSELoss ─→ BCEWithLogitsLoss ─→ CrossEntropyLoss ─→ BCE
 - **Phase 1 (Ch 7-14)** — DistilBERT와 Trainer로 Loss/Head 구조를 재정식화합니다. Ch 10·11이 binary 두 방식을 별도 학습으로 비교, Auxiliary loss(Ch 14)로 마무리.
 - **Phase 2 (Ch 15-18)** — 한국어로 압축 재방문 (klue/bert-base). Binary부터 시작 (회귀는 영어에서 다뤘으므로 생략).
 - **Phase 3 (Ch 19-20)** — 토크나이저를 직접 학습. 사전학습 의존 없는 경험. Phase 3가 클라이맥스가 되도록 토크나이저 시각을 Ch 1부터 일관되게 추적합니다.
-- **Phase 4 (Ch 21-30) — GPT/LLM**: encoder(BERT)에서 decoder(GPT)로. 사전학습 & 활용(21 TinyStories scratch → 22 gpt2 fine-tune → **23 한국어 tiny GPT scratch — Ch 21의 한국어판**) → instruction tuning & alignment(24 SFT → 25 PPO → 26 DPO → 27 GRPO) → diffusion LM(28 개념·작은 구현 → 29 LLaDA → 30 Trida-7B 한국 산). 부록 A1 (`24_sft/appendix_agentic.ipynb`) — agentic / function-calling SFT.
+- **Phase 4 (Ch 21-27) — GPT/LLM (autoregressive)**: encoder(BERT)에서 decoder(GPT)로. 사전학습 & 활용(21 TinyStories scratch → 22 gpt2 fine-tune → **23 한국어 tiny GPT scratch — Ch 21의 한국어판, `g0ster/TinyStories-Korean`**) → instruction tuning & alignment(24 SFT → 25 PPO → 26 DPO → 27 GRPO). 부록 A1 (`24_sft/appendix_agentic.ipynb`) — agentic / function-calling SFT.
+- **Phase 5 (Ch 28-30) — Diffusion LM**: autoregressive 가 아니라 *문장 전체를 병렬 denoise* 하는 새 패러다임. 28 개념·작은 mask-diffusion 직접 구현 → 29 LLaDA-8B 글로벌 모델 사용 → 30 Trida-7B 한국 산 모델 (AR vs Diffusion 비교).
 
 ## 학습 환경
 
