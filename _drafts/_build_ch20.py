@@ -417,26 +417,94 @@ code(r"""data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
     mlm=True,
     mlm_probability=0.15,
-)
+)""")
 
-# collator 동작 확인 — 같은 입력을 두 번 처리해 mask 위치가 매번 다른지 보기
-sample_batch = [lm_train[0], lm_train[1]]
-out1 = data_collator(sample_batch)
-out2 = data_collator(sample_batch)
+md(r"""### 🔍 [MASK] 가 들어가는 원리 — 한 눈에 보는 80/10/10
 
-print(f"batch shape: input_ids={tuple(out1['input_ids'].shape)}, labels={tuple(out1['labels'].shape)}")
-mask_id = tokenizer.mask_token_id
+`DataCollatorForLanguageModeling` 은 매 step 마다 *입력 토큰의 약 15%* 를 *무작위로* 선택하고, 선택된 위치마다 세 가지 중 하나를 적용합니다.
 
-n_masked_1 = (out1["input_ids"] == mask_id).sum().item()
-n_masked_2 = (out2["input_ids"] == mask_id).sum().item()
-total_tokens = out1["input_ids"].numel()
-print(f"masked tokens (call 1): {n_masked_1:>4} / {total_tokens}  ({n_masked_1/total_tokens:.2%})")
-print(f"masked tokens (call 2): {n_masked_2:>4} / {total_tokens}  ({n_masked_2/total_tokens:.2%})")
+| 선택된 토큰 운명 | 비율 | 의도 |
+| --- | --- | --- |
+| `[MASK]` 로 교체 | **80%** | 표준 마스킹 — 모델이 *주변 문맥만으로* 원래 토큰을 맞추도록 |
+| **다른 random 토큰** 으로 교체 | 10% | inference 때는 `[MASK]` 가 없으니, 모델이 *항상* 자기 입력을 *의심* 하게 만듦 |
+| **원본 그대로** 유지 | 10% | 동일 — 입력과 정답이 일치하는 케이스도 학습 데이터에 포함 |
 
-# labels 에서 -100 이 아닌 위치 = MLM loss 가 계산되는 위치
-n_loss_pos = (out1["labels"] != -100).sum().item()
-print(f"loss positions:        {n_loss_pos:>4} / {total_tokens}  "
-      f"({n_loss_pos/total_tokens:.2%})  ← labels != -100")""")
+**나머지 85%** 의 토큰은 `labels = -100` 으로 두어 *loss 계산에서 제외* 됩니다 (PyTorch CE 의 `ignore_index` 기본값). 즉 한 step 의 MLM loss 는 *선택된 15% 자리만* 모아 평균한 값.
+
+> 이 `labels = -100` 트릭은 BERT-만의 것이 아닙니다 — Phase 4 GPT 사전학습은 *거의 모든 토큰* 을 학습 (`labels = input_ids`), SFT (Ch 27) 는 *prompt 만 -100, 답변만 학습*. 같은 트릭, 정반대 자리. Ch 21 에서 더 자세히.""")
+
+code(r"""# 짧은 예시 문장 하나에 collator 한 번 돌려서 어떤 자리가 어떻게 바뀌는지 직접 봅니다.
+import pandas as pd
+
+DEMO_SENT = "Pretraining a language model on Wikipedia teaches it general English structure."
+demo_enc = tokenizer(DEMO_SENT, return_tensors=None)
+demo_ids = demo_enc["input_ids"]
+
+torch.manual_seed(0)  # 재현성: 같은 seed 면 같은 마스킹
+demo_batch = [{"input_ids": demo_ids, "attention_mask": [1] * len(demo_ids)}]
+demo_out = data_collator(demo_batch)
+
+masked_ids = demo_out["input_ids"][0].tolist()
+labels     = demo_out["labels"][0].tolist()
+mask_id    = tokenizer.mask_token_id
+
+orig_tokens   = tokenizer.convert_ids_to_tokens(demo_ids)
+masked_tokens = tokenizer.convert_ids_to_tokens(masked_ids)
+
+rows = []
+for orig_id, new_id, lab, orig_tok, new_tok in zip(demo_ids, masked_ids, labels, orig_tokens, masked_tokens):
+    if lab == -100:
+        kind = "—"
+    elif new_id == mask_id:
+        kind = "[MASK] (80%)"
+    elif new_id == orig_id:
+        kind = "kept (10%)"
+    else:
+        kind = "random (10%)"
+    rows.append({
+        "pos": len(rows),
+        "original": orig_tok,
+        "after_collator": new_tok,
+        "label_id": lab,
+        "what_happened": kind,
+    })
+
+demo_df = pd.DataFrame(rows)
+print(demo_df.to_string(index=False))""")
+
+code(r"""# 큰 batch 통계 — 80/10/10 비율이 실제로 맞는지 확인
+torch.manual_seed(0)
+N_DEMO = 64
+big_batch = [
+    {"input_ids": lm_train[i]["input_ids"], "attention_mask": [1] * BLOCK_SIZE}
+    for i in range(N_DEMO)
+]
+big_out = data_collator(big_batch)
+
+in_ids = big_out["input_ids"]
+lab    = big_out["labels"]
+
+selected = (lab != -100)
+n_total    = lab.numel()
+n_selected = selected.sum().item()
+n_mask     = ((in_ids == mask_id) & selected).sum().item()
+n_kept     = ((in_ids == lab) & selected).sum().item()
+n_random   = n_selected - n_mask - n_kept
+
+print(f"Total tokens:                      {n_total:>7,}")
+print(f"Selected for loss (target 15%):    {n_selected:>7,}  ({100 * n_selected / n_total:5.2f}%)")
+print(f"  └─ replaced with [MASK]:         {n_mask:>7,}  ({100 * n_mask / n_selected:5.2f}% of selected)")
+print(f"  └─ replaced with random:         {n_random:>7,}  ({100 * n_random / n_selected:5.2f}% of selected)")
+print(f"  └─ kept as original:             {n_kept:>7,}  ({100 * n_kept / n_selected:5.2f}% of selected)")
+print()
+print("Target: 선택 15% / 그 중 80-10-10 으로 [MASK]-random-kept. 표본 크면 비율 안정.")""")
+
+md(r"""**관전 포인트**
+
+- `what_happened` 가 `—` 인 자리 (약 85%) 는 *입력과 정답이 그대로* — loss 에 기여하지 않음. 모델은 *문맥을 만들어 주는* 역할만.
+- `[MASK]` 자리 (약 12%) 가 본 task 의 *진짜 학습 신호*. 주변 토큰들의 attention 결과로 *가려진 자리* 의 vocab 분포를 예측.
+- `random` (약 1.5%) 와 `kept` (약 1.5%) 는 *inference 분포 일치* 를 위한 정규화. 추론 시에는 `[MASK]` 가 없으므로 *입력을 절대 신뢰하면 안 된다* 는 신호를 학습에 섞어 줌.
+- 매 epoch · 매 batch 마다 마스킹은 *새로 무작위* — 같은 문장이 epoch 마다 다른 자리에서 가려져 학습됨 (data augmentation 효과).""")
 
 code(r"""USE_FP16 = (DEVICE == "cuda")   # T4 는 fp16, MPS/CPU 는 fp32
 NUM_EPOCHS = 2
@@ -472,6 +540,70 @@ print(f"learning rate: {training_args.learning_rate}")
 print(f"fp16:          {USE_FP16}")
 print(f"train blocks:  {len(lm_train):,}")
 print(f"steps / epoch: {len(lm_train) // training_args.per_device_train_batch_size}")""")
+
+md(r"""### 🔬 학습 직전 baseline — 사전학습 전·후 비교 준비
+
+`trainer.train()` 을 호출하기 *전* 의 모델 상태 (`BertForMaskedLM(config)` random init) 로 두 가지를 측정해 둡니다 — *학습 후와 나란히* 보면 *사전학습이 본체에 무엇을 새겼는지* 가 한 화면에 드러납니다.
+
+1. **`eval_loss` / `perplexity`** — random init 이므로 vocab 30,522 균등 분포 (`ln V` ≈ 10.33) 근처가 기대치.
+2. **같은 문장의 `[MASK]` top-5** — random init 의 logits 는 거의 균등이라 *문맥과 무관한 토큰* (자주 등장하는 관사·전치사·특수문자 등) 이 뽑힙니다.
+
+학습이 끝난 뒤 6-1 셀에서 *완전히 같은 문장* 으로 다시 측정해 *직접 비교* 합니다.""")
+
+code(r"""# predict_mask 함수 정의 — 학습 전·후 두 번 호출하므로 먼저 정의
+def predict_mask(text, top_k=5):
+    '''text 안의 [MASK] 자리 top-k 토큰과 확률 반환.'''
+    model.eval()
+    inputs = tokenizer(text, return_tensors="pt").to(model.device)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    logits = outputs.logits[0]
+    mask_positions = (inputs["input_ids"][0] == tokenizer.mask_token_id).nonzero(as_tuple=True)[0]
+    if len(mask_positions) == 0:
+        return None
+    results = []
+    for pos in mask_positions:
+        probs = torch.softmax(logits[pos], dim=-1)
+        top_p, top_i = probs.topk(top_k)
+        candidates = [(tokenizer.convert_ids_to_tokens(int(i)), float(p))
+                       for p, i in zip(top_p, top_i)]
+        results.append((int(pos), candidates))
+    return results
+
+
+# 검증용 문장 — 학습 전·후 동일하게 사용
+# 위키 일반 도메인 (사전학습 직접 본 분포) + Yelp 도메인 (Ch 21 downstream, 다른 도메인 transfer)
+test_sentences = [
+    # 위키 도메인 — 사전학습 직접 본 분포, 향상 명확히 기대
+    f"The capital of France is {tokenizer.mask_token}.",
+    f"Water freezes at {tokenizer.mask_token} degrees Celsius.",
+    # Yelp 도메인 (Ch 21 fine-tune 대상) — 다른 도메인 transfer 한계 확인
+    f"The food at this restaurant was absolutely {tokenizer.mask_token}.",
+    f"I would {tokenizer.mask_token} recommend this place.",
+]
+
+# ---- 사전학습 전 eval_loss / perplexity ----
+pre_eval = trainer.evaluate()
+pre_eval_loss = pre_eval["eval_loss"]
+pre_eval_ppl  = math.exp(pre_eval_loss)
+random_baseline_loss = math.log(tokenizer.vocab_size)
+
+print("=" * 78)
+print("BEFORE pretraining  (random init body)")
+print("=" * 78)
+print(f"  eval_loss       : {pre_eval_loss:.4f}   (random baseline ln V = {random_baseline_loss:.4f})")
+print(f"  eval_perplexity : {pre_eval_ppl:,.0f}     (random baseline V    = {tokenizer.vocab_size:,})")
+print()
+
+# ---- 사전학습 전 [MASK] top-5 ----
+pre_top5_records = []
+for sent in test_sentences:
+    results = predict_mask(sent, top_k=5)
+    top5_tokens = [tok for tok, _ in results[0][1]] if results else []
+    pre_top5_records.append({"sentence": sent, "top5_before": top5_tokens})
+    print(f"input: {sent}")
+    print(f"  top-5 before pretraining: {top5_tokens}")
+    print()""")
 
 code(r"""t0 = time.time()
 train_result = trainer.train()
@@ -524,64 +656,104 @@ print(f"  perplexity (exp loss):  {eval_ppl:.2f}")
 print(f"  random baseline PPL:    {tokenizer.vocab_size:,}  (uniform over vocab)")
 print(f"  -> model narrowed vocab to approx. {eval_ppl:.0f} candidates per masked position")""")
 
-md(r"""### 6-1. Masked token 예측 시연 — top-5 후보 (위키 도메인 + Yelp 도메인 혼합)
+md(r"""### 6-1. 🔬 사전학습 전·후 비교 — random init 본체 vs 2 epoch 학습 후
 
-학습된 작은 BERT 에 직접 [MASK] 가 들어간 문장을 넣어 *vocab 30,522 중 어떤 토큰을 가장 그럴듯하다고 보는지* 확인. 본 챕터의 사전학습 코퍼스가 *일반 위키* 이므로 위키 도메인 문장 두 개 + Yelp 도메인 문장 두 개를 섞어 *학습 분포* 와 *다른 도메인 transfer* 모두 관찰.""")
+학습 직전 (5번 마지막 셀에서 측정해 둔 `pre_eval_loss` / `pre_top5_records`) 와 *완전히 같은 문장·같은 평가 셋* 에 학습 후 모델을 적용해 두 결과를 나란히 봅니다. *사전학습이 본체에 무엇을 새겼는가* 의 가장 직접적인 증거.""")
 
-code(r"""def predict_mask(text, top_k=5):
-    '''text 에 [MASK] 토큰이 들어있어야 함. mask 위치의 top-k 예측을 반환.'''
-    model.eval()
-    inputs = tokenizer(text, return_tensors="pt").to(model.device)
-    with torch.no_grad():
-        outputs = model(**inputs)
-    logits = outputs.logits[0]  # (seq_len, vocab)
+code(r"""# ---- 사전학습 후 eval_loss / perplexity ----
+post_eval = trainer.evaluate()
+post_eval_loss = post_eval["eval_loss"]
+post_eval_ppl  = math.exp(post_eval_loss)
 
-    mask_positions = (inputs["input_ids"][0] == tokenizer.mask_token_id).nonzero(as_tuple=True)[0]
-    if len(mask_positions) == 0:
-        return None
+print("=" * 78)
+print("AFTER pretraining  (2 epoch MLM on Wikitext-103)")
+print("=" * 78)
+print(f"  eval_loss       : {post_eval_loss:.4f}   (before: {pre_eval_loss:.4f})")
+print(f"  eval_perplexity : {post_eval_ppl:,.2f}        (before: {pre_eval_ppl:,.0f})")
+print(f"  -> narrowed vocab to approx. {post_eval_ppl:.0f} candidates per masked position")
+print()
 
-    results = []
-    for pos in mask_positions:
-        probs = torch.softmax(logits[pos], dim=-1)
-        top_p, top_i = probs.topk(top_k)
-        candidates = [(tokenizer.convert_ids_to_tokens(int(i)), float(p))
-                       for p, i in zip(top_p, top_i)]
-        results.append((int(pos), candidates))
-    return results
-
-
-# 위키 일반 도메인 (사전학습 직접 본 분포) + Yelp 도메인 (다른 도메인 transfer)
-test_sentences = [
-    # 위키 일반 도메인 — 사전학습 직접 본 분포
-    f"The capital of France is {tokenizer.mask_token}.",
-    f"Water freezes at {tokenizer.mask_token} degrees Celsius.",
-    # Yelp 도메인 (downstream) — 다른 도메인 transfer
-    f"The food at this restaurant was absolutely {tokenizer.mask_token}.",
-    f"I would {tokenizer.mask_token} recommend this place.",
-]
-
+# ---- 사전학습 후 [MASK] top-5 ----
+post_top5_records = []
 for sent in test_sentences:
-    print("=" * 78)
-    print(f"input: {sent}")
     results = predict_mask(sent, top_k=5)
-    if results is None:
-        print("  (no [MASK] found)")
-        continue
-    for pos, candidates in results:
-        print(f"  top-5 at position {pos}:")
-        for tok, prob in candidates:
-            bar = "#" * int(prob * 40)
-            print(f"    {tok:>15s}  {prob:.4f}  {bar}")
+    top5_tokens = [tok for tok, _ in results[0][1]] if results else []
+    post_top5_records.append({"sentence": sent, "top5_after": top5_tokens})
+    print(f"input: {sent}")
+    print(f"  top-5 after pretraining: {top5_tokens}")
     print()""")
 
-md(r"""**해석 가이드 — 위키 도메인 vs Yelp 도메인**
+md(r"""### 6-2. eval_loss / perplexity — 수치 비교
 
-- **위키 도메인 문장** (`"The capital of France is [MASK]."` 등): 사전학습이 *직접 본 분포* — `paris` 같은 정답이 top-5 에 들어올 가능성. 일반 위키 어휘 (지명·과학·역사 등) 가 본체에 새겨진 결과.
-- **Yelp 도메인 문장** (`"The food at this restaurant was absolutely [MASK]."` 등): *다른 도메인 transfer* — *감성 형용사* (`amazing`, `delicious`) 가 top-5 에 안 들어올 수 있음. 그러나 일반 *부사·형용사* 가 섞이기 시작하면 사전학습 *방향성* 자체는 분명.
-- *학습 부족*: top-5 가 무관한 단어로 가득 (예: 숫자, 특수 기호, 문맥과 무관한 명사) — 학습 step 을 더 늘리거나 데이터를 더 줘야 함.
-- *vocab 폭주*: 같은 토큰이 여러 자리에 압도적 확률로 등장 — 모델이 자주 등장하는 토큰 (`the`, `a`, `,`) 에 *수렴* 한 상태. 학습 더 필요 또는 학습률 조정.
+두 측정치를 한 표·한 막대 그래프로.""")
 
-이번 챕터의 작은 BERT 는 *5K paragraphs × 2 epoch* 라 표준 BERT 수준의 답을 기대할 순 없습니다. 하지만 *위키 도메인은 직접 학습한 분포라 답이 빠르게 좁혀지고*, *Yelp 도메인은 다른 도메인이라 fine-tune 단계 (Ch 21) 에서 적응* — 이게 *진짜 사전학습-fine-tune 패러다임* 의 핵심입니다.""")
+code(r"""# 사전·사후 수치 비교 표
+metric_compare = pd.DataFrame({
+    "metric":           ["eval_loss", "eval_perplexity"],
+    "before (random)":  [pre_eval_loss,  pre_eval_ppl],
+    "after (2 epoch)":  [post_eval_loss, post_eval_ppl],
+    "random baseline":  [random_baseline_loss, float(tokenizer.vocab_size)],
+})
+print("Before vs After — eval metrics")
+print(metric_compare.round(4).to_string(index=False))""")
+
+code(r"""# 막대 그래프 두 장 (eval_loss / perplexity)
+sns.set_theme(style="whitegrid", context="talk")
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+loss_values = [pre_eval_loss, post_eval_loss]
+loss_labels = ["before (random)", "after (2 epoch)"]
+axes[0].bar(loss_labels, loss_values, color=["#999999", "#4878D0"])
+axes[0].axhline(random_baseline_loss, color="black", lw=1.0, ls=":",
+                label=f"random baseline ln V = {random_baseline_loss:.2f}")
+axes[0].set_ylabel("eval_loss")
+axes[0].set_title("MLM eval_loss")
+axes[0].legend(loc="upper right", fontsize=10)
+
+ppl_values = [pre_eval_ppl, post_eval_ppl]
+axes[1].bar(loss_labels, ppl_values, color=["#999999", "#4878D0"])
+axes[1].set_yscale("log")
+axes[1].axhline(tokenizer.vocab_size, color="black", lw=1.0, ls=":",
+                label=f"random baseline V = {tokenizer.vocab_size:,}")
+axes[1].set_ylabel("perplexity (log scale)")
+axes[1].set_title("MLM perplexity")
+axes[1].legend(loc="upper right", fontsize=10)
+
+plt.tight_layout()
+plt.show()""")
+
+md(r"""### 6-3. [MASK] top-5 — 토큰 비교
+
+같은 문장 4개의 [MASK] 자리 top-5 후보를 *사전학습 전 → 후* 로 나란히.""")
+
+code(r"""# 사전·사후 top-5 비교 표
+rows = []
+for pre, post in zip(pre_top5_records, post_top5_records):
+    rows.append({
+        "sentence":     pre["sentence"],
+        "top5_before":  ", ".join(pre["top5_before"]),
+        "top5_after":   ", ".join(post["top5_after"]),
+    })
+
+top5_compare = pd.DataFrame(rows)
+print("Before vs After — top-5 candidates at [MASK]")
+print()
+for _, row in top5_compare.iterrows():
+    print(f"input: {row['sentence']}")
+    print(f"  before: {row['top5_before']}")
+    print(f"  after : {row['top5_after']}")
+    print()""")
+
+md(r"""**해석 가이드 — 사전학습이 만든 차이**
+
+- **`eval_loss`**: random baseline `ln V ≈ 10.33` 에서 약 5-7 부근까지 떨어졌으면 본체가 *언어 구조 일부* 를 학습. *완전한* BERT 수준은 아니어도 표준 BERT 가 학습한 것의 *방향* 은 맞춤.
+- **`perplexity`**: 30,522 (vocab 전체) 에서 수십-수백 부근으로. *마스크 자리마다 후보를 약 50-500 개로 좁힌 상태* 라는 직관적 해석.
+- **top-5 토큰**:
+  - *before*: 자주 등장하는 *관사·전치사·특수문자* (`the`, `a`, `,`, `.`, `of`) — random init 이지만 logits 가 미세하게 흔들려 *통계적 빈도* 높은 토큰만 뽑힘.
+  - *after — 위키 도메인* (`"The capital of France is [MASK]."` 등): 사전학습이 *직접 본 분포* — `paris` 같은 정답이 top-5 에 들어올 가능성. 일반 위키 어휘 (지명·과학·역사) 가 본체에 새겨진 결과.
+  - *after — Yelp 도메인* (`"The food was absolutely [MASK]."` 등): *다른 도메인 transfer* — *감성 형용사* (`amazing`, `delicious`) 가 top-5 에 안 들어올 수 있음. 그러나 일반 *부사·형용사* 가 섞이기 시작하면 사전학습 *방향성* 자체는 분명.
+
+이번 챕터의 작은 BERT 는 *Wikitext-103 5K paragraphs × 2 epoch* 로 학습한 *일반 도메인 mini BERT*. 위키 도메인은 직접 본 분포라 향상이 빠르지만, Yelp 영화 리뷰 영역은 *다른 도메인* 이라 fine-tune 단계에서 적응이 필요합니다 — 이게 *진짜 사전학습 → fine-tune 패러다임* 의 핵심. Ch 21 에서 Yelp 이진 분류로 fine-tune 할 때 진짜 transfer 비교 — *우리가 직접 만든 작은 영어 BERT (일반 위키 5K, 약 10M)* vs *Ch 10 의 DistilBERT (대규모 Wikipedia+BookCorpus, 약 66M)* vs *random init baseline*.""")
 
 # ----- 14. 저장 -----
 md(r"""## 7. 💾 모델 저장 — Ch 21 에서 재사용
