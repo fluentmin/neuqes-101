@@ -48,7 +48,7 @@ md(r"""# Chapter 21. 작은 BERT 분류 — 영어 Yelp 이진 (scratch 사전�
 
 **목표**: Phase 3 의 세 번째 챕터. Ch 20 에서 *작은 BERT 를 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 fine-tune** 합니다. Ch 10 (DistilBERT, 약 66M params, 수십억 토큰 사전학습) 과 같은 Yelp 이진 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, Yelp 5K 문장 MLM) 를 붙여 두 결과를 나란히 비교 — *사전학습 규모* 가 downstream 정확도에 얼마나 차이를 만드는지 정량으로 확인.
 
-self-contained 노트북: Ch 20 의 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 분류 fine-tune → Ch 10 결과와 비교. *MLM 없이 random init 으로 바로 분류* 하는 baseline 도 변형 셀에서 함께 학습해 *사전학습 자체의 순 효과* 도 분리.
+self-contained 노트북: Ch 20 의 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 분류 fine-tune → Ch 10 결과와 비교. 본문은 *사전학습 → 분류 fine-tune* 메인 흐름에 집중. *사전학습 없이 같은 GPU compute 로 분류 fine-tune* 만 했을 때의 fair-compute 비교는 부록 노트북 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 에서 분리해 다룹니다.
 
 **환경**: Google Colab **T4 GPU 필수**.
 
@@ -65,7 +65,8 @@ self-contained 노트북: Ch 20 의 MLM 학습을 1 epoch 짧게 재현 → 같�
 5. 🚀 **분류 fine-tune**: Trainer fp16, 2 epoch
 6. 🔬 **평가**: accuracy / precision / recall / F1 / AUC (Ch 10 과 같은 5종)
 7. 🆚 **Ch 10 vs Ch 21 비교 표**: 정확도, 모델 크기, 사전학습 토큰량
-8. 🛠️ **변형 — random init baseline**: MLM 건너뛰고 바로 분류 fine-tune. 사전학습의 순 효과 정량
+
+📒 **부록**: [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) — 같은 GPU compute budget 으로 *사전학습 없이* 분류 fine-tune 만 했을 때의 fair-compute 비교
 
 ---
 
@@ -113,7 +114,7 @@ md(r"""## 🔄 변경점 (Diff from Ch 20)
 | 분류 fine-tune 셋업 | Ch 10 = 이번 챕터 동일 (같은 데이터, 같은 hyperparams) | | 변하는 건 *본체 출발점* 뿐 |
 | 기대 accuracy | 약 92-95% | **약 75-85% 예상** | 비교는 실측치로 확인 |
 
-이 격차가 *사전학습 규모의 가치* 를 정량으로 보여줍니다. 동시에 *작은 사전학습도 random init 보다는 낫다* 는 것을 변형 셀에서 추가 확인.""")
+이 격차가 *사전학습 규모의 가치* 를 정량으로 보여줍니다. *작은 사전학습도 random init 보다는 낫다* 는 것, 그리고 *같은 GPU compute 를 fine-tune 에 모두 쏟아도 사전학습 효과를 메우기 어렵다* 는 것은 부록 노트북 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 에서 fair-compute 관점으로 다룹니다.""")
 
 # ----- 4. Loss 노트 -----
 md(r"""## 📐 Loss 함수의 변화 — MLM CE (vocab=30,522) → 분류 CE (K=2)
@@ -142,7 +143,7 @@ $$L_{\text{cls}} = -\frac{1}{N}\sum_{i=1}^{N} \log \hat p_{i, y_i}$$
 
 | 셋업 | 학습 첫 step loss | 학습 종료 loss (epoch 2) | 메모 |
 |---|---|---|---|
-| random init + 분류 (변형 셀) | 약 0.693 | 약 0.5-0.6 | 본체도 분류 헤드도 random — 학습이 *느림* |
+| random init + 분류 (부록) | 약 0.693 | 약 0.5-0.6 | 본체도 분류 헤드도 random — 학습이 *느림* |
 | Ch 20 MLM 사전학습 본체 + 분류 (메인) | 약 0.693 | **약 0.3-0.5** | 본체에 *언어 구조* 가 들어 있어 헤드만 빠르게 적응 |
 | Ch 10 DistilBERT 사전학습 본체 + 분류 | 약 0.693 | **약 0.15-0.25** | 대규모 사전학습이 만든 표상의 위력 |
 
@@ -347,9 +348,97 @@ code(r"""mlm_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer,
     mlm=True,
     mlm_probability=0.15,
-)
+)""")
 
-USE_FP16 = (DEVICE == "cuda")
+md(r"""### 🔍 [MASK] 가 들어가는 원리 — 한 눈에 보는 80/10/10
+
+`DataCollatorForLanguageModeling` 은 매 step 마다 *입력 토큰의 약 15%* 를 *무작위로* 선택하고, 선택된 위치마다 세 가지 중 하나를 적용합니다.
+
+| 선택된 토큰 운명 | 비율 | 의도 |
+| --- | --- | --- |
+| `[MASK]` 로 교체 | **80%** | 표준 마스킹 — 모델이 *주변 문맥만으로* 원래 토큰을 맞추도록 |
+| **다른 random 토큰** 으로 교체 | 10% | inference 때는 `[MASK]` 가 없으니, 모델이 *항상* 자기 입력을 *의심* 하게 만듦 |
+| **원본 그대로** 유지 | 10% | 동일 — 입력과 정답이 일치하는 케이스도 학습 데이터에 포함 |
+
+**나머지 85%** 의 토큰은 `labels = -100` 으로 두어 *loss 계산에서 제외* 됩니다 (PyTorch CE 의 `ignore_index` 기본값). 즉 한 step 의 MLM loss 는 *선택된 15% 자리만* 모아 평균한 값.
+
+> 이 80/10/10 비율은 BERT 논문 (Devlin et al., 2018) 의 원안 그대로. `mlm_probability=0.15` 만 바꾸면 *선택률* 이 바뀌고, 80/10/10 자체는 collator 내부에 고정.""")
+
+code(r"""# 짧은 예시 문장 하나에 collator 한 번 돌려서 어떤 자리가 어떻게 바뀌는지 직접 봅니다.
+import torch
+import pandas as pd
+
+DEMO_SENT = "The food at this restaurant was absolutely amazing and I will return."
+demo_enc = tokenizer(DEMO_SENT, return_tensors=None)
+demo_ids = demo_enc["input_ids"]
+
+torch.manual_seed(0)  # 재현성: 같은 seed 면 같은 마스킹
+demo_batch = [{"input_ids": demo_ids, "attention_mask": [1] * len(demo_ids)}]
+demo_out = mlm_collator(demo_batch)
+
+masked_ids = demo_out["input_ids"][0].tolist()
+labels     = demo_out["labels"][0].tolist()   # -100 = loss 무시, 그 외 = 원본 token id
+mask_id    = tokenizer.mask_token_id
+
+orig_tokens   = tokenizer.convert_ids_to_tokens(demo_ids)
+masked_tokens = tokenizer.convert_ids_to_tokens(masked_ids)
+
+rows = []
+for orig_id, new_id, lab, orig_tok, new_tok in zip(demo_ids, masked_ids, labels, orig_tokens, masked_tokens):
+    if lab == -100:
+        kind = "—"                      # 미선택 (loss 계산 X)
+    elif new_id == mask_id:
+        kind = "[MASK] (80%)"            # 표준 마스킹
+    elif new_id == orig_id:
+        kind = "kept (10%)"              # 선택됐지만 원본 유지
+    else:
+        kind = "random (10%)"            # 다른 token 으로 교체
+    rows.append({
+        "pos": len(rows),
+        "original": orig_tok,
+        "after_collator": new_tok,
+        "label_id": lab,
+        "what_happened": kind,
+    })
+
+demo_df = pd.DataFrame(rows)
+print(demo_df.to_string(index=False))""")
+
+code(r"""# 큰 batch (block 64개 = 약 8000 토큰) 에서 80/10/10 비율이 실제로 맞는지 통계로 확인.
+torch.manual_seed(0)
+N_DEMO = 64
+big_batch = [
+    {"input_ids": lm_train[i]["input_ids"], "attention_mask": [1] * BLOCK_SIZE}
+    for i in range(N_DEMO)
+]
+big_out = mlm_collator(big_batch)
+
+in_ids = big_out["input_ids"]
+lab    = big_out["labels"]
+
+selected = (lab != -100)                                  # loss 계산 대상
+n_total    = lab.numel()
+n_selected = selected.sum().item()
+n_mask     = ((in_ids == mask_id) & selected).sum().item()
+n_kept     = ((in_ids == lab) & selected).sum().item()    # 선택됐지만 원본 유지
+n_random   = n_selected - n_mask - n_kept
+
+print(f"Total tokens:                {n_total:>7,}")
+print(f"Selected for loss (target 15%):    {n_selected:>7,}  ({100 * n_selected / n_total:5.2f}%)")
+print(f"  └─ replaced with [MASK]:   {n_mask:>7,}  ({100 * n_mask / n_selected:5.2f}% of selected)")
+print(f"  └─ replaced with random:   {n_random:>7,}  ({100 * n_random / n_selected:5.2f}% of selected)")
+print(f"  └─ kept as original:       {n_kept:>7,}  ({100 * n_kept / n_selected:5.2f}% of selected)")
+print()
+print("이론치: 선택 15% / 그 중 80-10-10 으로 [MASK]-random-kept. 표본이 작아 약간 흔들리지만 비율 일치.")""")
+
+md(r"""**관전 포인트**
+
+- `what_happened` 가 `—` 인 자리(85%) 는 *입력과 정답이 그대로* — loss 에 기여하지 않습니다. 모델은 *문맥을 만들어 주는* 역할만.
+- `[MASK]` 자리(약 12%) 가 본 task 의 *진짜 학습 신호*. 주변 토큰들의 attention 결과로 *가려진 자리* 의 vocab 분포를 예측.
+- `random` (약 1.5%) 와 `kept` (약 1.5%) 는 *inference 분포 일치* 를 위한 정규화. 추론 시에는 `[MASK]` 가 없으므로 *입력을 절대 신뢰하면 안 된다* 는 신호를 학습에 섞어 줌.
+- 매 epoch · 매 batch 마다 마스킹은 *새로 무작위* — 같은 문장이 epoch 마다 다른 자리에서 가려져 학습됩니다 (data augmentation 효과).""")
+
+code(r"""USE_FP16 = (DEVICE == "cuda")
 MLM_EPOCHS = 1   # Ch 20 의 1-2 epoch 중 짧은 쪽으로 (분류 fine-tune 시간 확보)
 
 mlm_args = TrainingArguments(
@@ -653,120 +742,14 @@ md(r"""**관찰 — *5000배 사전학습 격차* 가 분류 정확도에 어떻
 
 **accuracy 10-15%p 격차** 가 나옵니다. 이게 *사전학습 규모의 가치* — Wikipedia + BookCorpus 의 *일반 영어 지식* 이 DistilBERT 본체에 압축되어 있어, Yelp 분류 같은 *처음 보는 도메인* 에도 빠르게 적응합니다.
 
-> 한편 Ch 21 의 accuracy 가 *random (50%) 보다 훨씬 높다* 는 것도 중요한 결과입니다. 작은 사전학습 + 작은 모델로도 *기본 신호* (긍정/부정 단어들의 통계) 는 잡힙니다. 다음 변형 셀에서 *MLM 없이 random init* 으로 바로 분류했을 때 얼마나 더 떨어지는지 확인.""")
+> 한편 Ch 21 의 accuracy 가 *random (50%) 보다 훨씬 높다* 는 것도 중요한 결과입니다. 작은 사전학습 + 작은 모델로도 *기본 신호* (긍정/부정 단어들의 통계) 는 잡힙니다.""")
 
-# ----- 13. 변형 -----
-md(r"""## 🛠️ 변형 — MLM 사전학습 없이 random init 으로 바로 분류 fine-tune
+# ----- 13. 부록 안내 -----
+md(r"""## 📒 부록 — fair-compute 비교 (사전학습 없이 같은 GPU compute 로 분류만)
 
-*사전학습 자체의 순 효과* 를 측정. 위와 *완전히 같은* 분류 셋업이지만 본체를 *random init 그대로* (MLM 학습 없음) 사용. 두 결과 차이가 *Ch 20 의 MLM 사전학습이 분류 성능에 얼마나 도움 됐는지* 의 측정치.
+*MLM 사전학습 없이 random init 으로 바로 분류 fine-tune*, 그리고 *같은 GPU compute budget (MLM 시간 + fine-tune 시간 합)* 으로 *분류 fine-tune 만 더 길게* 돌렸을 때 어떻게 되는지는 부록 노트북 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 에서 다룹니다.
 
-| 셋업 | 본체 출발점 | 비교 |
-|---|---|---|
-| **메인** (위) | Ch 20 패턴 MLM 1 epoch 학습 → 본체 복사 | *사전학습 있음* |
-| **변형** (이 셀) | random init 그대로 (`BertForSequenceClassification(config)`) | *사전학습 없음* — pure baseline |
-
-같은 데이터·같은 hyperparams·같은 seed.""")
-
-code(r"""# 같은 config 의 *fresh* random init 분류 모델
-random_cls_config = BertConfig(
-    vocab_size=tokenizer.vocab_size,
-    hidden_size=HIDDEN_SIZE,
-    num_hidden_layers=NUM_HIDDEN_LAYERS,
-    num_attention_heads=NUM_ATTENTION_HEADS,
-    intermediate_size=INTERMEDIATE_SIZE,
-    max_position_embeddings=MAX_POS_EMBED,
-    pad_token_id=tokenizer.pad_token_id,
-    num_labels=2,
-    problem_type="single_label_classification",
-    id2label={0: "negative", 1: "positive"},
-    label2id={"negative": 0, "positive": 1},
-)
-random_cls_model = BertForSequenceClassification(random_cls_config)
-
-random_args = TrainingArguments(
-    output_dir="./ch21_random_output",
-    num_train_epochs=2,
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=32,
-    learning_rate=2e-5,
-    fp16=USE_FP16,
-    eval_strategy="epoch",
-    logging_steps=50,
-    save_strategy="no",
-    report_to="none",
-    seed=SEED,
-)
-
-random_trainer = Trainer(
-    model=random_cls_model,
-    args=random_args,
-    train_dataset=cls_train,
-    eval_dataset=cls_eval,
-    processing_class=tokenizer,
-    compute_metrics=compute_metrics,
-)
-
-t0 = time.time()
-random_result = random_trainer.train()
-random_elapsed = time.time() - t0
-print(f"\nRandom init classification done in {random_elapsed/60:.1f} min")
-print(f"mean train loss: {random_result.training_loss:.4f}")""")
-
-code(r"""random_eval_metrics = random_trainer.evaluate()
-print("Random init small BERT (no MLM pretraining) — eval:")
-for k, v in random_eval_metrics.items():
-    if k.startswith("eval_") and isinstance(v, float):
-        print(f"  {k:>20}: {v:.4f}")""")
-
-code(r"""# 세 결과 한꺼번에 비교
-random_metrics = {k.replace("eval_", ""): v for k, v in random_eval_metrics.items()
-                  if k.startswith("eval_") and isinstance(v, float)
-                  and k.replace("eval_", "") in CH10_REFERENCE}
-
-three_way = pd.DataFrame({
-    "metric":              list(CH10_REFERENCE.keys()),
-    "Ch10 DistilBERT (ref)": [CH10_REFERENCE[k] for k in CH10_REFERENCE.keys()],
-    "Ch21 small BERT + MLM": [ch21_metrics.get(k, float("nan")) for k in CH10_REFERENCE.keys()],
-    "Ch21 random init":    [random_metrics.get(k, float("nan")) for k in CH10_REFERENCE.keys()],
-})
-print("Three-way comparison — pretraining effect")
-print(three_way.round(4).to_string(index=False))""")
-
-code(r"""# 세 모델 bar chart
-sns.set_theme(style="whitegrid", context="talk")
-plot_df3 = three_way.melt(
-    id_vars=["metric"],
-    value_vars=["Ch10 DistilBERT (ref)", "Ch21 small BERT + MLM", "Ch21 random init"],
-    var_name="model", value_name="score",
-)
-
-fig, ax = plt.subplots(figsize=(10, 5.5))
-sns.barplot(
-    data=plot_df3, x="metric", y="score", hue="model",
-    palette={
-        "Ch10 DistilBERT (ref)": "#4878D0",
-        "Ch21 small BERT + MLM": "#EE854A",
-        "Ch21 random init":    "#999999",
-    },
-    ax=ax,
-)
-ax.set_ylim(0, 1.05)
-ax.set_title("Pretraining effect — DistilBERT vs small BERT (MLM) vs random init")
-ax.set_xlabel("metric")
-ax.set_ylabel("score")
-ax.legend(loc="lower right", fontsize=10)
-plt.tight_layout()
-plt.show()""")
-
-md(r"""**해석 — 세 셋업의 정렬**
-
-1. **Ch 10 DistilBERT** — 대규모 사전학습. 최고 성능.
-2. **Ch 21 small BERT + MLM** — 작은 사전학습 (5K 문장, 1 epoch). 중간 성능. *random 보다 분명히 나음*.
-3. **Ch 21 random init** — 사전학습 없음. 최저 성능. *작은 모델 + 작은 데이터로 처음부터 분류* 는 일반적으로 *수렴이 느림* 또는 *수렴해도 낮은 정확도*.
-
-`(2) - (3)` 차이가 *Ch 20 의 MLM 사전학습이 만든 가치*. `(1) - (2)` 차이가 *대규모 vs 작은 사전학습의 격차*. **두 격차가 비슷한 크기로 나오면 "데이터 규모 5000배 격차" 와 "사전학습 유무" 가 비슷한 영향력** 이라는 메시지.
-
-> **주의 — 작은 모델 + 작은 데이터의 분산** — Ch 21 의 두 셋업 (MLM vs random) 사이 격차가 *seed 에 따라 변동* 이 큽니다. 정확한 비교를 위해선 seed 3-5개 평균이 더 신뢰 가능. 이번 챕터는 *방향성* 만 보는 데 의의.""")
+> 부록의 핵심 질문 — *"사전학습에 쓰는 compute 를 그냥 fine-tune 에 더 쓰면 안 되나?"* 에 대한 정량 답. 작은 모델·작은 데이터 환경에서 사전학습이 *compute 등가물 보다도* 가치 있는지 확인.""")
 
 # ----- 14. 등장한 라이브러리 -----
 md(r"""## 📦 이번 챕터에 등장한 라이브러리·함수
@@ -940,7 +923,7 @@ README = """# 21_en_bert_classify — 작은 BERT 분류 (영어 Yelp 이진, sc
 ## 한 줄 목표
 Phase 3 의 세 번째 챕터. Ch 20 에서 *작은 BERT 를 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 fine-tune**. Ch 10 (DistilBERT, 약 66M params, 수십억 토큰 사전학습) 과 같은 Yelp 이진 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, Yelp 5K 문장 MLM) 를 붙여 두 결과를 나란히 비교 — *사전학습 규모* 가 downstream 정확도에 얼마나 차이를 만드는지 정량으로.
 
-self-contained 노트북: Ch 20 의 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 분류 fine-tune → Ch 10 결과와 비교. *MLM 없이 random init 으로 바로 분류* 하는 baseline 도 변형 셀에서 함께 학습해 *사전학습 자체의 순 효과* 도 분리.
+self-contained 노트북: Ch 20 의 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 분류 fine-tune → Ch 10 결과와 비교. 본문은 *사전학습 → 분류 fine-tune* 메인 흐름에 집중. *사전학습 없이 같은 GPU compute 로 분류 fine-tune* 만 했을 때의 fair-compute 비교는 부록 노트북 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 에서 분리해 다룹니다.
 
 ## 다루는 핵심 개념
 - `BertForMaskedLM` → `BertForSequenceClassification` 헤드 교체 — 본체 (`embeddings + encoder + pooler`) 는 그대로, MLM head 떼고 분류 head (`Linear(256, 2)`) 부착
@@ -984,7 +967,7 @@ Google Colab T4 GPU (fp16). 약 25분 (MLM 1 epoch 약 10-12분 + 분류 fine-tu
 | 분류 fine-tune 셋업 | (같음 — 5K/1K, batch 16, lr 2e-5, 2 epoch, fp16) | | 본체 외 통제 |
 | 기대 accuracy | 약 92-95% | 약 75-85% | 비교는 실측치로 |
 
-격차가 *사전학습 규모의 가치* 를 정량으로 보여줍니다. 동시에 *작은 사전학습도 random init 보다는 분명히 낫다* 는 게 변형 셀의 결과.
+격차가 *사전학습 규모의 가치* 를 정량으로 보여줍니다. *작은 사전학습도 random init 보다는 분명히 낫다* 는 것, 그리고 *fair-compute (사전학습 compute 를 fine-tune 으로 옮겨도)* 격차가 메워지지 않는다는 것은 부록 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 참조.
 
 ## 다음 챕터
 [22_ko_bert_pretrain](../22_ko_bert_pretrain/) — Ch 20 의 영어 사전학습 패턴을 한국어로 재현. 같은 작은 BertConfig + `klue/bert-base` 토크나이저 + NSMC text MLM. Ch 22 → Ch 23 (한국어 분류) 가 이번 챕터 → Ch 21 (영어) 와 *대칭*.

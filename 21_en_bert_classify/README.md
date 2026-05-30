@@ -5,7 +5,7 @@
 ## 한 줄 목표
 Phase 3 의 세 번째 챕터. Ch 20 에서 *작은 BERT 를 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 fine-tune**. Ch 10 (DistilBERT, 약 66M params, 수십억 토큰 사전학습) 과 같은 Yelp 이진 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, Yelp 5K 문장 MLM) 를 붙여 두 결과를 나란히 비교 — *사전학습 규모* 가 downstream 정확도에 얼마나 차이를 만드는지 정량으로.
 
-self-contained 노트북: Ch 20 의 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 분류 fine-tune → Ch 10 결과와 비교. *MLM 없이 random init 으로 바로 분류* 하는 baseline 도 변형 셀에서 함께 학습해 *사전학습 자체의 순 효과* 도 분리.
+self-contained 노트북: Ch 20 의 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 분류 fine-tune → Ch 10 결과와 비교. 본문은 *사전학습 → 분류 fine-tune* 메인 흐름에 집중. *사전학습 없이 같은 GPU compute 로 분류 fine-tune* 만 했을 때의 fair-compute 비교는 부록 노트북 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 에서 분리해 다룹니다.
 
 ## 다루는 핵심 개념
 - `BertForMaskedLM` → `BertForSequenceClassification` 헤드 교체 — 본체 (`embeddings + encoder + pooler`) 는 그대로, MLM head 떼고 분류 head (`Linear(256, 2)`) 부착
@@ -49,7 +49,7 @@ Google Colab T4 GPU (fp16). 약 25분 (MLM 1 epoch 약 10-12분 + 분류 fine-tu
 | 분류 fine-tune 셋업 | (같음 — 5K/1K, batch 16, lr 2e-5, 2 epoch, fp16) | | 본체 외 통제 |
 | 기대 accuracy | 약 92-95% | 약 75-85% | 비교는 실측치로 |
 
-격차가 *사전학습 규모의 가치* 를 정량으로 보여줍니다. 동시에 *작은 사전학습도 random init 보다는 분명히 낫다* 는 게 변형 셀의 결과.
+격차가 *사전학습 규모의 가치* 를 정량으로 보여줍니다. *작은 사전학습도 random init 보다는 분명히 낫다* 는 것, 그리고 *fair-compute (사전학습 compute 를 fine-tune 으로 옮겨도)* 격차가 메워지지 않는다는 것은 부록 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 참조.
 
 ## 다음 챕터
 [22_ko_bert_pretrain](../22_ko_bert_pretrain/) — Ch 20 의 영어 사전학습 패턴을 한국어로 재현. 같은 작은 BertConfig + `klue/bert-base` 토크나이저 + NSMC text MLM. Ch 22 → Ch 23 (한국어 분류) 가 이번 챕터 → Ch 21 (영어) 와 *대칭*.
