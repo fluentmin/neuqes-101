@@ -149,7 +149,7 @@ Ch 8에서 익힌 `datasets` + 토크나이저 패턴을 그대로 적용합니�
 # ----- 9. 데이터 로드 + 토큰화 -----
 code(r"""tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
-ds = load_dataset("yelp_review_full")
+ds = load_dataset("Yelp/yelp_review_full")
 
 # train 4,000 + eval 1,000 — T4 30분 안에 학습 끝나도록 작게
 train_ds = ds["train"].shuffle(seed=42).select(range(4000))

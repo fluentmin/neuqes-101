@@ -90,7 +90,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
-ds = load_dataset("yelp_review_full")
+ds = load_dataset("Yelp/yelp_review_full")
 train_ds = ds["train"].shuffle(seed=42).select(range(1000))
 eval_ds  = ds["test"].shuffle(seed=42).select(range(200))
 

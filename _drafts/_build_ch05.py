@@ -121,7 +121,7 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 
 plt.rcParams["axes.unicode_minus"] = False
 
-dataset = load_dataset("yelp_review_full")
+dataset = load_dataset("Yelp/yelp_review_full")
 SAMPLE_SIZE = 5000
 ds = dataset["train"].shuffle(seed=42).select(range(SAMPLE_SIZE))
 df = ds.to_pandas()

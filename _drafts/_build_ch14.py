@@ -286,7 +286,7 @@ print(f"K (aspects): {K}, aspects: {ASPECTS}")""")
 
 code(r"""tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
-ds = load_dataset("yelp_review_full")
+ds = load_dataset("Yelp/yelp_review_full")
 train_full = ds["train"].shuffle(seed=42).select(range(5000))
 eval_full  = ds["test"].shuffle(seed=42).select(range(1000))
 

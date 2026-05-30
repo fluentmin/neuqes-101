@@ -125,7 +125,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
-ds = load_dataset("yelp_review_full")
+ds = load_dataset("Yelp/yelp_review_full")
 # HPO는 trial을 여러 번 돌리므로 데이터를 더 작게 (1 trial이 1-2분에 끝나도록)
 train_ds = ds["train"].shuffle(seed=42).select(range(800))
 eval_ds  = ds["test"].shuffle(seed=42).select(range(200))

@@ -118,12 +118,12 @@ print("\nNo model weights loaded in this chapter; VRAM stays roughly flat.")""")
 # ----- 7. Yelp 로드 도입 -----
 md(r"""## 1. 🚀 `datasets` 로 Yelp 로드
 
-`load_dataset("yelp_review_full")` 한 줄로 Hugging Face Hub에서 65만 건 학습 데이터를 받아옵니다 (50K test). 처음 받으면 ~150MB 다운로드 + 디스크 캐시.
+`load_dataset("Yelp/yelp_review_full")` 한 줄로 Hugging Face Hub에서 65만 건 학습 데이터를 받아옵니다 (50K test). 처음 받으면 ~150MB 다운로드 + 디스크 캐시.
 
 **주목할 점**: `datasets` 는 Apache Arrow 형식으로 디스크에 저장하고 메모리맵으로 접근합니다. 65만 건이 한꺼번에 RAM에 올라가는 게 아니라, 인덱싱하는 시점에만 디스크에서 필요한 부분을 읽어 옵니다. 그래서 데이터셋이 아무리 커도 RAM 사용량에는 거의 영향이 없습니다.""")
 
 # ----- 8. load_dataset -----
-code(r"""ds = load_dataset("yelp_review_full")
+code(r"""ds = load_dataset("Yelp/yelp_review_full")
 print(ds)""")
 
 # ----- 9. 데이터 구조 -----
@@ -757,7 +757,7 @@ import psutil
 process = psutil.Process()
 mem_before = process.memory_info().rss / 1024**2
 
-ds = load_dataset("yelp_review_full")  # 65만 건
+ds = load_dataset("Yelp/yelp_review_full")  # 65만 건
 
 mem_after = process.memory_info().rss / 1024**2
 print(f"메모리 증가: {mem_after - mem_before:.1f} MB  (수십 MB 정도)")

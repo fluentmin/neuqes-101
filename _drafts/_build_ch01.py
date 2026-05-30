@@ -105,7 +105,7 @@ md(r"""## 🚀 실습: Yelp 리뷰 데이터 살펴보기
 `yelp_review_full`은 Yelp 식당 리뷰 65만 건에 1-5점 별점이 달린 데이터셋입니다 (라벨은 0-4로 저장됨). 학습 흐름을 가볍게 유지하기 위해 **5,000건만 무작위 샘플링** 합니다.""")
 
 # ----- 8. 데이터 로드 -----
-code(r"""dataset = load_dataset("yelp_review_full")
+code(r"""dataset = load_dataset("Yelp/yelp_review_full")
 print(dataset)""")
 
 # ----- 9. 샘플링 -----
@@ -245,7 +245,7 @@ md(r"""## ❓ FAQ
 ds = dataset["train"].shuffle(seed=42).select(range(5000))
 
 # (b) streaming 모드 — 전체를 다운로드하지 않고 한 줄씩 받음
-stream = load_dataset("yelp_review_full", split="train", streaming=True)
+stream = load_dataset("Yelp/yelp_review_full", split="train", streaming=True)
 for i, ex in enumerate(stream):
     if i >= 5000: break
     ...

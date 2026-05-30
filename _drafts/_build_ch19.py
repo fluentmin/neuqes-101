@@ -197,7 +197,7 @@ md(r"""## 1. 📥 영어 코퍼스 — Yelp text 5,000건
 code(r"""SEED = 42
 N_EN = 5000
 
-ds_yelp = load_dataset("yelp_polarity", split=f"train[:{N_EN}]")
+ds_yelp = load_dataset("fancyzhx/yelp_polarity", split=f"train[:{N_EN}]")
 texts_en = list(ds_yelp["text"])
 print(f"english corpus: {len(texts_en):,} sentences")
 print(f"first sample (truncated):\n  {texts_en[0][:200]}...")
@@ -381,7 +381,7 @@ md(r"""## 5. 📊 비교 시각화
 eval 코퍼스 (별도 sample 1,000 문장) 에 4 토크나이저를 적용해 *문장당 토큰 수* 분포를 비교.""")
 
 code(r"""N_EVAL = 1000
-eval_en = list(load_dataset("yelp_polarity", split=f"train[{N_EN}:{N_EN + N_EVAL}]")["text"])
+eval_en = list(load_dataset("fancyzhx/yelp_polarity", split=f"train[{N_EN}:{N_EN + N_EVAL}]")["text"])
 eval_ko = df_nsmc["document"].sample(n=N_EVAL, random_state=SEED + 1).tolist()
 
 

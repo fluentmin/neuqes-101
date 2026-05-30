@@ -117,7 +117,7 @@ N_TRAIN, N_EVAL = 4000, 1000
 tokenizer = AutoTokenizer.from_pretrained(MODEL)
 
 def load_split(split, n):
-    raw = load_dataset("yelp_polarity", split=split).shuffle(seed=42).select(range(n))
+    raw = load_dataset("fancyzhx/yelp_polarity", split=split).shuffle(seed=42).select(range(n))
     enc = raw.map(
         lambda b: tokenizer(b["text"], truncation=True, max_length=MAX_LEN, padding="max_length"),
         batched=True, remove_columns=raw.column_names,
