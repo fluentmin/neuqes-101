@@ -553,6 +553,67 @@ print(f"fp16:          {USE_FP16}")
 print(f"train blocks:  {len(lm_train):,}")
 print(f"steps / epoch: {len(lm_train) // training_args.per_device_train_batch_size}")""")
 
+md(r"""### 🔬 학습 직전 baseline — 사전학습 전·후 비교 준비
+
+`trainer.train()` 을 호출하기 *전* 의 모델 상태 (`BertForMaskedLM(config)` random init) 로 두 가지를 측정해 둡니다 — *학습 후와 나란히* 보면 *사전학습이 본체에 무엇을 새겼는지* 가 한 화면에 드러납니다.
+
+1. **`eval_loss` / `perplexity`** — random init 이므로 vocab 32,000 균등 분포 (`ln V` ≈ 10.37) 근처가 기대치.
+2. **같은 문장의 `[MASK]` top-5** — random init 의 logits 는 거의 균등이라 *문맥과 무관한 토큰* (자주 등장하는 조사·어미·특수문자 등) 이 뽑힙니다.
+
+학습이 끝난 뒤 7번 셀에서 *완전히 같은 문장* 으로 다시 측정해 *직접 비교* 합니다.""")
+
+code(r"""# predict_mask 함수 정의 — 학습 전·후 두 번 호출하므로 먼저 정의
+def predict_mask(text, top_k=5):
+    '''text 안의 [MASK] 자리 top-k 토큰과 확률 반환.'''
+    model.eval()
+    inputs = tokenizer(text, return_tensors="pt").to(model.device)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    logits = outputs.logits[0]
+    mask_positions = (inputs["input_ids"][0] == tokenizer.mask_token_id).nonzero(as_tuple=True)[0]
+    if len(mask_positions) == 0:
+        return None
+    results = []
+    for pos in mask_positions:
+        probs = torch.softmax(logits[pos], dim=-1)
+        top_p, top_i = probs.topk(top_k)
+        candidates = [(tokenizer.convert_ids_to_tokens(int(i)), float(p))
+                       for p, i in zip(top_p, top_i)]
+        results.append((int(pos), candidates))
+    return results
+
+
+# 검증용 한국어 문장 — 학습 전·후 동일하게 사용
+test_sentences = [
+    f"이 영화 정말 {tokenizer.mask_token}.",
+    f"배우 연기가 {tokenizer.mask_token} 좋았어요.",
+    f"스토리는 {tokenizer.mask_token} 별로였어요.",
+    f"다시는 안 {tokenizer.mask_token} 영화입니다.",
+]
+
+# ---- 사전학습 전 eval_loss / perplexity ----
+pre_eval = trainer.evaluate()
+pre_eval_loss = pre_eval["eval_loss"]
+pre_eval_ppl  = math.exp(pre_eval_loss)
+random_baseline_loss = math.log(tokenizer.vocab_size)
+
+print("=" * 78)
+print("BEFORE pretraining  (random init body)")
+print("=" * 78)
+print(f"  eval_loss       : {pre_eval_loss:.4f}   (random baseline ln V = {random_baseline_loss:.4f})")
+print(f"  eval_perplexity : {pre_eval_ppl:,.0f}     (random baseline V    = {tokenizer.vocab_size:,})")
+print()
+
+# ---- 사전학습 전 [MASK] top-5 ----
+pre_top5_records = []
+for sent in test_sentences:
+    results = predict_mask(sent, top_k=5)
+    top5_tokens = [tok for tok, _ in results[0][1]] if results else []
+    pre_top5_records.append({"sentence": sent, "top5_before": top5_tokens})
+    print(f"input: {sent}")
+    print(f"  top-5 before pretraining: {top5_tokens}")
+    print()""")
+
 code(r"""t0 = time.time()
 train_result = trainer.train()
 elapsed = time.time() - t0
@@ -605,62 +666,104 @@ print(f"  perplexity (exp loss):  {eval_ppl:.2f}")
 print(f"  random baseline PPL:    {tokenizer.vocab_size:,}  (uniform over vocab)")
 print(f"  -> model narrowed vocab to approx. {eval_ppl:.0f} candidates per masked position")""")
 
-# ----- 14. 한국어 토큰 표상 살펴보기 -----
-md(r"""## 7. 🔬 한국어 토큰 표상 살펴보기 — [MASK] top-5 후보
+# ----- 14. 사전학습 전·후 비교 -----
+md(r"""## 7. 🔬 사전학습 전·후 비교 — random init 본체 vs 2 epoch 학습 후
 
-학습된 작은 BERT 에 직접 [MASK] 가 들어간 한국어 문장을 넣어 *vocab 약 32,000 중 어떤 토큰을 가장 그럴듯하다고 보는지* 확인. 학습이 잘 됐다면 문맥에 맞는 한국어 단어가 top-5 에 들어옴.""")
+학습 직전 (5-2 마지막 셀에서 측정해 둔 `pre_eval_loss` / `pre_top5_records`) 와 *완전히 같은 문장·같은 평가 셋* 에 학습 후 모델을 적용해 두 결과를 나란히 봅니다. *사전학습이 본체에 무엇을 새겼는가* 의 가장 직접적인 증거.""")
 
-code(r"""def predict_mask(text, top_k=5):
-    '''text 에 [MASK] 토큰이 들어있어야 함. mask 위치의 top-k 예측을 반환.'''
-    model.eval()
-    inputs = tokenizer(text, return_tensors="pt").to(model.device)
-    with torch.no_grad():
-        outputs = model(**inputs)
-    logits = outputs.logits[0]  # (seq_len, vocab)
+code(r"""# ---- 사전학습 후 eval_loss / perplexity ----
+post_eval = trainer.evaluate()
+post_eval_loss = post_eval["eval_loss"]
+post_eval_ppl  = math.exp(post_eval_loss)
 
-    mask_positions = (inputs["input_ids"][0] == tokenizer.mask_token_id).nonzero(as_tuple=True)[0]
-    if len(mask_positions) == 0:
-        return None
+print("=" * 78)
+print("AFTER pretraining  (2 epoch MLM)")
+print("=" * 78)
+print(f"  eval_loss       : {post_eval_loss:.4f}   (before: {pre_eval_loss:.4f})")
+print(f"  eval_perplexity : {post_eval_ppl:,.2f}        (before: {pre_eval_ppl:,.0f})")
+print(f"  -> narrowed vocab to approx. {post_eval_ppl:.0f} candidates per masked position")
+print()
 
-    results = []
-    for pos in mask_positions:
-        probs = torch.softmax(logits[pos], dim=-1)
-        top_p, top_i = probs.topk(top_k)
-        candidates = [(tokenizer.convert_ids_to_tokens(int(i)), float(p))
-                       for p, i in zip(top_p, top_i)]
-        results.append((int(pos), candidates))
-    return results
-
-
-# NSMC 도메인스러운 한국어 문장에 [MASK] 끼우기
-test_sentences = [
-    f"이 영화 정말 {tokenizer.mask_token}.",
-    f"배우 연기가 {tokenizer.mask_token} 좋았어요.",
-    f"스토리는 {tokenizer.mask_token} 별로였어요.",
-    f"다시는 안 {tokenizer.mask_token} 영화입니다.",
-]
-
+# ---- 사전학습 후 [MASK] top-5 ----
+post_top5_records = []
 for sent in test_sentences:
-    print("=" * 78)
-    print(f"input: {sent}")
     results = predict_mask(sent, top_k=5)
-    if results is None:
-        print("  (no [MASK] found)")
-        continue
-    for pos, candidates in results:
-        print(f"  top-5 at position {pos}:")
-        for tok, prob in candidates:
-            bar = "#" * int(prob * 40)
-            print(f"    {tok:>15s}  {prob:.4f}  {bar}")
+    top5_tokens = [tok for tok, _ in results[0][1]] if results else []
+    post_top5_records.append({"sentence": sent, "top5_after": top5_tokens})
+    print(f"input: {sent}")
+    print(f"  top-5 after pretraining: {top5_tokens}")
     print()""")
 
-md(r"""**해석 가이드**
+md(r"""### 7-1. eval_loss / perplexity — 수치 비교
 
-- *잘 학습된 작은 BERT*: 문맥에 맞는 *한국어 단어* 가 top-5 안에 들어옴 (예: `"이 영화 정말 [MASK]."` → `재미있`, `좋`, `최고`, `별로`, `슬프` 같은 *감성 형용사·서술어*).
-- *학습 부족*: top-5 가 *조사·어미·구두점* 으로 가득 (예: `##요`, `##어`, `.`, `는`) — 모델이 *자주 등장하는 통계적 토큰* 에만 수렴한 상태. 학습 step 을 더 늘리거나 데이터를 더 줘야 함.
-- *vocab 폭주*: 같은 토큰이 여러 자리에 압도적 확률로 등장 — Ch 20 의 영어 패턴과 같은 진단.
+두 측정치를 한 표·한 막대 그래프로.""")
 
-이번 챕터의 작은 BERT 는 *NSMC 5K 문장 × 2 epoch* 라 표준 `klue/bert-base` 수준의 답을 기대할 순 없습니다. 그러나 *완전 무관 → 영화 평가 도메인 토큰* 으로 좁혀지는 것 만으로도 사전학습 효과의 *방향성* 이 보입니다. Ch 23 에서 NSMC 이진 분류 fine-tune 할 때 진짜 비교 — *우리가 직접 만든 작은 한국어 BERT* vs *Ch 15 의 `klue/bert-base` 본체* (110M, 대규모 사전학습).""")
+code(r"""# 사전·사후 수치 비교 표
+metric_compare = pd.DataFrame({
+    "metric":           ["eval_loss", "eval_perplexity"],
+    "before (random)":  [pre_eval_loss,  pre_eval_ppl],
+    "after (2 epoch)":  [post_eval_loss, post_eval_ppl],
+    "random baseline":  [random_baseline_loss, float(tokenizer.vocab_size)],
+})
+print("Before vs After — eval metrics")
+print(metric_compare.round(4).to_string(index=False))""")
+
+code(r"""# 막대 그래프 두 장 (eval_loss / perplexity)
+sns.set_theme(style="whitegrid", context="talk")
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+loss_values = [pre_eval_loss, post_eval_loss]
+loss_labels = ["before (random)", "after (2 epoch)"]
+axes[0].bar(loss_labels, loss_values, color=["#999999", "#EE854A"])
+axes[0].axhline(random_baseline_loss, color="black", lw=1.0, ls=":",
+                label=f"random baseline ln V = {random_baseline_loss:.2f}")
+axes[0].set_ylabel("eval_loss")
+axes[0].set_title("MLM eval_loss")
+axes[0].legend(loc="upper right", fontsize=10)
+
+ppl_values = [pre_eval_ppl, post_eval_ppl]
+axes[1].bar(loss_labels, ppl_values, color=["#999999", "#EE854A"])
+axes[1].set_yscale("log")
+axes[1].axhline(tokenizer.vocab_size, color="black", lw=1.0, ls=":",
+                label=f"random baseline V = {tokenizer.vocab_size:,}")
+axes[1].set_ylabel("perplexity (log scale)")
+axes[1].set_title("MLM perplexity")
+axes[1].legend(loc="upper right", fontsize=10)
+
+plt.tight_layout()
+plt.show()""")
+
+md(r"""### 7-2. [MASK] top-5 — 토큰 비교
+
+같은 한국어 문장 4개의 [MASK] 자리 top-5 후보를 *사전학습 전 → 후* 로 나란히.""")
+
+code(r"""# 사전·사후 top-5 비교 표
+rows = []
+for pre, post in zip(pre_top5_records, post_top5_records):
+    rows.append({
+        "sentence":     pre["sentence"],
+        "top5_before":  ", ".join(pre["top5_before"]),
+        "top5_after":   ", ".join(post["top5_after"]),
+    })
+
+top5_compare = pd.DataFrame(rows)
+print("Before vs After — top-5 candidates at [MASK]")
+print()
+for _, row in top5_compare.iterrows():
+    print(f"input: {row['sentence']}")
+    print(f"  before: {row['top5_before']}")
+    print(f"  after : {row['top5_after']}")
+    print()""")
+
+md(r"""**해석 가이드 — 사전학습이 만든 차이**
+
+- **`eval_loss`**: random baseline `ln V ≈ 10.37` 에서 약 5-7 부근까지 떨어졌으면 본체가 *언어 구조 일부* 를 학습. *완전한* 한국어 표상은 아니어도 `klue/bert-base` 가 학습한 것의 *방향* 은 맞춤.
+- **`perplexity`**: 32,000 (vocab 전체) 에서 수십-수백 부근으로. *마스크 자리마다 후보를 약 50-500 개로 좁힌 상태* 라는 직관적 해석.
+- **top-5 토큰**:
+  - *before*: 자주 등장하는 *조사·어미·특수문자* (`##요`, `##어`, `.`, `는`, `이` 등) — random init 이지만 logits 가 미세하게 흔들려 *통계적 빈도* 높은 토큰만 뽑힘.
+  - *after*: 문맥에 가까운 *내용어* 가 섞이기 시작 (`재미있`, `좋`, `최고`, `별로`, `슬프` 같은 *감성 형용사·서술어* — NSMC 도메인 토큰). 완전하진 않지만 *방향성* 이 분명.
+
+이번 챕터의 작은 BERT 는 *NSMC 5K 문장 × 2 epoch* 라 표준 `klue/bert-base` 수준의 답을 기대할 순 없습니다. 그러나 *완전 무관 → 영화 평가 도메인 토큰* 으로 좁혀지는 것 만으로도 *사전학습 효과의 방향* 이 보입니다. Ch 23 에서 NSMC 이진 분류 fine-tune 할 때 진짜 비교 — *우리가 직접 만든 작은 한국어 BERT* vs *Ch 15 의 `klue/bert-base` 본체* (약 110M, 대규모 사전학습).""")
 
 # ----- 15. 저장 -----
 md(r"""## 8. 💾 모델 저장 — Ch 23 에서 재사용
