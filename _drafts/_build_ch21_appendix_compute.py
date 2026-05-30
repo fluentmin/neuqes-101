@@ -5,14 +5,18 @@
 사전학습 효과가 분명히 드러나도록 합니다. 그렇게 쓴 GPU 시간을 *분류 fine-tune 에 더 쓰면*
 효과를 메울 수 있는지를 정량으로 비교합니다.
 
+MLM 사전학습 코퍼스는 *일반 도메인* Wikitext-103 (메인과 동일 패턴), 분류는 Yelp
+이진 그대로. *일반 위키 사전학습 → Yelp 분류 transfer* 의 fair-compute 비교가
+이 부록의 측정 대상.
+
 세 셋업:
-- 🅰️ A — MLM 3 epoch + 분류 fine-tune 2 epoch (부록 기준선, 메인의 1 → 3)
-- 🅱️ B — 사전학습 없이 random init 분류 모델, T_A_total 만큼 분류 fine-tune 만
+- 🅰️ A — MLM 3 epoch (Wikitext-103) + Yelp 분류 fine-tune 2 epoch (부록 기준선, 메인의 1 → 3)
+- 🅱️ B — 사전학습 없이 random init 분류 모델, T_A_total 만큼 Yelp 분류 fine-tune 만
 - 🅲  C — 사전학습 없이 random init 분류 모델, 같은 2 epoch 만 (단순 baseline)
 
 부록 빌더는 메인 빌더 `_build_ch21.py` 와 같은 패턴 (cells / _cid / md / code / NOTEBOOK
-json dump) 을 따릅니다. T4 30분 룰을 지키기 위해 데이터를 줄여 (N_TRAIN=2000,
-N_EVAL=400) 세 셋업이 한 노트북 안에 들어가도록 했습니다.
+json dump) 을 따릅니다. T4 30분 룰을 지키기 위해 데이터를 줄여 (N_TRAIN_TEXT=2000,
+N_EVAL_TEXT=400) 세 셋업이 한 노트북 안에 들어가도록 했습니다.
 """
 import json
 from pathlib import Path
@@ -52,27 +56,27 @@ def code(text: str):
 
 
 # ----- 1. 제목 + 부록 안내 -----
-md(r"""# Chapter 21 부록 — fair-compute 비교 (사전학습 vs 더 긴 fine-tune)
+md(r"""# Chapter 21 부록 — fair-compute 비교 (일반 도메인 사전학습 vs 더 긴 분류 fine-tune)
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/21_en_bert_classify/appendix_compute_budget.ipynb)
 
-> **부록 한 줄 질문** — *"MLM 사전학습에 쓰는 GPU 시간을 그냥 분류 fine-tune 에 더 쓰면 사전학습 효과를 메울 수 있나요?"*
+> **부록 한 줄 질문** — *"일반 도메인 (Wikitext-103) MLM 사전학습에 쓰는 GPU 시간을 그냥 Yelp 분류 fine-tune 에 더 쓰면 사전학습 효과를 메울 수 있나요?"*
 
-메인 챕터 ([`21_en_bert_classify.ipynb`](./21_en_bert_classify.ipynb)) 는 *작은 BERT 를 MLM 으로 짧게 사전학습 한 뒤 분류 fine-tune* 한 결과를 Ch 10 (DistilBERT 대규모 사전학습) 과 비교했습니다. 이 부록은 그 결과에 *한 비교* 를 더합니다 — **같은 GPU wall-clock budget** 으로 *사전학습 없이* 분류 fine-tune 만 더 길게 돌렸을 때 어떻게 되는지.
+메인 챕터 ([`21_en_bert_classify.ipynb`](./21_en_bert_classify.ipynb)) 는 *작은 BERT 를 일반 도메인 위키로 짧게 사전학습 한 뒤 Yelp 분류 fine-tune* 한 결과를 Ch 10 (DistilBERT 대규모 일반 위키 사전학습) 과 비교했습니다. 이 부록은 그 결과에 *한 비교* 를 더합니다 — **같은 GPU wall-clock budget** 으로 *사전학습 없이* 분류 fine-tune 만 더 길게 돌렸을 때 어떻게 되는지.
 
 세 셋업을 한 노트북 안에서 같은 데이터·같은 본체 구조에 *조건 하나만* 바꿔 비교합니다.
 
-| 셋업 | 사전학습 | 분류 fine-tune | 의도 |
+| 셋업 | 사전학습 (Wikitext-103) | 분류 fine-tune (Yelp) | 의도 |
 |---|---|---|---|
-| 🅰️ **A** | MLM 3 epoch | 2 epoch | 메인의 1 → 3 epoch (사전학습 효과를 충분히, 기준선) |
+| 🅰️ **A** | MLM 3 epoch | 2 epoch | 메인의 1 → 3 epoch (일반 도메인 사전학습 효과를 충분히, 기준선) |
 | 🅱️ **B** | 없음 (random init) | **A 의 총 시간만큼** epoch 늘림 | **fair-compute** 비교 — 같은 GPU 예산을 fine-tune 에 몰아주면? |
 | 🅲 **C** | 없음 (random init) | 2 epoch (A 와 동일) | *순수 random init baseline* — 사전학습의 *순* 효과 |
 
-A vs C 는 *사전학습의 순 효과*, A vs B 는 *사전학습 vs compute 등가 fine-tune* 비교.
+A vs C 는 *사전학습의 순 효과*, A vs B 는 *일반 도메인 사전학습 vs compute 등가 task-specific fine-tune* 비교.
 
 **환경**: Google Colab T4 GPU 필수. 약 25-30분.
 
-**메인 챕터와의 관계** — 메인 챕터는 분류 시간 확보를 위해 MLM 을 1 epoch 로 줄였지만, 부록은 fair-compute 비교가 핵심이라 **MLM 1 → 3 epoch** 로 늘려 사전학습 효과가 분명히 드러나도록 했습니다. 그 대신 데이터를 메인의 5K/1K → 부록의 `N_TRAIN=2000, N_EVAL=400` 으로 줄여 *부록 하나* 의 T4 30분 안에 세 셋업이 모두 들어가도록 했습니다. 부록은 *부록만으로 self-contained* — 메인 노트북을 먼저 돌릴 필요 없음.
+**메인 챕터와의 관계** — 메인 챕터는 분류 시간 확보를 위해 MLM 을 1 epoch 로 줄였지만, 부록은 fair-compute 비교가 핵심이라 **MLM 1 → 3 epoch** 로 늘려 사전학습 효과가 분명히 드러나도록 했습니다. 그 대신 데이터를 메인의 5K/1K → 부록의 `N_TRAIN_TEXT=2000, N_EVAL_TEXT=400` 으로 줄여 *부록 하나* 의 T4 30분 안에 세 셋업이 모두 들어가도록 했습니다. 부록은 *부록만으로 self-contained* — 메인 노트북을 먼저 돌릴 필요 없음.
 
 ---""")
 
@@ -81,11 +85,13 @@ md(r"""## 🔄 셋업 비교 — A / B / C
 
 | 축 | 🅰️ A (메인 재현) | 🅱️ B (fair-compute) | 🅲 C (random baseline) |
 |---|---|---|---|
-| MLM 사전학습 | **3 epoch** | 없음 | 없음 |
+| MLM 사전학습 데이터 | **Wikitext-103 paragraphs (일반 도메인)** | 없음 | 없음 |
+| MLM 사전학습 epoch | **3 epoch** | 없음 | 없음 |
+| 분류 fine-tune 데이터 | Yelp 이진 (다른 도메인) | Yelp 이진 (다른 도메인) | Yelp 이진 (다른 도메인) |
 | 분류 fine-tune epoch | 2 | **A 의 총 시간만큼 자동 산정** | 2 |
-| 본체 시작점 | MLM 가중치 | random init | random init |
+| 본체 시작점 | MLM 가중치 (위키 일반 도메인) | random init | random init |
 | 분류 head | random init | random init | random init |
-| 데이터 | Yelp 5K/1K (메인) → 본 부록은 **2K/400** | (같음) | (같음) |
+| 분류 데이터 크기 | Yelp 5K/1K (메인) → 본 부록은 **2K/400** | (같음) | (같음) |
 | 토크나이저 | `bert-base-uncased` | (같음) | (같음) |
 | 모델 본체 | 작은 BERT (hidden=256, layer=4) | (같음) | (같음) |
 | Loss | `CrossEntropyLoss` (K=2) | (같음) | (같음) |
@@ -94,7 +100,7 @@ md(r"""## 🔄 셋업 비교 — A / B / C
 
 **B 의 epoch 결정** — A 의 *총 시간* `T_A_total = T_A_mlm + T_A_cls` 를 측정한 뒤, B 의 *한 epoch* 에 걸린 시간 `t_per_epoch_B` 로 나눠 `epochs_B = round(T_A_total / t_per_epoch_B)` 로 자동 산정합니다. 이렇게 *시간 등가* 를 맞춥니다.
 
-> **B 가 측정하는 가설** — *"사전학습은 결국 GPU 시간 소비. 그 시간을 그냥 분류 fine-tune 에 쓰면 안 되나?"*. **A vs B** 결과가 이 질문에 답합니다.
+> **B 가 측정하는 가설** — *"일반 도메인 사전학습은 결국 GPU 시간 소비. 그 시간을 그냥 task 도메인 분류 fine-tune 에 쓰면 안 되나?"*. **A vs B** 결과가 이 질문에 답합니다.
 
 ---""")
 
@@ -150,11 +156,12 @@ elif DEVICE == "cpu":
 
 md(r"""### 데이터·모델 hyperparams — 메인과 통일, MLM 은 더 충분히
 
-메인 챕터는 *분류 fine-tune 시간 확보* 를 위해 MLM 을 1 epoch 으로 줄였지만, 부록은 fair-compute 비교가 핵심이라 **MLM 1 → 3 epoch** 로 늘려 사전학습 효과가 충분히 드러나도록 합니다. T4 30분 룰을 지키기 위해 데이터는 `N_TRAIN=2000, N_EVAL=400` 으로 축소 (메인 5K/1K → 부록 2K/400). 작은 BERT 본체 구조 (hidden=256, layer=4, head=4) 와 학습률은 메인과 완전히 같음.""")
+메인 챕터는 *분류 fine-tune 시간 확보* 를 위해 MLM 을 1 epoch 으로 줄였지만, 부록은 fair-compute 비교가 핵심이라 **MLM 1 → 3 epoch** 로 늘려 사전학습 효과가 충분히 드러나도록 합니다. T4 30분 룰을 지키기 위해 데이터는 *분류·MLM 모두* `N_TRAIN_TEXT=2000, N_EVAL_TEXT=400` 으로 축소 (메인 5K/1K → 부록 2K/400). MLM 코퍼스는 메인과 같이 Wikitext-103 paragraphs, 분류는 Yelp 그대로. 작은 BERT 본체 구조 (hidden=256, layer=4, head=4) 와 학습률은 메인과 완전히 같음.""")
 
 code(r"""SEED = 42
 
 # 데이터 — 부록은 MLM 을 3 epoch 까지 늘리므로 데이터를 더 줄여 시간 균형
+# MLM 사전학습 데이터 (Wikitext-103 paragraphs) 와 분류 데이터 (Yelp) 모두 같은 크기로 통일
 N_TRAIN_TEXT = 2000
 N_EVAL_TEXT  = 400
 BLOCK_SIZE     = 128
@@ -292,11 +299,11 @@ def make_cls_trainer(model, epochs, run_name):
     )""")
 
 # ----- 5. 셋업 A -----
-md(r"""## 2. 🅰️ Setup A — MLM 3 epoch + 분류 fine-tune 2 epoch (사전학습 충분히)
+md(r"""## 2. 🅰️ Setup A — MLM 3 epoch (Wikitext-103) + Yelp 분류 fine-tune 2 epoch (사전학습 충분히)
 
-메인 챕터의 핵심 셋업을 *MLM 만 1 → 3 epoch* 로 늘려 재현합니다 — 1 epoch 으로는 본체 표상이 덜 정렬돼서 fair-compute 비교 메시지가 약해지기 때문. `T_A_mlm` (MLM 학습 시간) 과 `T_A_cls` (분류 fine-tune 시간) 를 별도로 측정해 합쳐 `T_A_total` 을 만듭니다. 이 시간이 *셋업 B 의 compute budget* 입니다.""")
+메인 챕터의 핵심 셋업을 *MLM 만 1 → 3 epoch* 로 늘려 재현합니다 — 1 epoch 으로는 본체 표상이 덜 정렬돼서 fair-compute 비교 메시지가 약해지기 때문. **MLM 사전학습은 Wikitext-103 paragraphs (일반 도메인, 분류 데이터 Yelp 와 별도)**. `T_A_mlm` (MLM 학습 시간) 과 `T_A_cls` (분류 fine-tune 시간) 를 별도로 측정해 합쳐 `T_A_total` 을 만듭니다. 이 시간이 *셋업 B 의 compute budget* 입니다.""")
 
-code(r"""# ---- A-1. MLM 사전학습 ----
+code(r"""# ---- A-1. MLM 사전학습 (Wikitext-103 paragraphs, 일반 도메인) ----
 mlm_config = BertConfig(
     vocab_size=tokenizer.vocab_size,
     hidden_size=HIDDEN_SIZE,
@@ -310,10 +317,19 @@ mlm_config = BertConfig(
 torch.manual_seed(SEED)
 mlm_model = BertForMaskedLM(mlm_config)
 
-# MLM 학습용 데이터셋: text 만 (라벨 무시 — self-supervised)
-mlm_train_raw = ds_train_full.remove_columns(
-    [c for c in ds_train_full.column_names if c != "text"]
+# MLM 사전학습 코퍼스: Wikitext-103 (일반 도메인, 분류용 Yelp 와 별도 로드)
+print("downloading Wikitext-103 (Salesforce/wikitext, wikitext-103-raw-v1)...")
+raw_wikitext = load_dataset("Salesforce/wikitext", "wikitext-103-raw-v1", split="train")
+
+def is_good(ex, min_len=50, max_len=2000):
+    t = ex["text"].strip()
+    return min_len <= len(t) <= max_len
+
+mlm_train_raw = (
+    raw_wikitext.filter(is_good).shuffle(seed=SEED).select(range(N_TRAIN_TEXT))
+    .remove_columns([c for c in raw_wikitext.column_names if c != "text"])
 )
+print(f"MLM train paragraphs: {len(mlm_train_raw):,}  (wikitext-103)")
 
 def mlm_tokenize(examples):
     return tokenizer(examples["text"], add_special_tokens=False, truncation=False)
@@ -536,11 +552,11 @@ md(r"""## 6. 🔎 해석 — 무엇을 읽어야 하나
 
 | 비교 | 의미 | 전형적 결과 |
 |---|---|---|
-| **A vs C** | *사전학습의 순 효과* (같은 epoch 의 두 출발점) | A 가 C 보다 accuracy 약 5-15%p 높음 — MLM 3 epoch 으로 본체 표상이 *분류에 유용한 방향* 으로 충분히 정렬 |
-| **A vs B** | *사전학습 vs 동일 compute fine-tune* | A 가 B 보다 *여전히* 높음. 다만 격차는 A vs C 보다 줄어듦 — fine-tune epoch 을 늘려도 *self-supervised 신호 결손* 이 메워지지 않음 |
+| **A vs C** | *사전학습의 순 효과* (같은 epoch 의 두 출발점) | A 가 C 보다 accuracy 약 5-15%p 높음 — MLM 3 epoch (Wikitext-103) 으로 본체 표상이 *분류에 유용한 방향* 으로 충분히 정렬 |
+| **A vs B** | *일반 도메인 사전학습 vs 동일 compute task-specific fine-tune* | A 가 B 보다 *여전히* 높음. 다만 격차는 A vs C 보다 줄어듦 — fine-tune epoch 을 늘려도 *self-supervised 신호 결손* 이 메워지지 않음 |
 | **B vs C** | *fine-tune epoch 의 효과* (둘 다 random init) | B 가 C 보다 높음 — random init 도 epoch 늘리면 더 학습. 다만 *수렴 정체* 로 일찍 평탄해질 수 있음 |
 
-**왜 B 가 A 를 못 따라잡나** — 분류 task 의 *supervised 신호* 만으로는 *언어 구조 일반* 을 학습하기 어렵습니다. MLM 의 *비지도 self-supervised* 신호가 *모든 토큰 자리* 에 대해 *문맥 예측* 을 강제해 본체에 *언어 분포* 를 새기는 반면, 분류 신호는 *문장 단위로 0/1 한 비트* 만 줍니다. 같은 GPU 시간이라도 *학습 신호의 밀도* 가 다른 것.
+**왜 B 가 A 를 못 따라잡나** — 분류 task 의 *supervised 신호* 만으로는 *언어 구조 일반* 을 학습하기 어렵습니다. MLM 의 *비지도 self-supervised* 신호가 *모든 토큰 자리* 에 대해 *문맥 예측* 을 강제해 본체에 *언어 분포* 를 새기는 반면, 분류 신호는 *문장 단위로 0/1 한 비트* 만 줍니다. 같은 GPU 시간이라도 *학습 신호의 밀도* 가 다른 것. *일반 도메인 (위키) 사전학습이 task 도메인 (Yelp) 분류에도 transfer 됨* 이 본 부록의 핵심 결과.
 
 **작은 모델·작은 데이터에서 주의** — 본 부록처럼 데이터가 2K 정도면 *random init + 긴 fine-tune* 이 overfitting 에 빠져 B 의 train loss 는 떨어지는데 eval 은 평탄해질 수 있습니다. *큰 모델·큰 데이터* 일수록 사전학습의 가치가 더 명확하게 커집니다 (Ch 10 의 DistilBERT 가 그 정점).
 
@@ -569,12 +585,12 @@ md(r"""## 🎯 체크포인트 질문
 # ----- 11. 다음 단계 -----
 md(r"""## 다음 단계
 
-이 부록에서 *작은 모델·작은 데이터* 셋업에서도 사전학습이 *fair-compute 등가* 보다 가치 있다는 점을 확인했습니다. 다만 그 격차의 크기는 *모델/데이터 규모* 에 강하게 의존합니다.
+이 부록에서 *작은 모델·작은 데이터* 셋업에서도 *일반 도메인 사전학습이 fair-compute 등가의 task-specific fine-tune* 보다 가치 있다는 점을 확인했습니다. 다만 그 격차의 크기는 *모델/데이터 규모* 에 강하게 의존합니다.
 
-- **메인 챕터로 돌아가기**: [`21_en_bert_classify.ipynb`](./21_en_bert_classify.ipynb) — Ch 10 (DistilBERT 대규모 사전학습) 과의 비교 마무리
-- **다음 챕터 예고**: Chapter 22 — 한국어 작은 BERT 직접 사전학습 (`klue/bert-base` 토크나이저 + NSMC text MLM). Ch 20 의 영어 패턴을 한국어로 재현, 같은 *작은 사전학습* 흐름.
+- **메인 챕터로 돌아가기**: [`21_en_bert_classify.ipynb`](./21_en_bert_classify.ipynb) — Ch 10 (DistilBERT 대규모 일반 위키 사전학습) 과의 비교 마무리
+- **다음 챕터 예고**: Chapter 22 — 한국어 작은 BERT 직접 사전학습 (`klue/bert-base` 토크나이저 + **한국어 Wikipedia paragraphs** MLM, 일반 도메인). Ch 20 의 영어 패턴을 한국어로 재현, 같은 *일반 도메인 사전학습 → 다른 도메인 fine-tune* 흐름.
 
-> 부록의 핵심 메시지 한 줄 — *사전학습은 compute 의 형태가 아니라 학습 신호의 종류 차이*. 같은 GPU 시간이라도 *self-supervised 로 본체를 미리 정렬* 해 두는 게 *supervised 만 길게 돌리는 것* 보다 효율적.""")
+> 부록의 핵심 메시지 한 줄 — *사전학습은 compute 의 형태가 아니라 학습 신호의 종류 차이*. 같은 GPU 시간이라도 *일반 도메인 self-supervised 로 본체를 미리 정렬* 해 두는 게 *task-specific supervised 만 길게 돌리는 것* 보다 효율적.""")
 
 
 # ----- 노트북 저장 -----
