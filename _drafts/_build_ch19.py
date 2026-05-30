@@ -507,6 +507,85 @@ for col in ["mean_tokens_per_sent", "p95_tokens_per_sent", "unk_rate_pct"]:
 
 print(summary_2x2.to_string(index=False))""")
 
+# ----- 14b. 교차 적용 분석 -----
+md(r"""### 5-4. 🌐 교차 적용 — 영어 토크나이저로 한국어를, 그 반대도
+
+지금까지 *학습 언어 = 적용 언어* 였습니다. 만약 **다른 언어 텍스트** 를 학습한 토크나이저에 통과시키면?
+
+- **WordPiece (영어)** → 한국어 텍스트: 한국어 글자가 vocab 에 없어 대부분 **`[UNK]` 로 떨어짐** (BERT character fallback 도 없으면)
+- **WordLevel (영어)** → 한국어 텍스트: 한국어 *어절 통째* 가 단어로 vocab 에 없어 **거의 100% UNK**
+- 반대 (한국어 학습 → 영어 입력) 도 같은 양상
+
+이걸 정량 비교하면 "왜 multilingual 모델은 *공통 vocab* (mBERT 의 110k WordPiece, XLM-R 의 250k SentencePiece) 으로 학습되는지" 가 직관됩니다.""")
+
+code(r"""# 4 토크나이저를 dict 로 묶어 cross-language 분석에 사용
+tokenizers = {
+    "en_WordPiece": tok_en_wp,
+    "en_WordLevel": tok_en_wl,
+    "ko_WordPiece": tok_ko_wp,
+    "ko_WordLevel": tok_ko_wl,
+}
+
+# 교차 적용: 영어/한국어 예시 문장을 모두 4 토크나이저에 통과
+cross_examples = [
+    ("EN", "The food was absolutely delicious and the service was great."),
+    ("KO", "음식이 정말 맛있었고 서비스도 훌륭했습니다."),
+]
+
+cross_rows = []
+for lang, text in cross_examples:
+    for tok_name, tok in tokenizers.items():
+        enc = tok.encode(text)
+        n_tokens = len(enc.tokens)
+        n_unk = sum(1 for t in enc.tokens if t == "[UNK]")
+        cross_rows.append({
+            "input_lang": lang,
+            "tokenizer": tok_name,
+            "tokenizer_train_lang": "EN" if "en_" in tok_name else "KO",
+            "n_tokens": n_tokens,
+            "n_unk": n_unk,
+            "unk_pct": round(n_unk / n_tokens * 100, 1) if n_tokens else 0.0,
+            "match": "✅ same" if (lang.lower() in tok_name.lower()[:5]) else "❌ cross",
+        })
+
+cross_df = pd.DataFrame(cross_rows)
+print(cross_df.to_string(index=False))""")
+
+code(r"""# 같은 입력을 토크나이저 별로 실제로 어떻게 쪼개는지 (첫 12 토큰)
+print("=" * 78)
+for lang, text in cross_examples:
+    print(f"\n[input ({lang})]  {text}")
+    for tok_name, tok in tokenizers.items():
+        enc = tok.encode(text)
+        cross = "❌" if (lang.lower()[:2] not in tok_name.lower()[:5]) else "  "
+        head = enc.tokens[:12]
+        print(f"  {cross} {tok_name:18} ({len(enc.tokens):>3} tokens, UNK {sum(1 for t in enc.tokens if t=='[UNK]'):>2}): {head}")""")
+
+code(r"""# 시각화: UNK 비율 4×2 매트릭스 (가로 토크나이저, 세로 입력 언어)
+fig, ax = plt.subplots(figsize=(8.5, 3.6))
+pivot = cross_df.pivot(index="input_lang", columns="tokenizer", values="unk_pct")
+pivot = pivot[list(tokenizers.keys())]   # 열 순서 유지
+sns.heatmap(pivot, annot=True, fmt=".1f", cmap="Reds", vmin=0, vmax=100,
+            cbar_kws={"label": "UNK rate (%)"}, ax=ax)
+ax.set_title("Cross-language UNK rate — tokenizer trained on (EN|KO) × input (EN|KO)")
+ax.set_xlabel("tokenizer (algorithm × training language)")
+ax.set_ylabel("input language")
+plt.tight_layout(); plt.show()""")
+
+md(r"""**관찰**
+
+- 대각선(같은 언어) 셀은 UNK 가 거의 0 — 학습 언어와 같으면 vocab 이 커버.
+- **비대각선(교차) 셀은 UNK 가 크게 솟음** — 특히 WordLevel 은 어절 매칭이라 *거의 100%*, WordPiece 는 서브워드라도 한·영 *글자* 가 vocab 에 없으면 통째 UNK.
+- WordPiece 가 그나마 한·영 *공통 알파벳·구두점* 일부를 커버할 수 있지만, *한글 자모/조합* 또는 *영문 단어* 자체는 학습 corpus 에 의존.
+
+**시사점**
+
+- **단일 언어 corpus 로 학습한 토크나이저는 다른 언어에 거의 못 씁니다.** 모델을 통째 다른 언어로 재사용하려면 *vocab 부터* 그 언어 데이터를 보고 학습해야 합니다.
+- **multilingual 모델** (mBERT, XLM-R, mT5 등)은 *수십~백여 언어 corpus 를 섞어* 토크나이저를 학습해 *공통 vocab* 을 만듭니다 — 그래서 한 모델로 여러 언어 입력이 가능.
+- **byte-level BPE** (GPT-2/RoBERTa) 나 **SentencePiece(Unigram)** (T5/Llama) 같은 *byte/character 단위 fallback* 이 있는 토크나이저는 UNK 가 원리상 없습니다 — 단 비-학습 언어는 *매우 긴 토큰 시퀀스* 가 되어 비효율적.
+
+> 즉 "토크나이저는 모델의 언어를 *물리적으로 결정* 한다" 가 이 챕터의 큰 결론. Ch 20-23 에서 사전학습 모델의 토크나이저 (`bert-base-uncased` / `klue/bert-base`) 를 그대로 가져오는 이유 — 모델 본체와 *vocab 일치* 가 필수.""")
+
 # ----- 15. 저장·로드 -----
 md(r"""## 6. 💾 저장·로드 — `tokenizer.save()` / `PreTrainedTokenizerFast` 로 wrap
 
