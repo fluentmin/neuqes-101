@@ -1,4 +1,4 @@
-"""Build 21_gpt_tinystories/21_gpt_tinystories.ipynb — GPT prototype (HF API).
+"""Build 24_gpt_tinystories/24_gpt_tinystories.ipynb — GPT prototype (HF API).
 
 prototype 노트북: GPT2LMHeadModel from scratch + TinyStories 작은 subset 학습 + 생성.
 Trainer + DataCollatorForLanguageModeling(mlm=False) 패턴으로 BERT 챕터들과 톤 일관성 유지.
@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-OUT = REPO / "21_gpt_tinystories" / "21_gpt_tinystories.ipynb"
+OUT = REPO / "24_gpt_tinystories" / "24_gpt_tinystories.ipynb"
 
 cells = []
 _counter = 0
@@ -41,7 +41,7 @@ def code(text: str):
 
 
 # ----- 1. 제목 -----
-md(r"""# Chapter 21 (prototype). GPT — TinyStories 로 작은 언어모델 학습
+md(r"""# Chapter 24 (prototype). GPT — TinyStories 로 작은 언어모델 학습
 
 **목표**: BERT(encoder, MLM) 와 결이 다른 **GPT (decoder-only, causal LM)** 를 \
 `GPT2LMHeadModel` 로 *from scratch* (사전학습 없이) 띄우고, **TinyStories** 작은 subset 으로 \
@@ -86,7 +86,7 @@ Loss 수식은 BERT MLM 의 CE 와 동일, 마스킹 위치만 다름 (BERT: 무
 # ----- 3. 변경점 -----
 md(r"""## 🔄 변경점 (Diff from BERT 챕터들)
 
-| 축 | BERT (Ch 7-16) | GPT (Ch 21) |
+| 축 | BERT (Ch 7-16) | GPT (Ch 24) |
 |---|---|---|
 | **모델 패밀리** | Encoder, bidirectional attention | **Decoder, causal attention** ← *핵심 변화* |
 | 사전학습 | 사전학습된 가중치 로드 (`from_pretrained`) | **무작위 초기화 from scratch** (`GPT2LMHeadModel(config)`) |
@@ -532,12 +532,12 @@ md(r"""## 8. 다음 단계 (prototype 검증 후)
 
 이 노트북이 T4 30 분 안에 정상 돌고 grammatical 한 생성이 나오면, 다음 분할로 정식 챕터화:
 
-- **Ch 21 (정식)** — GPT 아키텍처 해부. `GPT2Config` 의 필드별 의미, causal vs bidirectional attention \
+- **Ch 24 (정식판)** — GPT 아키텍처 해부. `GPT2Config` 의 필드별 의미, causal vs bidirectional attention \
   비교, weight tying, position embedding 까지. 학습은 매우 짧은 sanity check 만.
-- **Ch 22** — TinyStories 본격 학습 + 생성. 데이터·step·모델 키워서 더 좋은 생성 품질.
-- **Ch 23 (선택)** — 같은 셋업을 *from-scratch `nn.Module`* 로 구현. HF 클래스의 내부가 \
+- **Ch 25** — TinyStories 본격 학습 + 생성. 데이터·step·모델 키워서 더 좋은 생성 품질.
+- **Ch 26 (선택)** — 같은 셋업을 *from-scratch `nn.Module`* 로 구현. HF 클래스의 내부가 \
   실제로 200 줄 PyTorch 로 펼쳐지는 모습을 확인. HF API ↔ from-scratch 동등성 시연.
-- **Ch 24 (선택)** — 한국어 작은 GPT (KLUE / 위키 일부).
+- **Ch 27 (선택)** — 한국어 작은 GPT (KLUE / 위키 일부).
 
 prototype 검증 체크리스트:
 - [ ] T4 에서 25-30 분 안에 끝까지 실행되는가
