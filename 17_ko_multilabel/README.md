@@ -19,7 +19,7 @@ Ch 16(한국어 multi-class, KLUE-YNAT 7분류)에서 *task 차원만* single-la
 **`BCEWithLogitsLoss` per-label** — Ch 13 과 같은 식. K=7 개 binary BCE 의 평균. Ch 16 의 `CrossEntropyLoss` 에서 전환.
 
 ## 데이터
-KLUE-YNAT (`load_dataset("klue", "ynat")`) 두 헤드라인 결합으로 합성 — 5K train / 1K eval. seed 고정(42). 평균 활성 라벨 -1.86개 (두 번 뽑아 가끔 충돌).
+KLUE-YNAT (`load_dataset("klue/klue", "ynat")`) 두 헤드라인 결합으로 합성 — 5K train / 1K eval. seed 고정(42). 평균 활성 라벨 -1.86개 (두 번 뽑아 가끔 충돌).
 
 ## 환경
 Google Colab **T4 GPU 필수**. 약 13분.
