@@ -722,36 +722,90 @@ axes[1].legend(loc="upper right", fontsize=10)
 plt.tight_layout()
 plt.show()""")
 
-md(r"""### 6-3. [MASK] top-5 — 토큰 비교
+md(r"""### 6-3. 🏆 학습이 *충분히 잘 된 경우* 의 기준점 — 표준 `bert-base-uncased` 비교
 
-같은 문장 4개의 [MASK] 자리 top-5 후보를 *사전학습 전 → 후* 로 나란히.""")
+우리 작은 BERT (10M, 5K paragraphs × 2 epoch) 의 top-5 가 *방향성은 맞지만 정답이 잘 안 보이는* 이유는 단순합니다 — **학습 데이터·모델 크기·학습 시간 모두 부족**. *그럼 학습이 충분히 잘 되면 어떤 결과가 나오나?* 의 답을 같은 문장에 표준 `bert-base-uncased` (110M, 위키+BookCorpus 약 33억 토큰) 를 적용해 직접 봅니다.
 
-code(r"""# 사전·사후 top-5 비교 표
+같은 토크나이저 (`bert-base-uncased`) 를 쓰고 있으므로 *모델만 바꿔* 두 결과를 나란히.""")
+
+code(r"""# 표준 bert-base-uncased 로드 — 학습이 충분히 잘 된 경우의 기준점
+from transformers import AutoModelForMaskedLM
+
+ref_model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
+ref_model.to(model.device)
+ref_model.eval()
+
+ref_param_count = sum(p.numel() for p in ref_model.parameters())
+our_param_count = sum(p.numel() for p in model.parameters())
+print(f"Our small BERT params: {our_param_count/1e6:.1f}M")
+print(f"Reference BERT params: {ref_param_count/1e6:.1f}M  ({ref_param_count/our_param_count:.0f}x larger)")""")
+
+code(r"""# Reference 모델로 같은 문장의 top-5 측정
+def predict_mask_with(text, ref, top_k=5):
+    '''임의의 MLM 모델로 [MASK] 자리 top-k 예측.'''
+    ref.eval()
+    inputs = tokenizer(text, return_tensors="pt").to(ref.device)
+    with torch.no_grad():
+        outputs = ref(**inputs)
+    logits = outputs.logits[0]
+    mask_positions = (inputs["input_ids"][0] == tokenizer.mask_token_id).nonzero(as_tuple=True)[0]
+    if len(mask_positions) == 0:
+        return None
+    results = []
+    for pos in mask_positions:
+        probs = torch.softmax(logits[pos], dim=-1)
+        top_p, top_i = probs.topk(top_k)
+        candidates = [(tokenizer.convert_ids_to_tokens(int(i)), float(p))
+                       for p, i in zip(top_p, top_i)]
+        results.append((int(pos), candidates))
+    return results
+
+
+ref_top5_records = []
+for sent in test_sentences:
+    results = predict_mask_with(sent, ref_model, top_k=5)
+    top5_tokens = [tok for tok, _ in results[0][1]] if results else []
+    ref_top5_records.append({"sentence": sent, "top5_ref": top5_tokens})
+
+# 참조 모델 메모리 해제 (분류 fine-tune 챕터 21 가 같은 노트북이 아니므로 안전)
+del ref_model
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()""")
+
+md(r"""### 6-4. [MASK] top-5 — 3-way 비교 (before / ours / reference BERT)
+
+같은 문장 4개의 [MASK] 자리 top-5 후보를 *사전학습 전 → 우리 작은 BERT 학습 후 → 표준 bert-base-uncased* 셋으로 나란히.""")
+
+code(r"""# 3-way top-5 비교 표
 rows = []
-for pre, post in zip(pre_top5_records, post_top5_records):
+for pre, post, ref in zip(pre_top5_records, post_top5_records, ref_top5_records):
     rows.append({
-        "sentence":     pre["sentence"],
-        "top5_before":  ", ".join(pre["top5_before"]),
-        "top5_after":   ", ".join(post["top5_after"]),
+        "sentence":          pre["sentence"],
+        "top5_before":       ", ".join(pre["top5_before"]),
+        "top5_ours":         ", ".join(post["top5_after"]),
+        "top5_ref_bert":     ", ".join(ref["top5_ref"]),
     })
 
 top5_compare = pd.DataFrame(rows)
-print("Before vs After — top-5 candidates at [MASK]")
-print()
+print("Before (random) vs Ours (small BERT, 5K paragraphs) vs Reference (bert-base-uncased, approx. 3.3B tokens)")
+print("=" * 100)
 for _, row in top5_compare.iterrows():
     print(f"input: {row['sentence']}")
-    print(f"  before: {row['top5_before']}")
-    print(f"  after : {row['top5_after']}")
+    print(f"  before (random)        : {row['top5_before']}")
+    print(f"  ours  (small, 5K para) : {row['top5_ours']}")
+    print(f"  ref   (bert-base)      : {row['top5_ref_bert']}")
     print()""")
 
 md(r"""**해석 가이드 — 사전학습이 만든 차이**
 
 - **`eval_loss`**: random baseline `ln V ≈ 10.33` 에서 약 5-7 부근까지 떨어졌으면 본체가 *언어 구조 일부* 를 학습. *완전한* BERT 수준은 아니어도 표준 BERT 가 학습한 것의 *방향* 은 맞춤.
 - **`perplexity`**: 30,522 (vocab 전체) 에서 수십-수백 부근으로. *마스크 자리마다 후보를 약 50-500 개로 좁힌 상태* 라는 직관적 해석.
-- **top-5 토큰**:
-  - *before*: 자주 등장하는 *관사·전치사·특수문자* (`the`, `a`, `,`, `.`, `of`) — random init 이지만 logits 가 미세하게 흔들려 *통계적 빈도* 높은 토큰만 뽑힘.
-  - *after — 위키 도메인* (`"The capital of France is [MASK]."` 등): 사전학습이 *직접 본 분포* — `paris` 같은 정답이 top-5 에 들어올 가능성. 일반 위키 어휘 (지명·과학·역사) 가 본체에 새겨진 결과.
-  - *after — Yelp 도메인* (`"The food was absolutely [MASK]."` 등): *다른 도메인 transfer* — *감성 형용사* (`amazing`, `delicious`) 가 top-5 에 안 들어올 수 있음. 그러나 일반 *부사·형용사* 가 섞이기 시작하면 사전학습 *방향성* 자체는 분명.
+- **top-5 토큰** (3-way 비교):
+  - *before (random)*: 자주 등장하는 *관사·전치사·특수문자* (`the`, `a`, `,`, `.`, `of`) — random init 이지만 logits 가 미세하게 흔들려 *통계적 빈도* 높은 토큰만 뽑힘.
+  - *ours (small BERT, 5K paragraphs × 2 epoch)*: 위키 도메인은 *방향성이 보이기 시작* — 일반 부사·형용사, 위키 어휘 일부. 다만 정답 토큰 (`paris`, `0` 등) 이 top-5 안에 *안정적으로* 들어오지는 못함. **데이터·모델 크기 부족의 한계**.
+  - *ref (bert-base-uncased, 약 33억 토큰 × 40 epoch)*: 위키 도메인은 *정답이 top-1* — `paris`, `zero` 같은 자연스러운 답. Yelp 도메인 (다른 도메인) 도 *감성 형용사* (`amazing`, `delicious`, `highly`) 가 자연스럽게 top-5 에 들어옴. **이게 사전학습이 충분히 잘 됐을 때의 모습**.
+
+> **세 모델의 격차가 정확히 *데이터 규모 + 모델 크기 + 학습 시간* 의 격차** — 우리 작은 BERT (10M, 5K paragraphs, 2 epoch) → reference (110M, 3.3B tokens, 40 epoch) 사이에 *데이터 약 5,000배, 파라미터 11배, epoch 20배*. 그 격차가 top-5 의 *질적 차이* 로 정확히 드러납니다.
 
 이번 챕터의 작은 BERT 는 *Wikitext-103 5K paragraphs × 2 epoch* 로 학습한 *일반 도메인 mini BERT*. 위키 도메인은 직접 본 분포라 향상이 빠르지만, Yelp 영화 리뷰 영역은 *다른 도메인* 이라 fine-tune 단계에서 적응이 필요합니다 — 이게 *진짜 사전학습 → fine-tune 패러다임* 의 핵심. Ch 21 에서 Yelp 이진 분류로 fine-tune 할 때 진짜 transfer 비교 — *우리가 직접 만든 작은 영어 BERT (일반 위키 5K, 약 10M)* vs *Ch 10 의 DistilBERT (대규모 Wikipedia+BookCorpus, 약 66M)* vs *random init baseline*.""")
 
