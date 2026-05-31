@@ -993,7 +993,7 @@ device 자동 감지 (CUDA / MPS / CPU) - 로컬 Mac MPS 에서도 실행 가능
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표) 를 참고하세요.
 
 ## 다음 챕터
-[25_gpt2_finetune](../25_gpt2_finetune/) - OpenAI `gpt2` (124M, WebText 약 40GB 사전학습) 을 *같은 TinyStories 30K* 로 **continued pretraining** (계속 사전학습 / continual learning — 같은 CausalLM task, head 그대로). *데이터를 통제하고 본체 출발점만 다름*. 본 챕터 (3M, from scratch, 약 18분) vs Ch 25 (124M, continued pretraining, 약 5-8분) 의 generation 품질·학습 곡선 격차가 *왜 실무는 from-scratch 가 아니라 대규모 사전학습 모델을 활용하는가* 의 정량 답변. *진짜 task adaptation 의미의 fine-tune (instruction tuning)* 은 Ch 27 SFT 에서 본격 등장.
+[25_gpt2_continual_pretrain](../25_gpt2_continual_pretrain/) - OpenAI `gpt2` (124M, WebText 약 40GB 사전학습) 을 *같은 TinyStories 30K* 로 **continued pretraining** (계속 사전학습 / continual learning — 같은 CausalLM task, head 그대로). *데이터를 통제하고 본체 출발점만 다름*. 본 챕터 (3M, from scratch, 약 18분) vs Ch 25 (124M, continued pretraining, 약 5-8분) 의 generation 품질·학습 곡선 격차가 *왜 실무는 from-scratch 가 아니라 대규모 사전학습 모델을 활용하는가* 의 정량 답변. *진짜 task adaptation 의미의 fine-tune (instruction tuning)* 은 Ch 27 SFT 에서 본격 등장.
 """
 
 OUT_README.write_text(README, encoding="utf-8")
