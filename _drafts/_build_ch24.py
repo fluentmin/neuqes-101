@@ -79,7 +79,7 @@ md(r"""## 📊 변화 추적표
 | 22 | 작은 BERT (한국어, scratch) | `klue/bert-base` (가져옴) | 한국어 위키 paragraphs | MLM head | `CrossEntropyLoss` (masked 15%) |
 | 23 | Ch 22 + 분류 헤드 | (Ch 22 와 동일) | NSMC 이진 (다른 도메인) | `Linear(H, 2)` | `CrossEntropyLoss` |
 | **24 ← 여기** | **작은 GPT2 (직접, scratch)** | **BPE (직접 학습, vocab=2048)** | **TinyStories 30K stories** | **`Linear(H, V)` (LM head, weight tied)** | **`CrossEntropyLoss` (next-token, 거의 모든 자리)** |
-| 25 (다음) | `gpt2` (124M, OpenAI WebText 사전학습) | BPE (GPT2 그대로) | TinyStories (Ch 24 와 동일) | `Linear(H, V)` (LM head) | `CrossEntropyLoss` (next-token) - *fine-tune* |
+| 25 (다음) | `gpt2` (124M, OpenAI WebText 사전학습) | BPE (GPT2 그대로) | TinyStories (Ch 24 와 동일) | `Linear(H, V)` (LM head 그대로) | `CrossEntropyLoss` (next-token) - **continued pretraining** |
 
 전체 챕터 표는 [루트 README](https://github.com/yoon-gu/neuqes-101#챕터별-변화추적표) 를 참고하세요.
 
@@ -98,7 +98,7 @@ Ch 7-23 의 BERT 챕터들이 *encoder + masked token 예측 + task head 부착 
 | Downstream 적응 | head 교체 + 본체 fine-tune (*task 적응*) | **SFT (*behavior alignment*)** + alignment (DPO/GRPO) |
 | "Fine-tune" 의미 | task 별 특화 | **prompt 만 바꿔도 다른 일** |
 
-> 본 챕터는 그 *출발점* — 작은 GPT 를 처음부터 학습해 *next-token 예측이 어떻게 generation 으로 이어지는지* 를 직접 봅니다. Ch 25 (대규모 사전학습 `gpt2` 를 TinyStories 로 fine-tune) / Ch 27 (SFT) / Ch 29-30 (DPO / GRPO) 가 같은 본체 위에 차곡차곡 쌓여 갑니다.""")
+> 본 챕터는 그 *출발점* — 작은 GPT 를 처음부터 학습해 *next-token 예측이 어떻게 generation 으로 이어지는지* 를 직접 봅니다. Ch 25 (대규모 사전학습 `gpt2` 를 TinyStories 로 **continued pretraining**) / Ch 27 (SFT) / Ch 29-30 (DPO / GRPO) 가 같은 본체 위에 차곡차곡 쌓여 갑니다.""")
 
 # ----- 3. 변경점 -----
 md(r"""## 🔄 변경점 (Diff from Ch 23)
@@ -113,7 +113,7 @@ md(r"""## 🔄 변경점 (Diff from Ch 23)
 | Loss | `CrossEntropyLoss` (분류, K=2) | **`CrossEntropyLoss` (next-token, K=V=2048)** |
 | 산출물 | 분류 정확도 | **generation 텍스트** (`model.generate()`) |
 
-> **변경점이 한꺼번에 많은 이유** — Phase 가 바뀌는 *전환 챕터* 라 *축 자체* 가 새로 정의됩니다. Ch 25 부터는 다시 *한 가지 축* 만 바뀝니다 (Ch 25: 모델 크기 + 사전학습 여부 / Ch 26: 언어 / Ch 27: 학습 신호 자리 — SFT 의 `labels[prompt] = -100`).""")
+> **변경점이 한꺼번에 많은 이유** — Phase 가 바뀌는 *전환 챕터* 라 *축 자체* 가 새로 정의됩니다. Ch 25 부터는 다시 *한 가지 축* 만 바뀝니다 (Ch 25: 본체 출발점 = scratch → 사전학습 모델, 같은 *continued pretraining* task / Ch 26: 언어 / Ch 27: 학습 단계 = pretraining → SFT, `labels[prompt] = -100`).""")
 
 # ----- 4. Loss 노트 -----
 md(r"""## 📐 Loss — `CrossEntropyLoss` (next-token)
@@ -172,24 +172,36 @@ Ch 20·22 의 MLM 에서 봤던 `labels = -100` ignore_index 트릭이 GPT Causa
 본 챕터에서는 `DataCollatorForLanguageModeling(mlm=False)` 이 자동으로 `labels = input_ids.clone()` 을 만들어 줍니다 — 뒤에 collator 출력 셀에서 직접 확인하겠습니다. Ch 27 의 *왜 모델이 instruction 을 따라가게 되는가* 는 *한 줄 코드 `labels[prompt_mask] = -100`* 로 정확히 설명되는데, 그 코드를 이해할 토대가 *이 챕터의 collator 출력* 입니다.""")
 
 # ----- 6. 파인튜닝 의미 변화 thread -----
-md(r"""## ⚠️ "파인튜닝" 의미가 BERT 시대와 GPT 시대에서 달라집니다
+md(r"""## ⚠️ GPT 시대의 학습은 *네 단계* — 용어가 BERT 와 다릅니다
 
 Ch 21·23 에서 본 *fine-tune* 은 **BERT 시대 의미** — *사전학습된 본체 + 새 task-specific head (`Linear(H, K)`)*. 분류·회귀·QA 마다 다른 head, *task 별 특화*. 한 모델 = 한 task.
 
-Phase 4 GPT 챕터 (Ch 25, Ch 27) 부터는 같은 단어가 *다른 의미* 입니다.
+Phase 4 GPT 시대는 *fine-tune* 한 단어가 *여러 의미* 로 섞여 쓰입니다. 학술적으로는 **네 단계** 로 분리됩니다.
 
-| 축 | **BERT 파인튜닝** (Ch 9-23) | **GPT 파인튜닝 = SFT** (Ch 25, Ch 27) |
+| 단계 | 정확 용어 | 의미 | 학습 신호 | 본 커리큘럼 |
+|---|---|---|---|---|
+| 1 | **Pretraining** (사전학습) | 일반 코퍼스 위에 random init 본체부터 학습 | 모든 토큰 (`labels = input_ids`) | **Ch 24** (영어 scratch, TinyStories), **Ch 26** (한국어 scratch) |
+| 2 | **Continued pretraining** (계속 사전학습 / continual learning) | *사전학습된 본체* 를 *새 데이터* 로 *같은 CausalLM task* 더 학습. **head 그대로, task 그대로, 데이터만 새로** | 모든 토큰 (pretraining 과 동일) | **Ch 25** (`gpt2` + TinyStories) |
+| 3 | **SFT** (Supervised Fine-Tuning / Instruction tuning) | instruction-response 쌍으로 *행동 정렬*. `labels[prompt] = -100` 으로 답변 부분만 학습 | **답변 토큰만** | **Ch 27** (KoGPT2 + KoAlpaca) |
+| 4 | **Alignment** (DPO / RLHF / GRPO) | preference 또는 verifier reward 로 *선호 정렬* | preference log-likelihood ratio / RL advantage | **Ch 29** (DPO), **Ch 30** (GRPO) |
+
+**세 가지 공통점** (모두 GPT 시대):
+- **모델 클래스 그대로** — `AutoModelForCausalLM` (BERT 처럼 task head 부착 안 함)
+- **출력 형식 그대로** — 토큰 시퀀스
+- **학습 신호 종류 그대로** — next-token CE (alignment 만 예외)
+
+**다른 점은 *데이터 형식* 과 *어느 토큰에 학습 신호를 주는가*** — `labels = -100` 자리만 변함.
+
+| 단계 | 데이터 | `labels = -100` 자리 |
 |---|---|---|
-| 무엇을 바꾸나 | 본체 + **새 head** (task 별 부착) | 본체 + **기존 LM head 그대로** |
-| 출력 형식 | task 별 다름 (class id / score / multi-hot) | *항상 토큰 시퀀스* — 형식 통일 |
-| 학습 신호 | task 별 loss (CE / BCE / MSE) | *항상 next-token CE*, 자리 마스킹만 다름 |
-| 학습되는 것 | *task 의 출력 분포* (긍정 / 부정 결정 경계 등) | *행동* — "이런 입력엔 이런 형식으로 답하라" |
-| 라벨 | 정답 카테고리 / 값 | *모범 답안 토큰 시퀀스* |
-| 한 모델 = 한 task? | 그렇다 - 다른 task 마다 다른 head | *아니다* - 같은 모델이 입력 프롬프트만 바꾸면 다른 일 |
+| Pretraining (Ch 24·26) | 일반 텍스트 | pad 만 |
+| **Continued pretraining (Ch 25)** | **새 도메인 텍스트** | **pad 만 (Pretraining 과 동일)** |
+| SFT (Ch 27) | instruction + response | **prompt 부분** |
+| Alignment (Ch 29·30) | preference 쌍 / verifier reward | (RL 내부) |
 
-> **BERT 파인튜닝은 *task 적응*, GPT 파인튜닝은 *행동 정렬*.** GPT 는 head 가 바뀌지 않으므로 "파인튜닝" 이 *동일한 next-token 예측 task 안에서 데이터·자리 마스킹만 바뀌는* 일이 됩니다. 그래서 Phase 4 부터는 "fine-tuning ≈ SFT ≈ instruction tuning ≈ behavior alignment" 가 거의 동의어로 섞여 쓰입니다. 이게 *왜 GPT 모델 하나가 모든 task 를 해내는가* 의 답 — head 가 task 별로 분기하지 않으니 *입력 프롬프트* 만 바꾸면 같은 모델이 다른 일을 합니다.
+> **BERT 의 "fine-tune" 은 *task 적응* 한 가지였지만, GPT 의 "fine-tune" 은 *continued pretraining / SFT / alignment* 셋이 섞인 통칭**. 정확히 말하려면 단계별 용어를 구분합니다. 본 챕터는 단계 1 (사전학습) 그 자체. Ch 25 에서 단계 2 (continued pretraining) 가, Ch 27 에서 단계 3 (SFT — 진짜 *행동 정렬*) 이, Ch 29-30 에서 단계 4 (alignment) 가 본격 등장합니다.
 
-본 챕터는 *GPT 시대의 사전학습* 그 자체. Ch 25 에서 "사전학습된 GPT 를 다른 데이터로 더 학습" 의 의미 (= *fine-tune*) 가, Ch 27 에서 "prompt 만 가리고 답변 부분만 학습" (= *SFT*) 이 본격 등장합니다.""")
+> *왜 GPT 모델 하나가 모든 task 를 해내는가* 의 답은 단계 3 (SFT) 부터 — head 가 task 별로 분기하지 않으니 *입력 프롬프트* 만 바꾸면 같은 모델이 다른 일을 합니다.""")
 
 # ----- 7. 토크나이저 노트 -----
 md(r"""## 🔤 토크나이저 노트 — BPE 직접 학습 (vocab=2048)
@@ -215,7 +227,7 @@ byte-level BPE 의 핵심 장점: *어떤 유니코드 문자열이든* (이모�
 
 GPT-2 는 특수 토큰을 *최소화* 합니다 - `<|endoftext|>` 하나만 사용 (bos = eos = pad 겸용). BERT 의 `[CLS] [SEP] [MASK] [PAD] [UNK]` 5종과 대비.
 
-> Ch 19 의 "토크나이저는 모델과 운명공동체" 원칙이 본 챕터에서도 유효 - vocab 2,048 의 BPE 를 직접 학습한 뒤, *같은 vocab 으로 GPT 본체를 random init* 합니다. Ch 25 에서는 *반대로* - `gpt2` (124M) 의 vocab 50,257 BPE 를 그대로 가져와 같은 TinyStories 데이터에 fine-tune. 토크나이저 + 모델이 *함께* 변하는 게 Ch 24-25 의 핵심 비교.""")
+> Ch 19 의 "토크나이저는 모델과 운명공동체" 원칙이 본 챕터에서도 유효 - vocab 2,048 의 BPE 를 직접 학습한 뒤, *같은 vocab 으로 GPT 본체를 random init* 합니다. Ch 25 에서는 *반대로* - `gpt2` (124M) 의 vocab 50,257 BPE 를 그대로 가져와 같은 TinyStories 데이터로 **continued pretraining**. 토크나이저 + 모델이 *함께* 변하는 게 Ch 24-25 의 핵심 비교.""")
 
 # ----- 8. 환경 셋업 -----
 md(r"""## 🛠️ 환경 셋업""")
@@ -697,7 +709,7 @@ md(r"""**해석 가이드 - 데이터·파라미터 규모가 만든 격차**
 
 > **세 모델의 격차가 정확히 *모델 크기 + 데이터 크기 + 데이터 다양성* 의 격차** - 우리 작은 GPT (3M, TinyStories 30K stories) → reference `gpt2` (124M, WebText 약 40GB) 사이에 *파라미터 약 40배, 데이터 규모 약 수천 배, 도메인 다양성 격차*. 그게 generation 의 *질적 차이* 로 정확히 드러납니다.
 
-> Ch 25 가 이 격차를 *데이터 축을 통제하고* 좁히는 챕터입니다 - `gpt2` (124M) 의 사전학습 *위에* 같은 TinyStories 30K 를 fine-tune. *대규모 일반 사전학습 모델을 작은 도메인 데이터로 적응* 시킬 때의 generation 품질이, 우리 from-scratch 작은 GPT 와 어떻게 다른지 직접 비교.""")
+> Ch 25 가 이 격차를 *데이터 축을 통제하고* 좁히는 챕터입니다 - `gpt2` (124M) 의 사전학습 *위에* 같은 TinyStories 30K 로 **continued pretraining**. *대규모 일반 사전학습 모델을 작은 도메인 데이터로 적응* 시킬 때의 generation 품질이, 우리 from-scratch 작은 GPT 와 어떻게 다른지 직접 비교.""")
 
 # ----- 18. 변형: sampling -----
 md(r"""## 🛠️ 변형 - sampling hyperparam 비교
@@ -779,7 +791,7 @@ DataCollatorForLanguageModeling(tokenizer, mlm=False)
 
 **TinyStories 는 *합성된 simple 스토리* 라 *generation 시연 가치* 가 우선** 인 데이터입니다. *진정한 일반 도메인 사전학습* 의 의미에서는 Wikitext-103 보다 약하지만, 본 챕터의 목적은 *작은 모델로 generation 이 어떻게 동작하는지를 직접 보는 것* - 일반 위키 (Wikitext-103) 로 같은 셋업을 돌리면 3M 모델이 *문장 구조를 학습하기 전에 학습이 끝남*. TinyStories 의 단순한 어휘·문법 덕분에 *작은 모델로도 grammatical 한 생성이 가능* 합니다.
 
-Ch 25 가 그 *trade-off 의 반대편* 을 다룹니다 - *큰 모델 (gpt2 124M) + 대규모 일반 코퍼스 (WebText)* 의 사전학습된 본체를 TinyStories 로 fine-tune. *작은 + 합성 도메인 from-scratch* vs *큰 + 일반 도메인 사전학습 후 fine-tune* 의 generation 품질 격차가 핵심 비교.
+Ch 25 가 그 *trade-off 의 반대편* 을 다룹니다 - *큰 모델 (gpt2 124M) + 대규모 일반 코퍼스 (WebText)* 의 사전학습된 본체를 TinyStories 로 **continued pretraining**. *작은 + 합성 도메인 from-scratch* vs *큰 + 일반 도메인 사전학습 후 continued pretraining* 의 generation 품질 격차가 핵심 비교.
 
 ### Q3. (이론) BPE 토크나이저는 Ch 19 의 WordPiece / WordLevel 과 어떻게 다른가요?
 
@@ -860,33 +872,34 @@ labels[:prompt_len] = [-100] * prompt_len   # <- 이 한 줄이 SFT 의 핵심
 
 본 챕터의 collator 출력 (거의 모든 자리 = 학습 신호) 을 손에 익혀 두면 Ch 27 의 `labels[:prompt_len] = -100` 가 단번에 이해됩니다.
 
-### Q7. (실무) 다음 챕터 (Ch 25) 와의 비교는 어떻게 되나요?
+### Q7. (실무) 다음 챕터 (Ch 25 — continued pretraining) 와의 비교는 어떻게 되나요?
 
-Ch 25 = *OpenAI 가 사전학습한 `gpt2` (124M params, WebText 약 40GB) 를 TinyStories 로 fine-tune*. 본 챕터의 *작은 from-scratch 모델* 과 *완전 반대 출발점*:
+Ch 25 = *OpenAI 가 사전학습한 `gpt2` (124M params, WebText 약 40GB) 를 TinyStories 로* **continued pretraining** (같은 CausalLM task, 같은 LM head — *task adaptation 의미의 fine-tune 이 아님*). 본 챕터의 *작은 from-scratch 모델* 과 *완전 반대 출발점*:
 
 | 축 | Ch 24 (본 챕터) | Ch 25 (다음) |
 |---|---|---|
 | 모델 크기 | 약 3M params | **약 124M (40배)** |
 | 사전학습 | from scratch (random init) | **OpenAI WebText 약 40GB 사전학습** |
-| TinyStories 학습 | 사전학습 그 자체 (1500 steps) | **fine-tune** (수백 steps 면 충분) |
+| TinyStories 학습 | 사전학습 그 자체 (1500 steps) | **continued pretraining** (수백 steps 면 충분) |
 | 토크나이저 | 직접 학습 BPE vocab 2,048 | **gpt2 BPE vocab 50,257 (그대로)** |
-| Generation 품질 | grammatical 한 동화 풍 영어 | **자연스러운 동화 + 일반 도메인 폭) |
-| 학습 시간 | 약 18분 (사전학습) | **약 5-8분** (fine-tune 만) |
+| Generation 품질 | grammatical 한 동화 풍 영어 | **자연스러운 동화 + 일반 도메인 폭** |
+| 학습 시간 | 약 18분 (사전학습) | **약 5-8분** (continued pretraining 만) |
 
-**핵심 메시지**: *대규모 일반 사전학습된 본체* + *작은 도메인 fine-tune* 이 *작은 from-scratch 모델* 보다 *빠르게, 그리고 좋게* 도달합니다. *왜 실무는 보통 from-scratch 가 아니라 사전학습 모델을 가져와 fine-tune 하는가* 의 답.""")
+**핵심 메시지**: *대규모 일반 사전학습된 본체* + *작은 도메인 continued pretraining* 이 *작은 from-scratch 모델* 보다 *빠르게, 그리고 좋게* 도달합니다. *왜 실무는 보통 from-scratch 가 아니라 사전학습 모델을 가져와 새 데이터로 계속 학습하거나 SFT 하는가* 의 답. (단계 3 SFT 는 Ch 27 에서 본격.)""")
 
 # ----- 22. 다음 챕터 -----
 md(r"""## 다음 챕터 예고
 
-**Chapter 25. GPT2 (124M) 를 TinyStories 로 Fine-tune — *대규모 사전학습 모델의 도메인 적응***
+**Chapter 25. GPT2 (124M) Continued Pretraining 으로 TinyStories 에 적응 — *대규모 사전학습 모델의 도메인 계속 학습***
 
 - `AutoModelForCausalLM.from_pretrained("gpt2")` - OpenAI WebText 약 40GB 로 사전학습된 124M params 모델 로드
-- **같은 TinyStories 30K** 데이터 (본 챕터와 동일) 로 fine-tune - *데이터를 통제하고 본체 출발점만 다름*
-- **핵심 비교**: 본 챕터 (3M, from scratch, 18분) vs Ch 25 (124M, fine-tune, 5-8분) 의 generation 품질·학습 곡선 격차
-- "파인튜닝" 의 *GPT 시대 의미* 첫 등장 - `AutoModelForCausalLM` 그대로 (head 교체 없음), 데이터만 바뀜. Ch 21·23 의 BERT 파인튜닝 (head 교체) 과 코드 라인이 다름을 직접 print 로 확인
-- 작은 데이터 + 큰 사전학습 모델 = *왜 실무가 from-scratch 가 아니라 사전학습 fine-tune 패턴인가* 의 정량 답변
+- **같은 TinyStories 30K** 데이터 (본 챕터와 동일) 로 **continued pretraining** (계속 사전학습 / continual learning — *같은 CausalLM task, 새 데이터, head 그대로*. *task adaptation 의미의 fine-tune 이 아니라 단계 2*)
+- **핵심 비교**: 본 챕터 (3M, from scratch, 18분) vs Ch 25 (124M, continued pretraining, 5-8분) 의 generation 품질·학습 곡선 격차
+- *trainer 자체는 Ch 24 와 동일* (`transformers.Trainer` + `DataCollatorForLanguageModeling(mlm=False)`) — *변하는 건 모델 로드 한 줄 + lr (scratch 5e-4 → continued pretraining 2e-5)*
+- 작은 데이터 + 큰 사전학습 모델 = *왜 실무가 from-scratch 가 아니라 사전학습 모델 위에 계속 학습 패턴인가* 의 정량 답변
+- *진짜 task adaptation 의미의 fine-tune (instruction tuning)* 은 Ch 27 SFT 에서 본격 등장
 
-> **변하는 축**: *모델 크기 + 사전학습 여부* (3M / scratch → 124M / pretrained). 데이터·토크나이저 규약·loss 는 같음. Phase 4 의 *fine-tune* 의미가 본격적으로 자리 잡는 챕터.""")
+> **변하는 축**: *모델 크기 + 사전학습 여부* (3M / scratch → 124M / pretrained). 데이터·토크나이저 규약·loss·trainer 는 같음. Phase 4 의 *학습 단계 2 (continued pretraining)* 가 본격적으로 자리 잡는 챕터.""")
 
 
 # ----- 노트북 저장 -----
@@ -928,7 +941,7 @@ Phase 4 의 첫 챕터. Ch 7-23 의 *BERT (encoder, MLM, task head 부착 fine-t
 | Downstream 적응 | head 교체 + fine-tune (*task 적응*) | **SFT (*behavior alignment*)** + alignment (DPO / GRPO) |
 | "Fine-tune" 의미 | task 별 특화 | **prompt 만 바꿔도 다른 일** |
 
-> 본 챕터는 그 *출발점* - 작은 GPT 를 처음부터 학습해 *next-token 예측이 어떻게 generation 으로 이어지는지* 를 직접 봅니다. Ch 25 (대규모 사전학습 `gpt2` fine-tune) / Ch 27 (SFT) / Ch 29-30 (DPO / GRPO) 가 같은 본체 위에 쌓여 갑니다.
+> 본 챕터는 그 *출발점* - 작은 GPT 를 처음부터 학습해 *next-token 예측이 어떻게 generation 으로 이어지는지* 를 직접 봅니다. Ch 25 (대규모 사전학습 `gpt2` **continued pretraining**) / Ch 27 (SFT) / Ch 29-30 (DPO / GRPO) 가 같은 본체 위에 쌓여 갑니다.
 
 ## 다루는 핵심 개념
 - **GPT2LMHeadModel(config)** from scratch - `from_pretrained` 없이 random init (Ch 20·22 의 `BertForMaskedLM(config)` 와 같은 패턴, 모델 패밀리만 다름)
@@ -975,12 +988,12 @@ device 자동 감지 (CUDA / MPS / CPU) - 로컬 Mac MPS 에서도 실행 가능
 |---|---|---|---|---|---|
 | 22-23 | 작은 BERT (한국어, scratch) | klue/bert-base (가져옴) | 한국어 위키 → NSMC | MLM head / Linear(H, 2) | CE (masked / class) |
 | **24** | **작은 GPT2 (직접, scratch)** | **BPE (직접 학습, vocab 2,048)** | **TinyStories 30K stories** | **Linear(H, V) (LM head, weight tied)** | **CE (next-token, 거의 모든 자리)** |
-| 25 (다음) | gpt2 (124M, OpenAI WebText 사전학습) | BPE (GPT2 그대로, vocab 50,257) | TinyStories (Ch 24 와 동일) | Linear(H, V) (LM head) | CE (next-token) - *fine-tune* |
+| 25 (다음) | gpt2 (124M, OpenAI WebText 사전학습) | BPE (GPT2 그대로, vocab 50,257) | TinyStories (Ch 24 와 동일) | Linear(H, V) (LM head 그대로) | CE (next-token) - **continued pretraining** |
 
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표) 를 참고하세요.
 
 ## 다음 챕터
-[25_gpt2_finetune](../25_gpt2_finetune/) - OpenAI `gpt2` (124M, WebText 약 40GB 사전학습) 을 *같은 TinyStories 30K* 로 fine-tune. *데이터를 통제하고 본체 출발점만 다름*. 본 챕터 (3M, from scratch, 약 18분) vs Ch 25 (124M, fine-tune, 약 5-8분) 의 generation 품질·학습 곡선 격차가 *왜 실무는 from-scratch 가 아니라 사전학습 fine-tune 패턴인가* 의 정량 답변. 동시에 *fine-tune* 의 GPT 시대 의미 (head 교체 없음, 데이터만 바뀜) 가 본격 등장.
+[25_gpt2_finetune](../25_gpt2_finetune/) - OpenAI `gpt2` (124M, WebText 약 40GB 사전학습) 을 *같은 TinyStories 30K* 로 **continued pretraining** (계속 사전학습 / continual learning — 같은 CausalLM task, head 그대로). *데이터를 통제하고 본체 출발점만 다름*. 본 챕터 (3M, from scratch, 약 18분) vs Ch 25 (124M, continued pretraining, 약 5-8분) 의 generation 품질·학습 곡선 격차가 *왜 실무는 from-scratch 가 아니라 대규모 사전학습 모델을 활용하는가* 의 정량 답변. *진짜 task adaptation 의미의 fine-tune (instruction tuning)* 은 Ch 27 SFT 에서 본격 등장.
 """
 
 OUT_README.write_text(README, encoding="utf-8")
