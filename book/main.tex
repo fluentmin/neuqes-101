@@ -79,11 +79,41 @@
   {
     \chapline{Ch 15}{한국어 BERT 이진 분류}{NSMC \& CE}
     \chapline{Ch 16}{한국어 BERT 다중 클래스 분류}{KLUE-YNAT \& CE}
+    \chapline{Ch 17}{한국어 BERT 다중 라벨 분류}{KLUE-YNAT \& BCE}
+    \chapline{Ch 18}{한국어 BERT 보조 손실}{Auxiliary Loss}
   }
 \input{chapters/ch15_ko_binary}
 \input{chapters/ch16_ko_multiclass}
+\input{chapters/ch17_ko_multilabel}
+\input{chapters/ch18_ko_auxiliary}
+
+\phasepart{3}
+  {직접 만드는 BERT}
+  {토크나이저와 작은 BERT를 직접 만들고 전이 성능을 확인}
+  {Tokenizer Training · Small BERT from Scratch}
+  {
+    \chapline{Ch 19}{토크나이저 직접 학습}{Tokenizer Training}
+    \chapline{Ch 20}{작은 BERT 사전학습}{English MLM}
+    \chapline{Ch 21}{작은 BERT 이진 분류}{Yelp Fine-tune}
+    \chapline{Ch 22}{한국어 작은 BERT 사전학습}{Korean MLM}
+    \chapline{Ch 23}{한국어 작은 BERT 이진 분류}{NSMC Fine-tune}
+  }
+\input{chapters/ch19_tokenizer_training}
+\input{chapters/ch20_en_bert_pretrain}
+\input{chapters/ch21_en_bert_classify}
+\input{chapters/ch22_ko_bert_pretrain}
+\input{chapters/ch23_ko_bert_classify}
 
 \appendix
+\appendixpart
+  {부록}
+  {검증 전 참고 원고와 이후 확장할 실험 도구}
+  {Reference Notes · Model Config, Tracking, HPO}
+  {
+    \chapline{App A}{모델 설정 읽기}{Model Config}
+    \chapline{App B}{실험 기록}{Experiment Tracking}
+    \chapline{App C}{하이퍼파라미터 탐색}{HPO}
+  }
 \input{appendices/app_a_model_config}
 \input{appendices/app_b_experiment_tracking}
 \input{appendices/app_c_hpo}

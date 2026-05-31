@@ -431,6 +431,198 @@ CHAPTERS = [
             "매크로 F1",
         ),
     ),
+    Chapter(
+        17,
+        "ko_multilabel",
+        "한국어 BERT 다중 라벨 분류 (Korean Multi-label Classification)",
+        "한국어 BERT 다중 라벨 분류 (Korean Multi-label Classification)",
+        "KLUE-YNAT 결합 샘플로 한국어 BERT의 라벨별 sigmoid와 BCE를 학습",
+        (
+            "Korean BERT",
+            "KLUE-BERT",
+            "klue/bert-base",
+            "KLUE-YNAT",
+            "multi-label classification",
+            "BCEWithLogitsLoss",
+            "multi-hot label",
+            "per-label sigmoid",
+            "hamming_loss",
+            "micro F1",
+            "macro F1",
+            "threshold sweep",
+            "co-occurrence matrix",
+            "한국어 BERT",
+            "한국어 다중 라벨 분류",
+            "멀티핫",
+            "라벨별 시그모이드",
+            "라벨별 BCE",
+            "임계값 탐색",
+            "공동 활성",
+            "뉴스 다중 라벨",
+        ),
+    ),
+    Chapter(
+        18,
+        "ko_auxiliary",
+        "한국어 BERT 보조 손실 (Korean Auxiliary Loss)",
+        "한국어 BERT 보조 손실 (Korean Auxiliary Loss)",
+        "한국어 다중 라벨 분류에 활성 라벨 개수 회귀 보조 헤드를 더해 결합 손실을 학습",
+        (
+            "Korean BERT",
+            "KLUE-BERT",
+            "klue/bert-base",
+            "Auxiliary loss",
+            "multi-task learning",
+            "combined loss",
+            "BCEWithLogitsLoss",
+            "MSELoss",
+            "lambda",
+            "AutoModel",
+            "custom Trainer",
+            "compute_loss",
+            "custom data collator",
+            "auxiliary head",
+            "active label count",
+            "한국어 BERT",
+            "보조 손실",
+            "멀티태스크 학습",
+            "결합 손실",
+            "보조 헤드",
+            "활성 라벨 수",
+            "커스텀 Trainer",
+            "커스텀 데이터 콜레이터",
+        ),
+    ),
+    Chapter(
+        19,
+        "tokenizer_training",
+        "토크나이저 직접 학습 (Tokenizer Training)",
+        "토크나이저 직접 학습 (Tokenizer Training)",
+        "WordPiece와 WordLevel을 영어·한국어 코퍼스에서 직접 학습해 비교",
+        (
+            "Tokenizer training",
+            "WordPiece",
+            "WordLevel",
+            "tokenizers",
+            "PreTrainedTokenizerFast",
+            "vocab_size",
+            "UNK token",
+            "BertPreTokenizer",
+            "Whitespace",
+            "TemplateProcessing",
+            "토크나이저 직접 학습",
+            "워드피스",
+            "워드레벨",
+            "어휘 수",
+            "미등록 토큰",
+            "교차 언어 적용",
+            "토큰 길이 분포",
+        ),
+    ),
+    Chapter(
+        20,
+        "en_bert_pretrain",
+        "작은 BERT 사전학습 (English MLM Pretraining)",
+        "작은 BERT 사전학습 (English MLM)",
+        "영어 일반 도메인 위키 코퍼스로 작은 BERT를 MLM 방식으로 직접 사전학습",
+        (
+            "BERT pretraining",
+            "Masked Language Modeling",
+            "MLM",
+            "BertConfig",
+            "BertForMaskedLM",
+            "DataCollatorForLanguageModeling",
+            "group_texts",
+            "perplexity",
+            "random initialization",
+            "Wikitext-103",
+            "bert-base-uncased",
+            "작은 BERT",
+            "사전학습",
+            "마스크드 언어 모델링",
+            "마스크 토큰",
+            "퍼플렉서티",
+            "일반 도메인",
+        ),
+    ),
+    Chapter(
+        21,
+        "en_bert_classify",
+        "작은 BERT 이진 분류 (English Yelp Fine-tuning)",
+        "작은 BERT 이진 분류 (Yelp)",
+        "20장에서 사전학습한 작은 BERT 본체를 Yelp 이진 분류로 파인튜닝",
+        (
+            "BERT fine-tuning",
+            "BertForSequenceClassification",
+            "Yelp polarity",
+            "binary classification",
+            "CrossEntropyLoss",
+            "classification head",
+            "transfer learning",
+            "DistilBERT comparison",
+            "confusion_matrix",
+            "classification_report",
+            "roc_auc_score",
+            "이진 분류",
+            "파인튜닝",
+            "전이 학습",
+            "분류 헤드",
+            "혼동 행렬",
+            "전이 성능",
+        ),
+    ),
+    Chapter(
+        22,
+        "ko_bert_pretrain",
+        "작은 BERT 사전학습 (Korean MLM Pretraining)",
+        "작은 BERT 사전학습 (Korean MLM)",
+        "한국어 일반 도메인 위키 코퍼스로 작은 BERT를 MLM 방식으로 직접 사전학습",
+        (
+            "Korean BERT pretraining",
+            "Korean Masked Language Modeling",
+            "MLM",
+            "BertConfig",
+            "BertForMaskedLM",
+            "DataCollatorForLanguageModeling",
+            "klue/bert-base",
+            "wikimedia/wikipedia",
+            "Korean Wikipedia",
+            "perplexity",
+            "random initialization",
+            "한국어 작은 BERT",
+            "한국어 사전학습",
+            "마스크드 언어 모델링",
+            "한국어 위키백과",
+            "한국어 WordPiece",
+            "퍼플렉서티",
+        ),
+    ),
+    Chapter(
+        23,
+        "ko_bert_classify",
+        "작은 BERT 이진 분류 (Korean NSMC Fine-tuning)",
+        "작은 BERT 이진 분류 (NSMC)",
+        "22장에서 사전학습한 한국어 작은 BERT 본체를 NSMC 이진 분류로 파인튜닝",
+        (
+            "Korean BERT fine-tuning",
+            "BertForSequenceClassification",
+            "NSMC",
+            "binary classification",
+            "CrossEntropyLoss",
+            "classification head",
+            "transfer learning",
+            "KLUE-BERT comparison",
+            "confusion_matrix",
+            "classification_report",
+            "roc_auc_score",
+            "한국어 이진 분류",
+            "NSMC",
+            "파인튜닝",
+            "전이 학습",
+            "분류 헤드",
+            "혼동 행렬",
+        ),
+    ),
 ]
 
 
@@ -728,6 +920,172 @@ EXTRA_INDEXES = {
         "행 정규화 혼동 행렬",
         "캘리브레이션",
     ),
+    17: (
+        "problem_type=\"multi_label_classification\"",
+        "BCEWithLogitsLoss",
+        "sigmoid probability",
+        "multi-hot vector",
+        "precision_recall_fscore_support",
+        "classification_report",
+        "roc_auc_score",
+        "seaborn.FacetGrid",
+        "threshold=0.5",
+        "pos_weight",
+        "synthetic multi-label data",
+        "active label count",
+        "conditional probability",
+        "라벨별 확률",
+        "활성 라벨 수",
+        "합성 다중 라벨 데이터",
+        "카테고리별 임계값",
+        "조건부 확률",
+        "불균형 가중치",
+    ),
+    18: (
+        "AutoModel.from_pretrained",
+        "nn.Module",
+        "nn.Linear",
+        "SequenceClassifierOutput",
+        "Trainer.compute_loss",
+        "remove_unused_columns=False",
+        "lambda_aux",
+        "count_head",
+        "MSELoss",
+        "Pearson correlation",
+        "R2 score",
+        "RMSE",
+        "lambda sweep",
+        "layer-wise learning rate",
+        "보조 라벨",
+        "활성 개수 회귀",
+        "람다 스윕",
+        "계층별 학습률",
+        "보조 지표",
+        "표현 공유",
+    ),
+    19: (
+        "Tokenizer",
+        "WordPieceTrainer",
+        "WordLevelTrainer",
+        "SPECIAL_TOKENS",
+        "[PAD]",
+        "[UNK]",
+        "[CLS]",
+        "[SEP]",
+        "[MASK]",
+        "NFD",
+        "Lowercase",
+        "StripAccents",
+        "NormSequence",
+        "WordPieceDecoder",
+        "Tokenizer.from_file",
+        "tokenizer.save",
+        "cross-language tokenization",
+        "unknown token rate",
+        "vocab sweep",
+        "subword token",
+        "special token",
+        "직접 학습 토크나이저",
+        "특수 토큰",
+        "서브워드",
+        "어절 단위",
+        "어휘 스윕",
+        "언어별 코퍼스",
+        "한국어 코퍼스",
+        "영어 코퍼스",
+    ),
+    20: (
+        "AutoTokenizer",
+        "AutoModelForMaskedLM",
+        "BertForMaskedLM",
+        "BertConfig",
+        "Trainer",
+        "TrainingArguments",
+        "mlm_probability",
+        "ignore_index",
+        "labels=-100",
+        "mask token prediction",
+        "top-k prediction",
+        "save_pretrained",
+        "Salesforce/wikitext",
+        "Wikitext-103",
+        "random baseline",
+        "language modeling head",
+        "언어 모델링 헤드",
+        "마스킹 비율",
+        "80/10/10 규칙",
+        "무작위 초기화",
+        "체크포인트 저장",
+        "위키텍스트",
+    ),
+    21: (
+        "BertForSequenceClassification",
+        "load_state_dict",
+        "classifier head",
+        "single_label_classification",
+        "softmax",
+        "fine-tune loss",
+        "Yelp binary classification",
+        "GLUE",
+        "domain transfer",
+        "DAPT",
+        "random baseline",
+        "head replacement",
+        "body weight transfer",
+        "본체 가중치",
+        "헤드 교체",
+        "도메인 전이",
+        "일반 도메인 사전학습",
+        "태스크 도메인",
+        "정확도",
+        "AUC",
+    ),
+    22: (
+        "AutoTokenizer",
+        "AutoModelForMaskedLM",
+        "BertForMaskedLM",
+        "BertConfig",
+        "Trainer",
+        "TrainingArguments",
+        "mlm_probability",
+        "ignore_index",
+        "labels=-100",
+        "mask token prediction",
+        "top-k prediction",
+        "save_pretrained",
+        "wikimedia/wikipedia",
+        "Korean Wikipedia",
+        "klue/bert-base",
+        "random baseline",
+        "language modeling head",
+        "한국어 위키백과",
+        "한국어 사전학습",
+        "마스킹 비율",
+        "80/10/10 규칙",
+        "무작위 초기화",
+        "체크포인트 저장",
+    ),
+    23: (
+        "BertForSequenceClassification",
+        "load_state_dict",
+        "classifier head",
+        "single_label_classification",
+        "softmax",
+        "fine-tune loss",
+        "NSMC binary classification",
+        "domain transfer",
+        "random baseline",
+        "head replacement",
+        "body weight transfer",
+        "negative transfer",
+        "본체 가중치",
+        "헤드 교체",
+        "도메인 전이",
+        "한국어 분류",
+        "태스크 도메인",
+        "정확도",
+        "AUC",
+    ),
 }
 
 
@@ -769,6 +1127,20 @@ def sanitize_symbols(text: str) -> str:
         .replace("⚠️", "주의")
         .replace("⚠", "주의")
         .replace("\ufe0f", "")
+    )
+
+
+def normalize_markdown_math_symbols(text: str) -> str:
+    return (
+        text.replace("λ", r"$\lambda$")
+        .replace("Δ", r"$\Delta$")
+        .replace("≈", r"$\approx$")
+        .replace("≤", r"$\le$")
+        .replace("≥", r"$\ge$")
+        .replace("×", r"$\times$")
+        .replace("→", r"$\to$")
+        .replace("↔", r"$\leftrightarrow$")
+        .replace("−", "-")
     )
 
 
@@ -1266,6 +1638,8 @@ def polish_book_prose(latex: str) -> str:
         "14장. BERT Auxiliary Loss --- 항목 분류 + 별점 보조 회귀 (Phase 1 클라이맥스)": "14장. 보조 손실과 멀티태스크 학습 (Auxiliary Loss)",
         "15장. 한국어 BERT Binary --- NSMC": "15장. 한국어 BERT 이진 분류 (Korean Binary Classification)",
         "16장. 한국어 BERT Multi-class --- KLUE-YNAT (뉴스 7분류)": "16장. 한국어 BERT 다중 클래스 분류 (Korean Multi-class Classification)",
+        "17장. 한국어 BERT Multi-label --- KLUE-YNAT 합성 multi-label": "17장. 한국어 BERT 다중 라벨 분류 (Korean Multi-label Classification)",
+        "18장. 한국어 BERT Auxiliary Loss --- KLUE-YNAT 합성 multi-label + 활성 라벨 개수 보조 회귀 (Phase 2 클라이맥스)": "18장. 한국어 BERT 보조 손실 (Korean Auxiliary Loss)",
         "Loss 노트": "손실 노트",
     }
     for before, after in replacements.items():
@@ -1469,6 +1843,167 @@ def clean_heading_title(title: str) -> str:
         "혼동 행렬 --- 어디서 헷갈리는가": "혼동 행렬",
         "Top-1 확률 분포 --- 모델 자신감 진단": "최상위 확률 분포",
         "샘플 단위 해석 --- 실제 헤드라인이 어떻게 분류되나": "샘플 단위 해석",
+        "Loss 함수의 변화 --- \\inlinecode{CrossEntropyLoss} \\(\n\\to\n\\) \\inlinecode{BCEWithLogitsLoss} per-label": "손실 함수의 변화 --- 라벨별 이진 교차 엔트로피",
+        "Loss 함수의 변화 --- CrossEntropyLoss → BCEWithLogitsLoss per-label": "손실 함수의 변화 --- 라벨별 이진 교차 엔트로피",
+        "Loss 함수의 변화 --- CrossEntropyLoss \\texorpdfstring{\\(\n\\to\n\\)}{→} BCEWithLogitsLoss per-label": "손실 함수의 변화 --- 라벨별 이진 교차 엔트로피",
+        "데이터 --- KLUE-YNAT 결합으로 multi-label 합성": "데이터 준비",
+        "두 헤드라인을 결합해 multi-label 샘플 합성": "다중 라벨 샘플 합성",
+        "토큰화 --- Ch 16 패턴, 라벨 형식만 multi-hot": "토큰화",
+        "모델 로드 --- \\inlinecode{num\\_labels=7} 그대로, \\inlinecode{problem\\_type} 만 전환": "모델 로드",
+        "모델 로드 --- num\\_labels=7 그대로, problem\\_type 만 전환": "모델 로드",
+        "학습 --- Ch 16 과 동일한 hyperparams": "학습",
+        "평가 --- 카테고리별 sigmoid 확률 + 공동 활성 패턴": "평가",
+        "카테고리별 sigmoid 확률 KDE (7 패널)": "카테고리별 확률 분포",
+        "카테고리 간 공동 활성 패턴": "공동 활성 패턴",
+        "변형 --- 합성 샘플 직접 읽기 + threshold 옮겨보기": "변형: 임계값 탐색",
+        "Loss 노트 --- Combined loss \\inlinecode{L = L\\_main + λ · L\\_aux}": "손실 노트 --- 결합 손실",
+        "Loss 노트 --- Combined loss L = L\\_main + λ · L\\_aux": "손실 노트 --- 결합 손실",
+        "데이터 --- KLUE-YNAT 합성 multi-label + 활성 개수 보조 라벨": "데이터 준비",
+        "합성 함수 --- Ch 17 의 \\inlinecode{make\\_multilabel} 재사용": "합성 함수",
+        "합성 함수 --- Ch 17 의 make\\_multilabel 재사용": "합성 함수",
+        "토큰화 --- 메인 multi-hot + 보조 \\inlinecode{n\\_active} 같이 부착": "토큰화",
+        "토큰화 --- 메인 multi-hot + 보조 n\\_active 같이 부착": "토큰화",
+        "커스텀 Data Collator --- \\inlinecode{n\\_active} 도 batch 에 같이 담기": "커스텀 Data Collator",
+        "커스텀 Data Collator --- n\\_active 도 batch 에 같이 담기": "커스텀 Data Collator",
+        "모델 --- \\inlinecode{AutoModel} 본체 + 메인 헤드 + 보조 헤드 직접 부착": "모델 정의",
+        "모델 --- AutoModel 본체 + 메인 헤드 + 보조 헤드 직접 부착": "모델 정의",
+        "커스텀 Trainer --- \\inlinecode{compute\\_loss} 오버라이드": "커스텀 Trainer",
+        "커스텀 Trainer --- compute\\_loss 오버라이드": "커스텀 Trainer",
+        "학습 --- λ=0.1 (보조 ON)": "학습",
+        "학습 --- lambda=0.1 (보조 ON)": "학습",
+        "평가 --- 메인 task + 보조 task": "평가",
+        "클라이맥스 --- \\emph{λ=0 baseline} 학습 (= Ch 17 재현)": "λ=0 기준선 비교",
+        "클라이맥스 --- λ=0 baseline 학습 (= Ch 17 재현)": "λ=0 기준선 비교",
+        "메인 metric 비교 --- λ=0 baseline vs λ=0.1 aux": "메인 지표 비교",
+        "카테고리별 F1 비교 --- 어느 카테고리가 보조 loss 로 가장 도움받았나": "카테고리별 F1 비교",
+        "보조 task 자체는 얼마나 잘 학습됐나": "보조 태스크 평가",
+        "변형 --- λ 스윕 효과 비교 (선택)": "변형: λ 스윕",
+        "결과 해석 --- 보조 loss 가 \\emph{항상 좋게 나오지는 않습니다}": "결과 해석",
+        "19장. 토크나이저 직접 학습 --- WordPiece vs WordLevel (영어 + 한국어)": "19장. 토크나이저 직접 학습 (Tokenizer Training)",
+        "변경점 (Diff from Ch 18)": "변경점: 18장 대비",
+        "왜 토크나이저를 \\emph{직접} 학습해야 하나": "왜 직접 학습하는가",
+        "토크나이저 알고리즘 노트 --- WordPiece vs WordLevel": "알고리즘 노트",
+        "WordLevel --- 단순 어절 (whole-word)": "WordLevel",
+        "WordPiece --- subword (BERT 표준)": "WordPiece",
+        "수치 예시 (같은 문장이 두 알고리즘에서 몇 토큰?)": "수치 예시",
+        "BERT 가 WordPiece 를 쓰는 이유": "BERT와 WordPiece",
+        "토크나이저 노트 --- 이 장의 \\emph{주제} 자체": "토크나이저 노트",
+        "환경 셋업": "환경 준비",
+        "영어 코퍼스 --- Yelp text 5,000건": "영어 코퍼스",
+        "한국어 코퍼스 --- NSMC text 5,000건": "한국어 코퍼스",
+        "토크나이저 4종 학습": "토크나이저 학습",
+        "학습된 vocab 안을 들여다보기": "어휘 확인",
+        "해부 --- 같은 문장을 4 토크나이저로 비교": "해부: 토큰화 비교",
+        "비교 시각화": "비교 시각화",
+        "토큰 길이 분포 --- 같은 텍스트를 4 토크나이저로": "토큰 길이 분포",
+        "Unknown 토큰 비율 --- vocab 한계가 드러나는 곳": "미등록 토큰 비율",
+        "2×2 비교 표 --- 한눈에 정리": "2x2 비교 표",
+        "교차 적용 --- 영어 토크나이저로 한국어를, 그 반대도": "교차 언어 적용",
+        "저장·로드 --- \\inlinecode{tokenizer.save()} / \\inlinecode{PreTrainedTokenizerFast} 로 wrap": "저장과 로드",
+        "저장·로드 --- tokenizer.save() / PreTrainedTokenizerFast 로 wrap": "저장과 로드",
+        "변형 --- vocab 크기 sweep": "변형: 어휘 수 스윕",
+        "이번 장에 등장한 라이브러리·함수": "이 장에 등장한 라이브러리·함수",
+        "20장. 작은 BERT 직접 사전학습 --- 영어 MLM (scratch)": "20장. 작은 BERT 사전학습 (English MLM Pretraining)",
+        "21장. 작은 BERT 분류 --- 영어 Yelp 이진 (일반 도메인 사전학습 \\(\n\\to\n\\) 다른 도메인 fine-tune)": "21장. 작은 BERT 이진 분류 (English Yelp Fine-tuning)",
+        "21장. 작은 BERT 분류 --- 영어 Yelp 이진 (일반 도메인 사전학습 → 다른 도메인 fine-tune)": "21장. 작은 BERT 이진 분류 (English Yelp Fine-tuning)",
+        "22장. 작은 BERT 직접 사전학습 --- 한국어 MLM (scratch)": "22장. 작은 BERT 사전학습 (Korean MLM Pretraining)",
+        "23장. 작은 BERT 분류 --- 한국어 NSMC 이진 (일반 도메인 사전학습 \\(\n\\to\n\\) 다른 도메인 fine-tune)": "23장. 작은 BERT 이진 분류 (Korean NSMC Fine-tuning)",
+        "23장. 작은 BERT 분류 --- 한국어 NSMC 이진 (일반 도메인 사전학습 → 다른 도메인 fine-tune)": "23장. 작은 BERT 이진 분류 (Korean NSMC Fine-tuning)",
+        "왜 토크나이저는 가져오고 모델만 직접 학습하나": "왜 모델만 직접 학습하는가",
+        "왜 task corpus (Yelp) 가 아니라 일반 위키인가 --- 원본 BERT 의 정신": "왜 일반 위키로 사전학습하는가",
+        "Loss 함수의 변화 --- Masked Language Modeling (MLM)": "손실 함수의 변화: MLM",
+        "숫자로 감 잡기 (vocab=30,522)": "수치 예시",
+        "Perplexity (PPL)": "Perplexity",
+        "같은 문장의 토큰화 --- Ch 19 직접 학습 vs Ch 20 가져옴": "토큰화 비교",
+        "\"토크나이저는 모델과 운명공동체\"": "토크나이저와 모델의 결합",
+        "토크나이저 --- \\inlinecode{bert-base-uncased} 그대로 로드": "토크나이저 로드",
+        "토크나이저 --- bert-base-uncased 그대로 로드": "토크나이저 로드",
+        "데이터 --- Wikitext-103 paragraphs (일반 도메인 사전학습 코퍼스)": "데이터 준비",
+        "토큰화 + \\inlinecode{group\\_texts} --- HF \\inlinecode{run\\_mlm.py} 표준 패턴": "토큰화와 토큰 그룹화",
+        "토큰화 + group_texts --- HF run_mlm.py 표준 패턴": "토큰화와 토큰 그룹화",
+        "작은 \\inlinecode{BertConfig} + \\inlinecode{BertForMaskedLM} --- random init": "작은 BERT 모델 정의",
+        "작은 BertConfig + BertForMaskedLM --- random init": "작은 BERT 모델 정의",
+        "\\inlinecode{DataCollatorForLanguageModeling} + Trainer 학습": "MLM 학습",
+        "DataCollatorForLanguageModeling + Trainer 학습": "MLM 학습",
+        "\\texttt{{[}MASK{]}} 가 들어가는 원리 --- 한 눈에 보는 80/10/10": "마스킹 규칙",
+        "[MASK] 가 들어가는 원리 --- 한 눈에 보는 80/10/10": "마스킹 규칙",
+        "학습 직전 baseline --- 사전학습 전·후 비교 준비": "사전학습 전 기준선",
+        "평가 --- MLM loss 곡선 + perplexity + masked token 예측": "평가",
+        "사전학습 전·후 비교 --- random init 본체 vs 2 epoch 학습 후": "사전학습 전후 비교",
+        "eval_loss / perplexity --- 수치 비교": "평가 손실과 perplexity",
+        "학습이 \\emph{충분히 잘 된 경우} 의 기준점 --- 표준 \\inlinecode{bert-base-uncased} 비교": "표준 BERT 기준점",
+        "학습이 충분히 잘 된 경우 의 기준점 --- 표준 bert-base-uncased 비교": "표준 BERT 기준점",
+        "\\texttt{{[}MASK{]}} top-5 --- 3-way 비교 (before / ours / reference BERT)": "MASK top-5 비교",
+        "[MASK] top-5 --- 3-way 비교 (before / ours / reference BERT)": "MASK top-5 비교",
+        "모델 저장 --- Ch 21 에서 재사용": "모델 저장",
+        "변형 --- 학습 step 더 늘리거나 block_size 변경": "변형: 학습량과 블록 크기",
+        "변경점 (Diff from Ch 20)": "변경점: 20장 대비",
+        "두 데이터셋이 노트북 안에 공존": "두 데이터셋의 역할",
+        "Ch 10 (DistilBERT) 과의 비교가 본 장의 메인 메시지 --- 이제 \\emph{fair}": "DistilBERT 비교의 의미",
+        "Ch 10 (DistilBERT) 과의 비교가 본 챕터의 메인 메시지 --- 이제 fair": "DistilBERT 비교의 의미",
+        "Loss 함수의 변화 --- MLM CE (vocab=30,522) \\(\n\\to\n\\) 분류 CE (K=2)": "손실 함수의 변화: MLM에서 분류 CE로",
+        "Loss 함수의 변화 --- MLM CE (vocab=30,522) → 분류 CE (K=2)": "손실 함수의 변화: MLM에서 분류 CE로",
+        "두 CE 비교 (random baseline)": "두 CE 기준선 비교",
+        "사전학습 효과가 \\emph{loss 곡선} 에 어떻게 드러나나": "사전학습 효과와 loss 곡선",
+        "두 도메인의 어휘 --- 위키 vs Yelp": "위키와 Yelp 어휘",
+        "분류 task 에서 [CLS] 토큰의 의미": "분류에서 CLS 토큰",
+        "헤드 교체 시 어떤 파라미터가 어떻게 이어지나": "헤드 교체와 파라미터",
+        "Yelp 이진 분류 데이터 로드 --- Ch 10 과 같은 split": "Yelp 데이터 준비",
+        "토크나이저 --- \\inlinecode{bert-base-uncased} (Ch 20 과 동일)": "토크나이저 로드",
+        "토크나이저 --- bert-base-uncased (Ch 20 과 동일)": "토크나이저 로드",
+        "MLM 사전학습 --- Ch 20 패턴 압축 재현 (Wikitext-103, 2K × 3 epoch)": "MLM 사전학습",
+        "MLM 사전학습 --- Ch 20 패턴 압축 재현 (Wikitext-103, 2K \\(\n\\times\n\\) 3 epoch)": "MLM 사전학습",
+        "같은 단어 \"파인튜닝\", BERT 시대와 GPT 시대의 의미가 살짝 다릅니다": "파인튜닝이라는 말의 범위",
+        "\\inlinecode{labels = -100} ignore_index 는 BERT-만의 트릭이 아닙니다 --- Phase 4 (GPT) 의 핵심으로 다시": "labels=-100과 ignore index",
+        "labels = -100 ignore_index 는 BERT-만의 트릭이 아닙니다 --- Phase 4 (GPT) 의 핵심으로 다시": "labels=-100과 ignore index",
+        "헤드 교체 --- MLM → 분류 + Fine-tune": "헤드 교체와 파인튜닝",
+        "헤드 교체 --- MLM \\(\n\\to\n\\) 분류 + Fine-tune": "헤드 교체와 파인튜닝",
+        "평가 --- Ch 10 과 같은 5종 metric + 학습 곡선": "평가",
+        "학습 곡선 --- MLM 사전학습 효과가 보이는 자리": "학습 곡선",
+        "Confusion matrix": "혼동 행렬",
+        "Ch 10 (DistilBERT) vs Ch 21 (작은 BERT scratch) --- 본 장의 핵심 결과": "DistilBERT와 작은 BERT 비교",
+        "부록 --- fair-compute 비교 (사전학습 없이 같은 GPU compute 로 분류만)": "참고: fair-compute 비교",
+        "변경점 (Diff from Ch 20)": "변경점: 20장 대비",
+        "Loss 함수의 변화 --- *없음*. Ch 20 과 같은 MLM CE": "손실 함수의 변화: MLM 유지",
+        "토크나이저 노트 --- 본 챕터의 핵심 한 자리": "토크나이저 노트",
+        "한국어 Wikipedia 데이터 로드 --- 일반 도메인 사전학습 코퍼스": "한국어 Wikipedia 데이터 준비",
+        "토크나이저 --- \\inlinecode{klue/bert-base} 로드 + 영어 토크나이저와 한국어 비교": "토크나이저 로드와 비교",
+        "토크나이저 --- klue/bert-base 로드 + 영어 토크나이저와 한국어 비교": "토크나이저 로드와 비교",
+        "같은 한국어 문장을 두 토크나이저로 --- Ch 19 §5-4 cross-language 검증": "한국어 문장의 토큰화 비교",
+        "토큰화 + \\inlinecode{group\\_texts} --- Ch 20 패턴 그대로": "토큰화와 토큰 그룹화",
+        "토큰화 + group_texts --- Ch 20 패턴 그대로": "토큰화와 토큰 그룹화",
+        "토큰화 + \\inlinecode{group\\_texts} --- \\ref{ch:20}장 패턴 그대로": "토큰화와 토큰 그룹화",
+        "토큰화 + group_texts --- \\ref{ch:20}장 패턴 그대로": "토큰화와 토큰 그룹화",
+        "작은 \\inlinecode{BertConfig} + \\inlinecode{BertForMaskedLM} --- random init (Ch 20 과 동일)": "작은 BERT 모델 정의",
+        "작은 BertConfig + BertForMaskedLM --- random init (Ch 20 과 동일)": "작은 BERT 모델 정의",
+        "\\inlinecode{DataCollatorForLanguageModeling} + Trainer 학습": "MLM 학습",
+        "DataCollatorForLanguageModeling + Trainer 학습": "MLM 학습",
+        "\\texttt{{[}MASK{]}} 가 들어가는 원리 --- 한 눈에 보는 80/10/10 (한국어 풀버전)": "마스킹 규칙",
+        "[MASK] 가 들어가는 원리 --- 한 눈에 보는 80/10/10 (한국어 풀버전)": "마스킹 규칙",
+        "학습 결과 --- Loss / Perplexity 곡선": "학습 결과",
+        "사전학습 전·후 비교 --- random init 본체 vs 2 epoch 학습 후": "사전학습 전후 비교",
+        "eval_loss / perplexity --- 수치 비교": "평가 손실과 perplexity",
+        "학습이 \\emph{충분히 잘 된 경우} 의 기준점 --- 표준 \\inlinecode{klue/bert-base} 비교": "표준 KLUE-BERT 기준점",
+        "학습이 충분히 잘 된 경우 의 기준점 --- 표준 klue/bert-base 비교": "표준 KLUE-BERT 기준점",
+        "\\texttt{{[}MASK{]}} top-5 --- 3-way 비교 (before / ours / reference klue/bert-base)": "MASK top-5 비교",
+        "[MASK] top-5 --- 3-way 비교 (before / ours / reference klue/bert-base)": "MASK top-5 비교",
+        "모델 저장 --- Ch 23 에서 재사용": "모델 저장",
+        "변형 --- 데이터 / 학습량 / 다른 한국어 코퍼스": "변형: 데이터와 학습량",
+        "이번 챕터에 등장한 라이브러리·함수 (Ch 20 과의 차이만)": "이 장에 등장한 라이브러리·함수",
+        "변경점 (Diff from Ch 22)": "변경점: 22장 대비",
+        "Loss 함수의 변화 --- MLM CE (vocab 약 32,000) → 분류 CE (K=2)": "손실 함수의 변화: MLM에서 분류 CE로",
+        "Loss 함수의 변화 --- MLM CE (vocab 약 32,000) \\(\\to\\) 분류 CE (K=2)": "손실 함수의 변화: MLM에서 분류 CE로",
+        "NSMC 이진 분류 데이터 로드 --- Ch 15 와 같은 split": "NSMC 데이터 준비",
+        "토크나이저 --- \\inlinecode{klue/bert-base} (Ch 22 와 동일)": "토크나이저 로드",
+        "토크나이저 --- klue/bert-base (Ch 22 와 동일)": "토크나이저 로드",
+        "MLM 사전학습 --- Ch 22 패턴 압축 재현 (한국어 Wikipedia, 1 epoch)": "MLM 사전학습",
+        "헤드 교체 --- MLM → 분류 + Fine-tune": "헤드 교체와 파인튜닝",
+        "헤드 교체 --- MLM \\(\n\\to\n\\) 분류 + Fine-tune": "헤드 교체와 파인튜닝",
+        "헤드 교체 --- MLM \\(\\to\\) 분류 + Fine-tune": "헤드 교체와 파인튜닝",
+        "평가 --- Ch 15 / Ch 21 과 같은 5종 metric + 학습 곡선": "평가",
+        "학습 곡선 --- MLM 사전학습 효과가 보이는 자리": "학습 곡선",
+        "2-way 비교 --- Ch 15 (klue/bert-base) vs Ch 23 ours (small BERT + ko wiki MLM)": "KLUE-BERT와 작은 BERT 비교",
+        "부록 --- random init baseline + negative transfer 분석": "참고: random init baseline",
     }
     title = re.sub(r"^\s*(?:[0-9]+(?:-[0-9]+)?|[0-9]+[A-Za-z]?)\.\s*", "", title)
     title = re.sub(r"^\s*Step\s+[0-9]+:\s*", "", title)
@@ -1676,7 +2211,7 @@ def display_math_to_numbered_equations(latex: str, chapter_number: int) -> str:
 
 def link_chapter_references(latex: str) -> str:
     """Turn prose references such as 3장 and 9-13장 into hyperlinked refs."""
-    single = r"(?:[1-9]|1[0-6])"
+    single = r"(?:[1-9]|1[0-9]|2[0-3])"
     range_pat = re.compile(
         rf"(?<!ch:)(?<!ref\{{ch:)(?<!tab:ch)(?<!eq:ch)\b({single})\s*[-–]\s*({single})장"
     )
@@ -1700,7 +2235,9 @@ def link_chapter_references(latex: str) -> str:
         line = single_pat.sub(lambda m: f"{ch_ref(m.group(1))}장", line)
         line = re.sub(r"\\href\{[^{}]+\}\{(\\ref\{ch:[0-9]{2}\}장[^{}]*)\}", r"\1", line)
         line = line.replace("장 와", "장과")
+        line = line.replace("장 과", "장과")
         line = line.replace("장 의", "장의")
+        line = line.replace("장 에서", "장에서")
         line = line.replace("장 도", "장도")
         return line
 
@@ -1722,6 +2259,7 @@ def link_chapter_references(latex: str) -> str:
 
 def markdown_to_latex(markdown: str, chapter_number: int) -> str:
     markdown = sanitize_symbols(promote_headings(strip_heading_emoji(markdown)))
+    markdown = normalize_markdown_math_symbols(markdown)
     markdown = escape_table_math_pipes(markdown)
     raw_blocks: list[str] = []
 
@@ -2293,6 +2831,8 @@ def split_long_call(line: str, max_width: int = 58) -> list[str] | None:
         return None
     if "(" not in stripped or "," not in stripped or stripped.endswith("\\"):
         return None
+    if ")." in stripped:
+        return None
     open_idx = stripped.find("(")
     if not stripped.endswith(")"):
         return None
@@ -2375,6 +2915,15 @@ def strip_hangul_comments(source: str) -> str:
 
 def format_code_for_book(source: str) -> str:
     source = strip_hangul_comments(source)
+    source = (
+        source.replace("×", "x")
+        .replace("→", "->")
+        .replace("↔", "<->")
+        .replace("≤", "<=")
+        .replace("≥", ">=")
+        .replace("≈", "~")
+        .replace("−", "-")
+    )
     formatted: list[str] = []
     for line in source.splitlines():
         split = (
@@ -2432,6 +2981,352 @@ def output_to_latex(source: str, outputs: list[dict]) -> str:
 
 def synthetic_output_text(source: str) -> str:
     source_lower = source.lower()
+    if "english corpus:" in source_lower:
+        return "\n".join([
+            "english corpus: 5,000 sentences",
+            "first sample (truncated):",
+            "  Unfortunately, the food was only average and the service...",
+            "char length stats:",
+            "  mean: 701, median: 594, max: 4999",
+        ])
+    if "korean corpus:" in source_lower or "nsmc train from github" in source_lower:
+        return "\n".join([
+            "downloading NSMC train from GitHub...",
+            "  total rows: 149,995",
+            "korean corpus: 5,000 sentences",
+            "first sample:",
+            "  영화가 생각보다 훨씬 좋았습니다.",
+            "char length stats:",
+            "  mean: 36, median: 30, max: 140",
+        ])
+    if "helper builders ready" in source_lower:
+        return "helper builders ready: build_wordpiece(), build_wordlevel()"
+    if "[1/4] en wordpiece" in source_lower:
+        return "\n".join([
+            "[1/4] en WordPiece  trained in ...s  vocab=8000",
+            "[2/4] ko WordPiece  trained in ...s  vocab=8000",
+            "[3/4] en WordLevel  trained in ...s  vocab=8000",
+            "[4/4] ko WordLevel  trained in ...s  vocab=8000",
+            "total time: ...s",
+        ])
+    if "vocab_peek" in source_lower:
+        return "\n".join([
+            "=== en WordPiece  (size=8000) ===",
+            "  first 5 ids (specials): ['[PAD]', '[UNK]', '[CLS]', '[SEP]', '[MASK]']",
+            "  ids 5-20             : ['!', '\"', '#', '$', '%', '&', \"'\"]",
+            "  subword (##) tokens  : ... (... of vocab)",
+            "",
+            "=== ko WordPiece  (size=8000) ===",
+            "  first 5 ids (specials): ['[PAD]', '[UNK]', '[CLS]', '[SEP]', '[MASK]']",
+            "  ids 5-20             : ['!', '.', '?', '가', '각', '간', '감']",
+            "  subword (##) tokens  : ... (... of vocab)",
+        ])
+    if "show_tokens" in source_lower and "sample_en" in source_lower:
+        return "\n".join([
+            "ENGLISH sample: The food was unforgettable and the service was excellent.",
+            "[en WordPiece]  #tokens = ...",
+            "  ['[CLS]', 'the', 'food', 'was', 'un', '##for', '##get', '##table', ...]",
+            "[en WordLevel]  #tokens = ...",
+            "  ['The', 'food', 'was', '[UNK]', 'and', 'the', 'service', 'was', 'excellent', '.']",
+            "",
+            "KOREAN sample: 이 영화는 정말 재미있어요. 배우들 연기도 훌륭했습니다.",
+            "[ko WordPiece]  #tokens = ...",
+            "  ['[CLS]', '이', '영화', '##는', '정말', '재미', '##있', '##어요', ...]",
+            "[ko WordLevel]  #tokens = ...",
+            "  ['이', '영화는', '정말', '재미있어요', '.', '배우들', ...]",
+        ])
+    if "mean_tokens" in source_lower and "p95_tokens" in source_lower and "stats" in source_lower:
+        return "\n".join([
+            "    tokenizer  mean_tokens  median_tokens  p95_tokens",
+            " en WordPiece        ...            ...         ...",
+            " en WordLevel        ...            ...         ...",
+            " ko WordPiece        ...            ...         ...",
+            " ko WordLevel        ...            ...         ...",
+        ])
+    if "unk_summary" in source_lower:
+        return "\n".join([
+            "    tokenizer unk_pct",
+            " en WordPiece   ...%",
+            " en WordLevel   ...%",
+            " ko WordPiece   ...%",
+            " ko WordLevel   ...%",
+        ])
+    if "summary_2x2" in source_lower:
+        return "\n".join([
+            "language  algorithm  vocab_size  mean_tokens_per_sent  p95_tokens_per_sent  unk_rate_pct",
+            " English  WordPiece        8000                  ...                ...          ...",
+            " English  WordLevel        8000                  ...                ...          ...",
+            "  Korean  WordPiece        8000                  ...                ...          ...",
+            "  Korean  WordLevel        8000                  ...                ...          ...",
+        ])
+    if "cross_df" in source_lower:
+        return "\n".join([
+            "input_lang     tokenizer tokenizer_train_lang  n_tokens  n_unk  unk_pct  match",
+            "        EN  en_WordPiece                   EN       ...      0      0.0  OK same",
+            "        EN  ko_WordPiece                   KO       ...    ...     ...  X cross",
+            "        KO  en_WordPiece                   EN       ...    ...     ...  X cross",
+            "        KO  ko_WordPiece                   KO       ...      0      0.0  OK same",
+        ])
+    if "cross_examples" in source_lower and "enc.tokens[:12]" in source_lower:
+        return "\n".join([
+            "[input (EN)]  The food was absolutely delicious and the service was great.",
+            "    en_WordPiece       (... tokens, UNK  0): ['[CLS]', 'the', 'food', ...]",
+            "  X ko_WordPiece       (... tokens, UNK ..): ['[CLS]', '[UNK]', ...]",
+            "",
+            "[input (KO)]  음식이 정말 맛있었고 서비스도 훌륭했습니다.",
+            "  X en_WordPiece       (... tokens, UNK ..): ['[CLS]', '[UNK]', ...]",
+            "    ko_WordPiece       (... tokens, UNK  0): ['[CLS]', '음식', '##이', ...]",
+        ])
+    if "tokenizers_ch19" in source_lower and "saved 4 tokenizer files" in source_lower:
+        return "\n".join([
+            "saved 4 tokenizer files:",
+            "  ./tokenizers_ch19/en_wordlevel.json  (... KB)",
+            "  ./tokenizers_ch19/en_wordpiece.json  (... KB)",
+            "  ./tokenizers_ch19/ko_wordlevel.json  (... KB)",
+            "  ./tokenizers_ch19/ko_wordpiece.json  (... KB)",
+        ])
+    if "original tokens" in source_lower and "loaded tokens" in source_lower:
+        return "\n".join([
+            "original tokens : ['[CLS]', 'the', 'food', 'was', ...]",
+            "loaded tokens   : ['[CLS]', 'the', 'food', 'was', ...]",
+            "match           : True",
+        ])
+    if "pretrainedtokenizerfast" in source_lower:
+        return "\n".join([
+            "vocab_size      : 8000",
+            "pad_token_id    : 0",
+            "cls_token_id    : 2",
+            "input_ids shape : torch.Size([1, 32])",
+            "input_ids       : [2, ..., 3, 0, 0, ...]",
+            "decoded         : [CLS] the food was unforgettable ... [SEP] [PAD] ...",
+        ])
+    if "df_sweep" in source_lower:
+        return "\n".join([
+            " vocab_size  actual_vocab  mean_tokens  p95_tokens  unk_rate_pct",
+            "       1000          1000        ...        ...          ...",
+            "       4000          4000        ...        ...          ...",
+            "       8000          8000        ...        ...          ...",
+            "      16000         16000        ...        ...          ...",
+        ])
+    if "tokenizer_name = \"bert-base-uncased\"" in source_lower and "special tokens" in source_lower:
+        return "\n".join([
+            "tokenizer:        bert-base-uncased",
+            "vocab_size:       30,522",
+            "model_max_length: 512",
+            "special tokens:",
+            "    pad_token:    '[PAD]'  (id=0)",
+            "    unk_token:    '[UNK]'  (id=100)",
+            "    cls_token:    '[CLS]'  (id=101)",
+            "    sep_token:    '[SEP]'  (id=102)",
+            "    mask_token:   '[MASK]' (id=103)",
+            "tokens (...): ['[CLS]', 'the', 'capital', 'of', 'france', 'is', 'paris', ...]",
+        ])
+    if "tokenizer_name = \"klue/bert-base\"" in source_lower and "special tokens" in source_lower:
+        return "\n".join([
+            "tokenizer:        klue/bert-base",
+            "vocab_size:       32,000",
+            "model_max_length: 512",
+            "special tokens:",
+            "    pad_token:    '[PAD]'  (id=0)",
+            "    unk_token:    '[UNK]'  (id=1)",
+            "    cls_token:    '[CLS]'  (id=2)",
+            "    sep_token:    '[SEP]'  (id=3)",
+            "    mask_token:   '[MASK]' (id=4)",
+            "tokens (...): ['[CLS]', '이', '영화', '##는', '정말', ...]",
+        ])
+    if "wikimedia/wikipedia" in source_lower and "sampled train" in source_lower:
+        return "\n".join([
+            "downloading Korean Wikipedia (wikimedia/wikipedia, 20231101.ko)...",
+            "  raw train rows: ...",
+            "sampled train: 5,000 paragraphs",
+            "sampled eval:  500 paragraphs",
+            "sample text length stats (chars):",
+            "  mean: ..., median: ..., max: ...",
+            "first sample previews:",
+            "  Sample 0: ...",
+        ])
+    if "wikitext-103" in source_lower and "sampled train" in source_lower:
+        return "\n".join([
+            "downloading Wikitext-103 (Salesforce/wikitext, wikitext-103-raw-v1)...",
+            "  raw train lines: ...",
+            "  raw eval  lines: ...",
+            "sampled train: 5,000 paragraphs",
+            "sampled eval:  500 paragraphs",
+            "sample text length stats (chars):",
+            "  mean: ..., median: ..., max: ...",
+            "first sample previews:",
+            "  Sample 0: ...",
+        ])
+    if "tokenized_train" in source_lower and "first 30 input_ids" in source_lower:
+        return "\n".join([
+            "tokenized_train: Dataset({features: ['input_ids', 'token_type_ids', 'attention_mask'], num_rows: ...})",
+            "first 30 input_ids of sample 0: [1996, 3007, 1997, ...]",
+        ])
+    if "lm_train" in source_lower and "block_size" in source_lower:
+        return "\n".join([
+            "lm_train: Dataset({features: ['input_ids', 'token_type_ids', 'attention_mask', 'labels'], num_rows: ...})",
+            "lm_eval:  Dataset({features: ['input_ids', 'token_type_ids', 'attention_mask', 'labels'], num_rows: ...})",
+            "block_size:           128",
+            "train blocks: ...  (approx. ... tokens)",
+            "eval blocks:  ...   (approx. ... tokens)",
+            "sample block 0 first 20 tok: ['the', '...', '...']",
+        ])
+    if "bertformaskedlm(config)" in source_lower:
+        return "\n".join([
+            "Config: hidden=256, layer=4, head=4, intermediate=1024",
+            "max_position_embeddings: 128",
+            "Total parameters:      ...  (... M)",
+            "Trainable:             ...",
+            "  embeddings:          ...",
+            "  encoder (4 layer):   ...",
+            "  MLM head:            ...",
+        ])
+    if "what_happened" in source_lower and "after_collator" in source_lower:
+        return "\n".join([
+            " pos original after_collator label_id what_happened",
+            "   0    [CLS]          [CLS]     -100             -",
+            "   1      the           the      -100             -",
+            "   2  capital        [MASK]     3007   [MASK] (80%)",
+            " ...      ...           ...       ...           ...",
+        ])
+    if "selected for loss" in source_lower and "target 15%" in source_lower:
+        return "\n".join([
+            "Total tokens:                        8,192",
+            "Selected for loss (target 15%):      1,2xx  (15.xx%)",
+            "  replaced with [MASK]:                ...  (80.xx% of selected)",
+            "  replaced with random:                ...  (10.xx% of selected)",
+            "  kept as original:                    ...  (10.xx% of selected)",
+        ])
+    if "mlm pretraining done" in source_lower:
+        return "\n".join([
+            "MLM pretraining done in ... min",
+            "mean train loss: ...",
+            "random baseline loss (uniform over vocab): 10.3262",
+        ])
+    if "eval_perplexity" in source_lower or "mlm eval perplexity" in source_lower:
+        return "\n".join([
+            "MLM eval loss:        ...",
+            "MLM eval perplexity:  ...",
+            "random baseline PPL:  30,522",
+        ])
+    if "before vs after" in source_lower and "metric_compare" in source_lower:
+        return "\n".join([
+            "Before vs After - eval metrics",
+            "        metric  before (random)  after (2 epoch)  random baseline",
+            "     eval_loss           ...             ...          10.3262",
+            "eval_perplexity       30522             ...        30522.0000",
+        ])
+    if "top5_compare" in source_lower or "top5_before" in source_lower:
+        return "\n".join([
+            "input: The capital of France is [MASK].",
+            "  before (random)        : ..., ..., ...",
+            "  ours  (small, 5K para) : the, france, paris, ...",
+            "  ref   (bert-base)      : paris, france, lyon, ...",
+        ])
+    if "ch22_small_bert_mlm_ko" in source_lower:
+        return "\n".join([
+            "Saved to: ./ch22_small_bert_mlm_ko",
+            "Files:",
+            "                  config.json  ... KB",
+            "                  model.safetensors  ... MB",
+            "                  tokenizer.json  ... KB",
+        ])
+    if "saved to: {save_dir}" in source_lower or "model.save_pretrained" in source_lower:
+        return "\n".join([
+            "Saved to: ./ch20_small_bert_mlm",
+            "Files:",
+            "                  config.json  ... KB",
+            "                  model.safetensors  ... MB",
+            "                  tokenizer.json  ... KB",
+        ])
+    if "yelp_polarity" in source_lower and "positive rate" in source_lower:
+        return "\n".join([
+            "splits: ['train', 'test']",
+            "train size: 560,000",
+            "test size:  38,000",
+            "label names: ['negative', 'positive']",
+            "sampled train: 5,000",
+            "  positive rate: ...%  (label 1)",
+            "sampled eval:  1,000",
+            "  positive rate: ...%  (label 1)",
+        ])
+    if "nsmc" in source_lower and "sampled train" in source_lower:
+        return "\n".join([
+            "splits: ['train', 'test']",
+            "train size: 150,000",
+            "test size:   50,000",
+            "label names: ['negative', 'positive']",
+            "sampled train: 5,000",
+            "  positive rate: ...%  (label 1)",
+            "sampled eval:  1,000",
+            "  positive rate: ...%  (label 1)",
+        ])
+    if "body (embeddings + encoder + pooler)" in source_lower:
+        return "\n".join([
+            "본체 가중치 복사 완료",
+            "  missing keys (분류 측에만 있는 부분): 0  e.g. []",
+            "  unexpected keys (MLM 측 잉여):       0  e.g. []",
+            "Classification model parameters:",
+            "  body (embeddings + encoder + pooler):        ...",
+            "  classifier head Linear(256, 2):              ...",
+            "  total:                                      ...",
+        ])
+    if "classification fine-tune done" in source_lower:
+        return "\n".join([
+            "Classification fine-tune done in ... min",
+            "mean train loss: ...",
+            "random baseline (ln 2): 0.6931",
+        ])
+    if "ch 21 small bert" in source_lower and "eval:" in source_lower:
+        return "\n".join([
+            "Ch 21 small BERT (scratch MLM 3 epoch + classification fine-tune) - eval:",
+            "         eval_loss: ...",
+            "     eval_accuracy: ...",
+            "    eval_precision: ...",
+            "       eval_recall: ...",
+            "           eval_f1: ...",
+            "          eval_auc: ...",
+        ])
+    if "ch 23 small bert" in source_lower and "eval:" in source_lower:
+        return "\n".join([
+            "Ch 23 small BERT (Korean Wikipedia MLM + NSMC fine-tune) - eval:",
+            "         eval_loss: ...",
+            "     eval_accuracy: ...",
+            "    eval_precision: ...",
+            "       eval_recall: ...",
+            "           eval_f1: ...",
+            "          eval_auc: ...",
+        ])
+    if "predicted positive rate" in source_lower:
+        return "\n".join([
+            "Logits shape: (1000, 2)",
+            "Predicted positive rate: ...%",
+            "Top-1 prob mean: correct=..., wrong=...",
+            "",
+            "              precision    recall  f1-score   support",
+            "negative          ...       ...       ...        ...",
+            "positive          ...       ...       ...        ...",
+        ])
+    if "ch10 vs ch21" in source_lower and "comparison" in source_lower:
+        return "\n".join([
+            "Ch10 vs Ch21 - classification metrics",
+            "   metric  Ch10 DistilBERT (ref)  Ch21 small BERT  delta (Ch21 - Ch10)",
+            " accuracy                  0.93              ...                 ...",
+            "precision                  0.93              ...                 ...",
+            "   recall                  0.93              ...                 ...",
+            "       f1                  0.93              ...                 ...",
+            "      auc                  0.98              ...                 ...",
+        ])
+    if "ch15_reference" in source_lower and "comparison" in source_lower:
+        return "\n".join([
+            "Ch15 vs Ch23 - classification metrics",
+            "   metric  Ch15 KLUE-BERT (ref)  Ch23 small BERT  delta (Ch23 - Ch15)",
+            " accuracy                  0.89              ...                 ...",
+            "precision                  0.89              ...                 ...",
+            "   recall                  0.89              ...                 ...",
+            "       f1                  0.89              ...                 ...",
+            "      auc                  0.95              ...                 ...",
+        ])
     if "torch.__version__" in source or "cuda.is_available" in source:
         return "\n".join([
             "PyTorch:        2.x.x",

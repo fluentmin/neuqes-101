@@ -530,6 +530,396 @@ def ch16_top1_probability() -> None:
     finish("ch16_top1_probability.png")
 
 
+YNAT_LABELS = ["IT/sci", "economy", "society", "culture", "world", "sports", "politics"]
+
+
+def ch17_multilabel_probability_facets() -> None:
+    rng = np.random.default_rng(170)
+    base_rates = np.array([0.25, 0.27, 0.30, 0.24, 0.22, 0.28, 0.26])
+    rows = []
+    for k, category in enumerate(YNAT_LABELS):
+        labels = rng.random(520) < base_rates[k]
+        probs = np.where(
+            labels,
+            rng.beta(7.5 - 0.25 * (k % 3), 2.0 + 0.15 * (k % 2), labels.size),
+            rng.beta(1.8 + 0.15 * (k % 2), 7.0 - 0.2 * (k % 3), labels.size),
+        )
+        rows.extend(
+            {"category": category, "prob": float(prob), "label": int(label)}
+            for prob, label in zip(probs, labels)
+        )
+    df = pd.DataFrame(rows)
+    grid = sns.FacetGrid(df, col="category", col_wrap=4, height=2.35, aspect=1.25)
+    grid.map_dataframe(
+        sns.kdeplot,
+        x="prob",
+        hue="label",
+        fill=True,
+        common_norm=False,
+        alpha=0.46,
+        palette={0: BLUE, 1: RED},
+        clip=(0, 1),
+    )
+    for ax in grid.axes.flat:
+        ax.axvline(0.5, color="black", lw=0.8, ls="--", alpha=0.65)
+        ax.set_xlabel("sigmoid probability")
+    grid.add_legend(title="label")
+    grid.fig.suptitle("Per-category sigmoid probability distribution", y=1.03)
+    grid.fig.subplots_adjust(top=0.86)
+    grid.fig.savefig(OUT / "ch17_label_probability_facets.png", dpi=220, bbox_inches="tight")
+    plt.close(grid.fig)
+
+
+def ch17_cooccurrence() -> None:
+    rng = np.random.default_rng(171)
+    base = np.full((7, 7), 0.24)
+    np.fill_diagonal(base, 1.0)
+    true = base + rng.normal(0, 0.025, base.shape)
+    pred = base + rng.normal(0, 0.055, base.shape)
+    np.fill_diagonal(true, 1.0)
+    np.fill_diagonal(pred, 1.0)
+    true = np.clip(true, 0, 1)
+    pred = np.clip(pred, 0, 1)
+    fig, axes = plt.subplots(1, 2, figsize=(11.6, 4.8))
+    for ax, matrix, title in [
+        (axes[0], true, "True co-occurrence P(j | i)"),
+        (axes[1], pred, "Predicted co-occurrence P(j | i)"),
+    ]:
+        sns.heatmap(
+            matrix,
+            annot=True,
+            fmt=".2f",
+            cmap="Blues",
+            vmin=0,
+            vmax=1,
+            xticklabels=YNAT_LABELS,
+            yticklabels=YNAT_LABELS,
+            cbar=False,
+            ax=ax,
+        )
+        ax.set_title(title)
+        ax.set_xlabel("category j")
+        ax.set_ylabel("given category i")
+    finish("ch17_cooccurrence.png")
+
+
+def ch17_threshold_sweep() -> None:
+    thresholds = np.arange(0.1, 0.91, 0.05)
+    micro = 0.62 + 0.24 * np.exp(-((thresholds - 0.48) ** 2) / 0.045)
+    macro = 0.58 + 0.23 * np.exp(-((thresholds - 0.42) ** 2) / 0.052)
+    micro += 0.012 * np.sin(thresholds * 18)
+    macro += 0.010 * np.cos(thresholds * 14)
+    fig, ax = plt.subplots(figsize=(7.6, 4.2))
+    ax.plot(thresholds, micro, "o-", label="micro F1", color=BLUE)
+    ax.plot(thresholds, macro, "s-", label="macro F1", color=RED)
+    ax.axvline(0.5, color="black", lw=1.0, ls="--", alpha=0.62)
+    ax.text(0.505, min(micro.min(), macro.min()), "default 0.5", va="bottom", fontsize=8, alpha=0.7)
+    ax.set_ylim(0.55, 0.9)
+    ax.set_xlabel("decision threshold")
+    ax.set_ylabel("F1")
+    ax.set_title("Threshold sweep - micro vs macro F1")
+    ax.legend(frameon=False)
+    finish("ch17_threshold_sweep.png")
+
+
+def ch18_per_label_f1_compare() -> None:
+    rng = np.random.default_rng(180)
+    no_aux = np.array([0.74, 0.71, 0.68, 0.66, 0.70, 0.79, 0.69])
+    aux = np.clip(no_aux + np.array([0.01, 0.025, -0.005, 0.018, 0.012, 0.004, 0.020]), 0, 1)
+    aux += rng.normal(0, 0.004, len(aux))
+    x = np.arange(len(YNAT_LABELS))
+    fig, ax = plt.subplots(figsize=(8.4, 4.2))
+    width = 0.38
+    ax.bar(x - width / 2, no_aux, width, label="lambda = 0", color=BLUE, alpha=0.86)
+    ax.bar(x + width / 2, aux, width, label="lambda = 0.1", color=RED, alpha=0.86)
+    ax.set_xticks(x)
+    ax.set_xticklabels(YNAT_LABELS, rotation=20, ha="right")
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Per-label F1")
+    ax.set_title("Per-category F1 - auxiliary loss effect")
+    ax.legend(frameon=False)
+    finish("ch18_per_label_f1_compare.png")
+
+
+def ch18_aux_count_violin() -> None:
+    rng = np.random.default_rng(181)
+    true_one = np.ones(180)
+    true_two = np.full(760, 2.0)
+    pred_one = np.clip(rng.normal(1.18, 0.22, len(true_one)), 0, 3)
+    pred_two = np.clip(rng.normal(1.88, 0.24, len(true_two)), 0, 3)
+    df = pd.DataFrame(
+        {
+            "True n_active": ["1"] * len(true_one) + ["2"] * len(true_two),
+            "Predicted": np.concatenate([pred_one, pred_two]),
+        }
+    )
+    fig, ax = plt.subplots(figsize=(6.6, 4.6))
+    sns.violinplot(
+        data=df,
+        x="True n_active",
+        y="Predicted",
+        order=["1", "2"],
+        inner="quart",
+        cut=0,
+        color=RED,
+        alpha=0.65,
+        ax=ax,
+    )
+    for i, target in enumerate([1.0, 2.0]):
+        ax.hlines(target, i - 0.4, i + 0.4, color="black", lw=1.0, ls="--", alpha=0.68)
+    ax.set_ylim(0.0, 3.0)
+    ax.set_title("Auxiliary task - predicted vs true n_active")
+    finish("ch18_aux_count_violin.png")
+
+
+def ch19_token_length_distribution() -> None:
+    rng = np.random.default_rng(190)
+    en_wp = np.clip(rng.gamma(5.4, 10.5, 900), 8, 210)
+    en_wl = np.clip(rng.gamma(4.7, 8.8, 900), 6, 170)
+    ko_wp = np.clip(rng.gamma(4.1, 4.4, 900), 5, 72)
+    ko_wl = np.clip(rng.gamma(3.3, 3.8, 900), 4, 56)
+    fig, axes = plt.subplots(1, 2, figsize=(10.2, 4.0), sharey=True)
+    sns.kdeplot(en_wp, ax=axes[0], color=BLUE, fill=True, alpha=0.35, label="WordPiece")
+    sns.kdeplot(en_wl, ax=axes[0], color=RED, fill=True, alpha=0.35, label="WordLevel")
+    axes[0].set_title("English corpus")
+    axes[0].set_xlabel("tokens per sentence")
+    axes[0].set_ylabel("density")
+    axes[0].legend(frameon=False)
+    sns.kdeplot(ko_wp, ax=axes[1], color=BLUE, fill=True, alpha=0.35, label="WordPiece")
+    sns.kdeplot(ko_wl, ax=axes[1], color=RED, fill=True, alpha=0.35, label="WordLevel")
+    axes[1].set_title("Korean corpus")
+    axes[1].set_xlabel("tokens per sentence")
+    axes[1].legend(frameon=False)
+    finish("ch19_token_length_distribution.png")
+
+
+def ch19_unk_rate_bar() -> None:
+    labels = ["en\nWordPiece", "en\nWordLevel", "ko\nWordPiece", "ko\nWordLevel"]
+    rates = np.array([0.03, 3.4, 0.05, 5.8])
+    colors = [BLUE, RED, BLUE, RED]
+    fig, ax = plt.subplots(figsize=(6.8, 4.0))
+    bars = ax.bar(labels, rates, color=colors, alpha=0.86)
+    for bar, value in zip(bars, rates):
+        ax.text(bar.get_x() + bar.get_width() / 2, value + 0.18, f"{value:.2f}%", ha="center", fontsize=8)
+    ax.set_ylim(0, max(rates) + 1.0)
+    ax.set_ylabel("UNK rate (%)")
+    ax.set_title("Unknown token rate by tokenizer")
+    finish("ch19_unk_rate_bar.png")
+
+
+def ch19_cross_language_heatmap() -> None:
+    matrix = pd.DataFrame(
+        [[0.0, 1.6, 68.5, 83.0], [72.0, 91.5, 0.0, 4.5]],
+        index=["EN input", "KO input"],
+        columns=["en WP", "en WL", "ko WP", "ko WL"],
+    )
+    fig, ax = plt.subplots(figsize=(7.2, 3.4))
+    sns.heatmap(
+        matrix,
+        annot=True,
+        fmt=".1f",
+        cmap="Reds",
+        vmin=0,
+        vmax=100,
+        cbar_kws={"label": "UNK rate (%)"},
+        ax=ax,
+    )
+    ax.set_title("Cross-language application")
+    ax.set_xlabel("trained tokenizer")
+    ax.set_ylabel("input language")
+    finish("ch19_cross_language_heatmap.png")
+
+
+def ch19_vocab_sweep() -> None:
+    vocab = np.array([1000, 4000, 8000, 16000])
+    mean_tokens = np.array([72.0, 60.5, 55.2, 52.3])
+    unk_rate = np.array([1.8, 0.35, 0.06, 0.02])
+    fig, ax1 = plt.subplots(figsize=(7.4, 4.2))
+    ax1.plot(vocab, mean_tokens, "o-", color=BLUE, label="mean tokens")
+    ax1.set_xscale("log")
+    ax1.set_xlabel("vocab size")
+    ax1.set_ylabel("mean tokens per sentence", color=BLUE)
+    ax1.tick_params(axis="y", labelcolor=BLUE)
+    ax2 = ax1.twinx()
+    ax2.plot(vocab, unk_rate, "s--", color=RED, label="UNK rate")
+    ax2.set_ylabel("UNK rate (%)", color=RED)
+    ax2.tick_params(axis="y", labelcolor=RED)
+    ax1.set_title("WordPiece vocabulary size sweep")
+    finish("ch19_vocab_sweep.png")
+
+
+def ch20_mlm_training_loss() -> None:
+    steps = np.arange(20, 321, 20)
+    rng = np.random.default_rng(200)
+    losses = 9.7 - 2.1 * (1 - np.exp(-steps / 120)) + rng.normal(0, 0.08, len(steps))
+    baseline = np.log(30522)
+    fig, ax = plt.subplots(figsize=(7.6, 4.2))
+    ax.plot(steps, losses, "o-", color=BLUE, label="train MLM loss")
+    ax.axhline(baseline, color="black", lw=1.0, ls=":", label="random baseline ln V")
+    ax.set_xlabel("training step")
+    ax.set_ylabel("MLM loss")
+    ax.set_title("Small BERT MLM pretraining loss")
+    ax.legend(frameon=False)
+    finish("ch20_mlm_training_loss.png")
+
+
+def ch20_eval_loss_ppl() -> None:
+    labels = ["before\nrandom", "after\nMLM"]
+    loss_values = np.array([10.28, 7.45])
+    ppl_values = np.exp(loss_values)
+    fig, axes = plt.subplots(1, 2, figsize=(9.2, 4.0))
+    axes[0].bar(labels, loss_values, color=["#999999", BLUE], alpha=0.88)
+    axes[0].axhline(np.log(30522), color="black", lw=1.0, ls=":")
+    axes[0].set_ylabel("eval_loss")
+    axes[0].set_title("MLM eval loss")
+    axes[1].bar(labels, ppl_values, color=["#999999", BLUE], alpha=0.88)
+    axes[1].axhline(30522, color="black", lw=1.0, ls=":")
+    axes[1].set_yscale("log")
+    axes[1].set_ylabel("perplexity")
+    axes[1].set_title("MLM perplexity")
+    finish("ch20_eval_loss_ppl.png")
+
+
+def ch21_finetune_loss() -> None:
+    steps = np.arange(50, 651, 50)
+    rng = np.random.default_rng(210)
+    losses = 0.68 - 0.24 * (1 - np.exp(-steps / 210)) + rng.normal(0, 0.018, len(steps))
+    fig, ax = plt.subplots(figsize=(7.6, 4.2))
+    ax.plot(steps, losses, "o-", color=BLUE, label="train CE loss")
+    ax.axhline(np.log(2), color="black", lw=1.0, ls=":", label="random baseline ln 2")
+    ax.set_xlabel("training step")
+    ax.set_ylabel("Cross-Entropy loss")
+    ax.set_title("Yelp fine-tuning loss - small BERT")
+    ax.legend(frameon=False)
+    finish("ch21_finetune_loss.png")
+
+
+def ch21_confusion_matrix() -> None:
+    cm = np.array([[420, 75], [68, 437]])
+    cm_norm = cm / cm.sum(axis=1, keepdims=True)
+    fig, ax = plt.subplots(figsize=(5.2, 4.7))
+    sns.heatmap(
+        cm_norm,
+        annot=cm,
+        fmt="d",
+        cmap="Blues",
+        vmin=0,
+        vmax=1,
+        xticklabels=["negative", "positive"],
+        yticklabels=["negative", "positive"],
+        cbar_kws={"label": "row-normalized recall"},
+        ax=ax,
+    )
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("Actual")
+    ax.set_title("Small BERT - Yelp confusion matrix")
+    finish("ch21_confusion_matrix.png")
+
+
+def ch21_ch10_compare() -> None:
+    metrics = ["accuracy", "precision", "recall", "f1", "auc"]
+    ch10 = np.array([0.93, 0.93, 0.93, 0.93, 0.98])
+    ch21 = np.array([0.86, 0.85, 0.87, 0.86, 0.93])
+    x = np.arange(len(metrics))
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    width = 0.38
+    ax.bar(x - width / 2, ch10, width, color=BLUE, label="Ch10 DistilBERT")
+    ax.bar(x + width / 2, ch21, width, color=RED, label="Ch21 small BERT")
+    ax.set_xticks(x)
+    ax.set_xticklabels(metrics)
+    ax.set_ylim(0, 1.05)
+    ax.set_ylabel("score")
+    ax.set_title("Yelp binary classification - reference vs small BERT")
+    ax.legend(frameon=False, loc="lower right")
+    finish("ch21_ch10_compare.png")
+
+
+def ch22_mlm_training_loss() -> None:
+    steps = np.arange(40, 641, 40)
+    rng = np.random.default_rng(220)
+    baseline = np.log(32000)
+    losses = baseline - 3.4 * (1 - np.exp(-steps / 210)) + rng.normal(0, 0.08, len(steps))
+    fig, ax = plt.subplots(figsize=(7.6, 4.2))
+    ax.plot(steps, losses, "o-", color=BLUE, label="train MLM loss")
+    ax.axhline(baseline, color="black", lw=1.0, ls=":", label="random baseline ln V")
+    ax.set_xlabel("training step")
+    ax.set_ylabel("MLM loss")
+    ax.set_title("Korean small BERT MLM pretraining loss")
+    ax.legend(frameon=False)
+    finish("ch22_mlm_training_loss.png")
+
+
+def ch22_eval_loss_ppl() -> None:
+    labels = ["before\nrandom", "after\nMLM"]
+    loss_values = np.array([10.37, 6.35])
+    ppl_values = np.exp(loss_values)
+    fig, axes = plt.subplots(1, 2, figsize=(9.2, 4.0))
+    axes[0].bar(labels, loss_values, color=["#999999", BLUE], alpha=0.88)
+    axes[0].axhline(np.log(32000), color="black", lw=1.0, ls=":")
+    axes[0].set_ylabel("eval_loss")
+    axes[0].set_title("Korean MLM eval loss")
+    axes[1].bar(labels, ppl_values, color=["#999999", BLUE], alpha=0.88)
+    axes[1].axhline(32000, color="black", lw=1.0, ls=":")
+    axes[1].set_yscale("log")
+    axes[1].set_ylabel("perplexity")
+    axes[1].set_title("Korean MLM perplexity")
+    finish("ch22_eval_loss_ppl.png")
+
+
+def ch23_finetune_loss() -> None:
+    steps = np.arange(50, 651, 50)
+    rng = np.random.default_rng(230)
+    losses = 0.69 - 0.17 * (1 - np.exp(-steps / 260)) + rng.normal(0, 0.02, len(steps))
+    fig, ax = plt.subplots(figsize=(7.6, 4.2))
+    ax.plot(steps, losses, "o-", color=BLUE, label="train CE loss")
+    ax.axhline(np.log(2), color="black", lw=1.0, ls=":", label="random baseline ln 2")
+    ax.set_xlabel("training step")
+    ax.set_ylabel("Cross-Entropy loss")
+    ax.set_title("NSMC fine-tuning loss - Korean small BERT")
+    ax.legend(frameon=False)
+    finish("ch23_finetune_loss.png")
+
+
+def ch23_confusion_matrix() -> None:
+    cm = np.array([[395, 105], [112, 388]])
+    cm_norm = cm / cm.sum(axis=1, keepdims=True)
+    fig, ax = plt.subplots(figsize=(5.2, 4.7))
+    sns.heatmap(
+        cm_norm,
+        annot=cm,
+        fmt="d",
+        cmap="Blues",
+        vmin=0,
+        vmax=1,
+        xticklabels=["negative", "positive"],
+        yticklabels=["negative", "positive"],
+        cbar_kws={"label": "row-normalized recall"},
+        ax=ax,
+    )
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("Actual")
+    ax.set_title("Korean small BERT - NSMC confusion matrix")
+    finish("ch23_confusion_matrix.png")
+
+
+def ch23_ch15_compare() -> None:
+    metrics = ["accuracy", "precision", "recall", "f1", "auc"]
+    ch15 = np.array([0.86, 0.86, 0.86, 0.86, 0.93])
+    ch23 = np.array([0.79, 0.79, 0.78, 0.79, 0.87])
+    x = np.arange(len(metrics))
+    fig, ax = plt.subplots(figsize=(8.0, 4.2))
+    width = 0.38
+    ax.bar(x - width / 2, ch15, width, color=BLUE, label="Ch15 KLUE-BERT")
+    ax.bar(x + width / 2, ch23, width, color=RED, label="Ch23 small BERT")
+    ax.set_xticks(x)
+    ax.set_xticklabels(metrics)
+    ax.set_ylim(0, 1.05)
+    ax.set_ylabel("score")
+    ax.set_title("NSMC binary classification - reference vs small BERT")
+    ax.legend(frameon=False, loc="lower right")
+    finish("ch23_ch15_compare.png")
+
+
 def main() -> None:
     theme()
     ch01_star_distribution()
@@ -553,6 +943,25 @@ def main() -> None:
     ch15_logit_kde()
     ch16_confusion_matrix()
     ch16_top1_probability()
+    ch17_multilabel_probability_facets()
+    ch17_cooccurrence()
+    ch17_threshold_sweep()
+    ch18_per_label_f1_compare()
+    ch18_aux_count_violin()
+    ch19_token_length_distribution()
+    ch19_unk_rate_bar()
+    ch19_cross_language_heatmap()
+    ch19_vocab_sweep()
+    ch20_mlm_training_loss()
+    ch20_eval_loss_ppl()
+    ch21_finetune_loss()
+    ch21_confusion_matrix()
+    ch21_ch10_compare()
+    ch22_mlm_training_loss()
+    ch22_eval_loss_ppl()
+    ch23_finetune_loss()
+    ch23_confusion_matrix()
+    ch23_ch15_compare()
 
 
 if __name__ == "__main__":

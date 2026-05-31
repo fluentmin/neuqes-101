@@ -393,9 +393,72 @@
   }{Phase #1: #2}%
 }
 
+\newcommand{\tocbookpart}[3]{%
+  \texorpdfstring{%
+    \begingroup
+    {\setlength{\fboxsep}{2.5pt}%
+     \mbox{\colorbox{taInk}{\sffamily\bfseries\fontsize{7.5pt}{9pt}\selectfont
+      \color{taSlateLight}\,#1\,}}}%
+    \quad
+    \mbox{\sffamily\bfseries\fontsize{11pt}{13pt}\selectfont\color{taInk}#2}%
+    \quad
+    {\sffamily\fontsize{8pt}{10pt}\selectfont\color{taSlateMute}#3}%
+    \endgroup
+  }{#1: #2}%
+}
+
 \newcommand{\phasepart}[5]{%
   \registerphaseparttrue
   \phasedivider{#1}{#2}{#3}{#4}{#5}%
+}
+
+\newcommand{\appendixpart}[4]{%
+  \cleardoublepage
+  \refstepcounter{part}%
+  \addcontentsline{toc}{part}{\protect\tocbookpart{APPENDIX}{#1}{#2}}%
+  \markboth{Appendix. #1}{Appendix. #1}%
+  \thispagestyle{empty}
+  \begin{tikzpicture}[remember picture, overlay]
+    \fill[hfInk]
+      (current page.north west) rectangle (current page.south east);
+    \node[anchor=north west, text=hfPaper, opacity=0.55,
+          font=\hfMono\fontsize{7.5pt}{9pt}\selectfont]
+      at ([xshift=20mm, yshift=-18mm]current page.north west)
+      {REFERENCE OPENER \ \textbf{·}\ \ Appendix};
+    \node[anchor=north east, text=hfPaper, opacity=0.50,
+          font=\hfMono\fontsize{7.5pt}{9pt}\selectfont]
+      at ([xshift=-18mm, yshift=-18mm]current page.north east)
+      {#3};
+    \node[anchor=west, text=hfAccentSoft, opacity=0.85,
+          font=\hfPen\fontsize{22pt}{22pt}\selectfont]
+      at ([xshift=20mm, yshift=-65mm]current page.north west)
+      {참고로,};
+    \node[anchor=north west, text=hfPaper, text width=160mm,
+          font=\hfDisplay\bfseries\fontsize{44pt}{52pt}\selectfont]
+      at ([xshift=20mm, yshift=-78mm]current page.north west)
+      {#1};
+    \draw[hfAccent, line width=1.4pt]
+      ([xshift=20mm, yshift=-128mm]current page.north west) -- ++(20mm, 0);
+    \node[anchor=north west, text=hfPaper, opacity=0.85, text width=140mm,
+          font=\hfDisplay\fontsize{12pt}{18pt}\selectfont]
+      at ([xshift=20mm, yshift=-138mm]current page.north west)
+      {#2\\[2pt]\textit{\textcolor{hfPaper!55!black}{#3}}};
+    \draw[hfPaper, line width=0.4pt, opacity=0.30]
+      ([xshift=20mm, yshift=-185mm]current page.north west) --
+      ([xshift=-18mm, yshift=-185mm]current page.north east);
+    \node[anchor=north west, text=hfPaper, opacity=0.55,
+          font=\hfMono\fontsize{7.5pt}{9pt}\selectfont]
+      at ([xshift=20mm, yshift=-192mm]current page.north west)
+      {APPENDIX};
+    \node[anchor=north west, text=hfPaper,
+          font=\hfDisplay\bfseries\fontsize{52pt}{52pt}\selectfont]
+      at ([xshift=20mm, yshift=-200mm]current page.north west)
+      {REF};
+    \node[anchor=north west, inner sep=0pt]
+      at ([xshift=66mm, yshift=-198mm]current page.north west)
+      {\begin{minipage}{90mm}\setlength{\parskip}{6pt}\raggedright #4\end{minipage}};
+  \end{tikzpicture}
+  \cleardoublepage
 }
 
 %% \chapline — 디자인의 phase-page 하단 chapter chip 그리드 한 칸. 디자인은
@@ -527,13 +590,13 @@
         {Introduction to Text Analysis with Hugging Face};
       \node[anchor=north west, text=taSlate, font=\fontsize{10}{12}\selectfont]
         at ([xshift=20mm, yshift=-123mm]current page.north west)
-        {현재 원고: 1--16장\ \ \textbf{·}\ \ Phase 2 진행 중};
+        {현재 원고: 1--23장\ \ \textbf{·}\ \ Phase 3 완료};
 
       \draw[taSlate, line width=0.6pt]
         ([xshift=20mm, yshift=-144mm]current page.north west) -- ++(8mm, 0);
       \node[anchor=west, text=taSubtext, font=\sffamily\fontsize{7}{9}\selectfont]
         at ([xshift=30mm, yshift=-144mm]current page.north west)
-        {CURRENT MANUSCRIPT\ \ \textbf{·}\ \ PHASE 2 IN PROGRESS\ \ \textbf{·}\ \ CH 1--16};
+        {CURRENT MANUSCRIPT\ \ \textbf{·}\ \ PHASE 3 COMPLETE\ \ \textbf{·}\ \ CH 1--23};
 
       \node[anchor=north west, text=taInk, font=\fontsize{10}{12}\selectfont\bfseries]
         at ([xshift=20mm, yshift=-153mm]current page.north west)
@@ -581,23 +644,23 @@
         ([xshift=150mm, yshift=-203.5mm]current page.north west);
       \fill[taPhaseTwo]
         ([xshift=20mm, yshift=-202mm]current page.north west) rectangle
-        ([xshift=85mm, yshift=-203.5mm]current page.north west);
+        ([xshift=150mm, yshift=-203.5mm]current page.north west);
 
       \node[anchor=north west, text=taInk, font=\fontsize{10}{12}\selectfont\bfseries]
         at ([xshift=20mm, yshift=-210mm]current page.north west)
         {PHASE 3\ \ \textbf{·}\ \ 토크나이저 직접 학습};
       \node[anchor=north east, text=taSubtext, font=\itshape\fontsize{8}{10}\selectfont]
         at ([xshift=150mm, yshift=-210mm]current page.north west)
-        {Ch 19--20};
+        {Ch 19--23};
       \node[anchor=north west, text=taSubtext, font=\fontsize{8}{10}\selectfont]
         at ([xshift=20mm, yshift=-215mm]current page.north west)
-        {워드레벨\,\textbf{·}\,형태소 토크나이저 직접 학습};
+        {Tokenizer training\,\textbf{·}\,Small BERT scratch};
       \fill[taTrack, opacity=0.08]
         ([xshift=20mm, yshift=-221mm]current page.north west) rectangle
         ([xshift=150mm, yshift=-222.5mm]current page.north west);
       \fill[taPhaseThree]
         ([xshift=20mm, yshift=-221mm]current page.north west) rectangle
-        ([xshift=20mm, yshift=-222.5mm]current page.north west);
+        ([xshift=98mm, yshift=-222.5mm]current page.north west);
 
       \draw[taSlate, line width=1.5pt]
         ([xshift=20mm, yshift=-235mm]current page.north west) -- ++(13mm, 0);
@@ -609,7 +672,7 @@
         {PYTHON\ \ \textbf{·}\ \ COLAB\ \ \textbf{·}\ \ HUGGINGFACE};
       \node[anchor=north east, text=taSlate, font=\itshape\fontsize{10}{12}\selectfont]
         at ([xshift=-20mm, yshift=-248mm]current page.north east)
-        {v0.4.0};
+        {v0.4.5};
     \end{tikzpicture}
   \end{titlepage}
 }
