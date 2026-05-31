@@ -472,12 +472,20 @@ n_loss_pos = (out1["labels"] != -100).sum().item()
 print(f"loss positions:        {n_loss_pos:>4} / {total_tokens}  "
       f"({n_loss_pos/total_tokens:.2%})  (labels != -100)")""")
 
-# ----- 5-1. 한국어 [MASK] 80/10/10 압축 시각화 -----
-md(r"""### 5-1. 🔍 [MASK] 80/10/10 — 한국어 예시 한 번 확인 (압축 시각화)
+# ----- 5-1. 한국어 [MASK] 80/10/10 풀버전 시각화 -----
+md(r"""### 5-1. 🔍 [MASK] 가 들어가는 원리 — 한 눈에 보는 80/10/10 (한국어 풀버전)
 
-Ch 21 에서 영어 문장에 collator 한 번 돌려 *어떤 자리가 `[MASK]` / `random` / `kept` / `—` 인지* 표로 본 적이 있습니다. 같은 시각화를 *한국어 문장 하나* 에 압축해 재확인합니다 — `[MASK]` 트릭은 *언어와 무관*, collator 가 토큰 id 만 보고 처리한다는 게 결론.
+`DataCollatorForLanguageModeling` 은 매 step 마다 *입력 토큰의 약 15%* 를 *무작위로* 선택하고, 선택된 위치마다 세 가지 중 하나를 적용합니다.
 
-> 큰 batch 의 80/10/10 통계 검증과 풀버전 표는 Ch 21 §3 의 *[MASK] 80/10/10* 셀을 참조하세요.""")
+| 선택된 토큰 운명 | 비율 | 의도 |
+| --- | --- | --- |
+| `[MASK]` 로 교체 | **80%** | 표준 마스킹 — 모델이 *주변 문맥만으로* 원래 토큰을 맞추도록 |
+| **다른 random 토큰** 으로 교체 | 10% | inference 때는 `[MASK]` 가 없으니, 모델이 *항상* 자기 입력을 *의심* 하게 만듦 |
+| **원본 그대로** 유지 | 10% | 동일 — 입력과 정답이 일치하는 케이스도 학습 데이터에 포함 |
+
+**나머지 85%** 의 토큰은 `labels = -100` 으로 두어 *loss 계산에서 제외* 됩니다 (PyTorch CE 의 `ignore_index` 기본값). 즉 한 step 의 MLM loss 는 *선택된 15% 자리만* 모아 평균한 값.
+
+> 이 `labels = -100` 트릭은 BERT-만의 것이 아닙니다 — Phase 4 GPT 사전학습은 *거의 모든 토큰* 을 학습 (`labels = input_ids`), SFT (Ch 27) 는 *prompt 만 -100, 답변만 학습*. 같은 트릭, 정반대 자리. Ch 21 / 영어 짝과 동일한 풀버전 시각화로 한국어 환경에서도 직접 확인.""")
 
 code(r"""# 한국어 예시 문장 한 개에 collator 한 번 적용 — 어떤 자리가 어떻게 바뀌나
 DEMO_SENT_KO = "이 영화는 정말 재미있었고 배우들 연기도 훌륭했습니다."
@@ -516,11 +524,39 @@ for orig_id, new_id, lab, orig_tok, new_tok in zip(demo_ids, masked_ids, labels,
 demo_df = pd.DataFrame(rows)
 print(demo_df.to_string(index=False))""")
 
+code(r"""# 큰 batch 통계 — 80/10/10 비율이 실제로 맞는지 확인 (한국어 lm_train 사용)
+torch.manual_seed(0)
+N_DEMO = 64
+big_batch = [
+    {"input_ids": lm_train[i]["input_ids"], "attention_mask": [1] * BLOCK_SIZE}
+    for i in range(N_DEMO)
+]
+big_out = data_collator(big_batch)
+
+in_ids = big_out["input_ids"]
+lab_big = big_out["labels"]
+
+selected = (lab_big != -100)
+n_total    = lab_big.numel()
+n_selected = selected.sum().item()
+n_mask     = ((in_ids == mask_id_local) & selected).sum().item()
+n_kept     = ((in_ids == lab_big) & selected).sum().item()
+n_random   = n_selected - n_mask - n_kept
+
+print(f"Total tokens:                      {n_total:>7,}")
+print(f"Selected for loss (target 15%):    {n_selected:>7,}  ({100 * n_selected / n_total:5.2f}%)")
+print(f"  └─ replaced with [MASK]:         {n_mask:>7,}  ({100 * n_mask / n_selected:5.2f}% of selected)")
+print(f"  └─ replaced with random:         {n_random:>7,}  ({100 * n_random / n_selected:5.2f}% of selected)")
+print(f"  └─ kept as original:             {n_kept:>7,}  ({100 * n_kept / n_selected:5.2f}% of selected)")
+print()
+print("Target: 선택 15% / 그 중 80-10-10 으로 [MASK]-random-kept. 표본 크면 비율 안정.")""")
+
 md(r"""**관전 포인트**
 
-- `what_happened` 가 `-` 인 자리 (약 85%) 는 *입력과 정답이 그대로* — loss 에 기여하지 않습니다.
+- `what_happened` 가 `-` 인 자리 (약 85%) 는 *입력과 정답이 그대로* — loss 에 기여하지 않습니다. 모델은 *문맥을 만들어 주는* 역할만.
 - `[MASK]` 자리 (약 12%) 가 본 task 의 *진짜 학습 신호*. 주변 한국어 토큰들의 attention 결과로 *가려진 자리* 의 vocab 분포를 예측.
-- `random` 과 `kept` 자리 (각 약 1.5%) 는 *inference 분포 일치* 를 위한 정규화. 영어 (Ch 21) 와 같은 규칙.
+- `random` (약 1.5%) 과 `kept` (약 1.5%) 는 *inference 분포 일치* 를 위한 정규화. 추론 시에는 `[MASK]` 가 없으므로 *입력을 절대 신뢰하면 안 된다* 는 신호를 학습에 섞어 줌. 영어 (Ch 20·21) 와 같은 규칙.
+- 매 epoch · 매 batch 마다 마스킹은 *새로 무작위* — 같은 한국어 문장이 epoch 마다 다른 자리에서 가려져 학습됨 (data augmentation 효과).
 
 > **결론 한 줄** — *`[MASK]` 트릭은 언어와 무관, 본체만 한국어를 학습.* `DataCollatorForLanguageModeling` 코드는 한국어든 영어든 *토큰 id 위에서만* 동작합니다. 언어 차이는 *학습된 임베딩의 의미* 에 반영될 뿐, masking 메커니즘 자체는 동일.""")
 
@@ -1072,7 +1108,7 @@ Phase 3 의 네 번째 챕터. Ch 20 에서 *영어 작은 BERT* 를 random init
 - `klue/bert-base` 한국어 WordPiece 토크나이저 로드 + `bert-base-uncased` (영어) 와의 *cross-language* 비교 (Ch 19 §5-4 결론의 실측 확인)
 - 작은 `BertConfig(hidden=256, layer=4, head=4, intermediate=1024)` + `BertForMaskedLM(config)` random init
 - `wikimedia/wikipedia` (`20231101.ko`) HF 정제본 로드 — article 단위 → paragraph 단위로 split 후 5K 사용
-- `DataCollatorForLanguageModeling(mlm_probability=0.15)` — 한국어 [MASK] 80/10/10 동작 압축 시각화 (Ch 21 풀버전 안내)
+- `DataCollatorForLanguageModeling(mlm_probability=0.15)` — 한국어 [MASK] 80/10/10 동작 풀버전 시각화 (자리별 운명 표 + 큰 batch 통계, Ch 20 영어 짝과 동일 깊이)
 - `labels = -100` ignore_index — 한국어 MLM 도 동일, Phase 4 SFT (Ch 27) 에서 *같은 트릭, 정반대 자리* 로 재등장
 - random baseline `ln(32000) ≈ 10.37` (Ch 20 의 10.33 과 미세 차이)
 - 학습 전·후 비교: 일반 위키 도메인 문장 + NSMC 도메인 문장 [MASK] top-5 — 사전학습이 본 분포는 향상이 명확, 다른 도메인은 fine-tune 단계에서 적응

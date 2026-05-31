@@ -11,7 +11,7 @@ Phase 3 의 네 번째 챕터. Ch 20 에서 *영어 작은 BERT* 를 random init
 - `klue/bert-base` 한국어 WordPiece 토크나이저 로드 + `bert-base-uncased` (영어) 와의 *cross-language* 비교 (Ch 19 §5-4 결론의 실측 확인)
 - 작은 `BertConfig(hidden=256, layer=4, head=4, intermediate=1024)` + `BertForMaskedLM(config)` random init
 - `wikimedia/wikipedia` (`20231101.ko`) HF 정제본 로드 — article 단위 → paragraph 단위로 split 후 5K 사용
-- `DataCollatorForLanguageModeling(mlm_probability=0.15)` — 한국어 [MASK] 80/10/10 동작 압축 시각화 (Ch 21 풀버전 안내)
+- `DataCollatorForLanguageModeling(mlm_probability=0.15)` — 한국어 [MASK] 80/10/10 동작 풀버전 시각화 (자리별 운명 표 + 큰 batch 통계, Ch 20 영어 짝과 동일 깊이)
 - `labels = -100` ignore_index — 한국어 MLM 도 동일, Phase 4 SFT (Ch 27) 에서 *같은 트릭, 정반대 자리* 로 재등장
 - random baseline `ln(32000) ≈ 10.37` (Ch 20 의 10.33 과 미세 차이)
 - 학습 전·후 비교: 일반 위키 도메인 문장 + NSMC 도메인 문장 [MASK] top-5 — 사전학습이 본 분포는 향상이 명확, 다른 도메인은 fine-tune 단계에서 적응

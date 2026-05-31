@@ -3,9 +3,9 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/21_en_bert_classify/21_en_bert_classify.ipynb)
 
 ## 한 줄 목표
-Phase 3 의 세 번째 챕터. Ch 20 에서 *작은 BERT 를 일반 도메인 (Wikitext-103) 으로 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 *완전히 다른 도메인 (Yelp 영화 리뷰)* 이진 분류로 fine-tune**. Ch 10 (DistilBERT, 약 66M params, 대규모 Wikipedia + BookCorpus 사전학습) 과 같은 Yelp 이진 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, Wikitext-103 5K paragraphs MLM) 를 붙여 두 결과를 나란히 비교 — 둘 다 *일반 도메인 → Yelp transfer* 라 비교가 *fair*, *사전학습 규모* 차이만 측정됨.
+Phase 3 의 세 번째 챕터. Ch 20 에서 *작은 BERT 를 일반 도메인 (Wikitext-103) 으로 직접 MLM 사전학습* 했다면, 이번엔 그 위에 **분류 헤드를 얹어 *완전히 다른 도메인 (Yelp 영화 리뷰)* 이진 분류로 fine-tune**. Ch 10 (DistilBERT, 약 66M params, 대규모 Wikipedia + BookCorpus 사전학습) 과 같은 Yelp 이진 분류 셋업에 *우리가 만든 작은 BERT* (약 10M params, Wikitext-103 2K paragraphs × 3 epoch MLM — 한국어 Ch 23 와 동일 hyperparams) 를 붙여 두 결과를 나란히 비교 — 둘 다 *일반 도메인 → Yelp transfer* 라 비교가 *fair*, *사전학습 규모* 차이만 측정됨.
 
-self-contained 노트북: Wikitext-103 MLM 학습을 1 epoch 짧게 재현 → 같은 본체로 Yelp 분류 fine-tune → Ch 10 결과와 비교. 본문은 *일반 사전학습 → 다른 도메인 fine-tune* 메인 흐름에 집중. *사전학습 없이 같은 GPU compute 로 분류 fine-tune* 만 했을 때의 fair-compute 비교는 부록 노트북 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 에서 분리해 다룹니다.
+self-contained 노트북: Wikitext-103 MLM 학습을 2K × 3 epoch 압축 재현 → 같은 본체로 Yelp 분류 fine-tune → Ch 10 결과와 비교. 본문은 *일반 사전학습 → 다른 도메인 fine-tune* 메인 흐름에 집중. *사전학습 없이 같은 GPU compute 로 분류 fine-tune* 만 했을 때의 fair-compute 비교는 부록 노트북 [`appendix_compute_budget.ipynb`](./appendix_compute_budget.ipynb) 에서 분리해 다룹니다.
 
 ## 다루는 핵심 개념
 - **일반 도메인 → 다른 도메인 transfer** — 원본 BERT 정신의 핵심. Wikitext-103 일반 위키로 사전학습 → Yelp 영화 리뷰 분류 fine-tune. domain-adaptive pretraining (DAPT) 함정을 피해 *정직한 transfer* 측정
