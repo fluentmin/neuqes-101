@@ -16,7 +16,7 @@ Phase 4 의 첫 챕터. Ch 7-23 의 *BERT (encoder, MLM, task head 부착 fine-t
 | Downstream 적응 | head 교체 + fine-tune (*task 적응*) | **SFT (*behavior alignment*)** + alignment (DPO / GRPO) |
 | "Fine-tune" 의미 | task 별 특화 | **prompt 만 바꿔도 다른 일** |
 
-> 본 챕터는 그 *출발점* - 작은 GPT 를 처음부터 학습해 *next-token 예측이 어떻게 generation 으로 이어지는지* 를 직접 봅니다. Ch 25 (대규모 사전학습 `gpt2` **continual pretraining**) / Ch 27 (SFT) / Ch 29-30 (DPO / GRPO) 가 같은 본체 위에 쌓여 갑니다.
+> 본 챕터는 그 *출발점* - 작은 GPT 를 처음부터 학습해 *next-token 예측이 어떻게 generation 으로 이어지는지* 를 직접 봅니다. Ch 25 (대규모 사전학습 `gpt2` **continual pretraining**) / Ch 28 (SFT) / Ch 30-31 (DPO / GRPO) 가 같은 본체 위에 쌓여 갑니다.
 
 ## 다루는 핵심 개념
 - **GPT2LMHeadModel(config)** from scratch - `from_pretrained` 없이 random init (Ch 20·22 의 `BertForMaskedLM(config)` 와 같은 패턴, 모델 패밀리만 다름)
@@ -27,7 +27,7 @@ Phase 4 의 첫 챕터. Ch 7-23 의 *BERT (encoder, MLM, task head 부착 fine-t
 - **byte-level BPE 토크나이저 직접 학습** - `tokenizers.BPE + ByteLevel`, vocab 2,048. WordPiece 와의 결합 방식 차이
 - **GPT-2 special token 컨벤션** - `<|endoftext|>` 하나가 bos / eos / pad 겸용
 - **`model.generate(do_sample=True, ...)`** - temperature / top_k / top_p sampling 비교
-- **`-100` thread 환기** - MLM (15% 자리) vs CausalLM (거의 모든 자리) vs SFT (response 부분만, Ch 27) - 같은 트릭, 정반대 자리
+- **`-100` thread 환기** - MLM (15% 자리) vs CausalLM (거의 모든 자리) vs SFT (response 부분만, Ch 28) - 같은 트릭, 정반대 자리
 - **파인튜닝 의미 변화 thread 환기** - BERT 시대 (task head 부착) vs GPT 시대 (head 그대로, 행동 정렬)
 - Random baseline loss `ln(2048) ≈ 7.62`, TinyStories 3M 모델은 보통 *약 2.5-3.0* 까지 도달
 - **Reference 비교** - `gpt2` (124M, WebText 약 40GB) 의 같은 prompt generation 으로 *모델 크기 + 데이터 격차* 의 generation 품질 차이 직접 확인
@@ -68,4 +68,4 @@ device 자동 감지 (CUDA / MPS / CPU) - 로컬 Mac MPS 에서도 실행 가능
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표) 를 참고하세요.
 
 ## 다음 챕터
-[25_gpt2_continual_pretrain](../25_gpt2_continual_pretrain/) - OpenAI `gpt2` (124M, WebText 약 40GB 사전학습) 을 *같은 TinyStories 30K* 로 **continual pretraining** (계속 사전학습 / continual learning — 같은 CausalLM task, head 그대로). *데이터를 통제하고 본체 출발점만 다름*. 본 챕터 (3M, from scratch, 약 18분) vs Ch 25 (124M, continual pretraining, 약 5-8분) 의 generation 품질·학습 곡선 격차가 *왜 실무는 from-scratch 가 아니라 대규모 사전학습 모델을 활용하는가* 의 정량 답변. *진짜 task adaptation 의미의 fine-tune (instruction tuning)* 은 Ch 27 SFT 에서 본격 등장.
+[25_gpt2_continual_pretrain](../25_gpt2_continual_pretrain/) - OpenAI `gpt2` (124M, WebText 약 40GB 사전학습) 을 *같은 TinyStories 30K* 로 **continual pretraining** (계속 사전학습 / continual learning — 같은 CausalLM task, head 그대로). *데이터를 통제하고 본체 출발점만 다름*. 본 챕터 (3M, from scratch, 약 18분) vs Ch 25 (124M, continual pretraining, 약 5-8분) 의 generation 품질·학습 곡선 격차가 *왜 실무는 from-scratch 가 아니라 대규모 사전학습 모델을 활용하는가* 의 정량 답변. *진짜 task adaptation 의미의 fine-tune (instruction tuning)* 은 Ch 28 SFT 에서 본격 등장.

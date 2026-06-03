@@ -129,8 +129,8 @@ Ch 24 에서 도입한 GPT 시대 학습 4단계 표의 *단계 2 (continual pre
 |---|---|---|---|---|---|
 | 1 | **Pretraining** (사전학습) | 일반 코퍼스 위에 random init 본체부터 학습 | pad 만 | Ch 24, Ch 26 | |
 | 2 | **Continual pretraining** (계속 사전학습 / continual learning) | *사전학습된 본체* 를 *새 데이터* 로 *같은 CausalLM task* 더 학습. **head 그대로, task 그대로, 데이터만 새로** | pad 만 (단계 1 과 동일) | **Ch 25 ← 여기** | ✅ |
-| 3 | **SFT** (Supervised Fine-Tuning / Instruction tuning) | instruction-response 쌍으로 *행동 정렬*. `labels[:prompt_len] = -100` 으로 답변 부분만 학습 | **prompt 부분** | Ch 27 | |
-| 4 | **Alignment** (DPO / RLHF / GRPO) | preference 또는 verifier reward 로 *선호 정렬* | (RL 내부) | Ch 29-30 | |
+| 3 | **SFT** (Supervised Fine-Tuning / Instruction tuning) | instruction-response 쌍으로 *행동 정렬*. `labels[:prompt_len] = -100` 으로 답변 부분만 학습 | **prompt 부분** | Ch 28 | |
+| 4 | **Alignment** (DPO / RLHF / GRPO) | preference 또는 verifier reward 로 *선호 정렬* | (RL 내부) | Ch 30-31 | |
 
 ### ⚠️ Ch 25 는 *SFT 가 아닙니다*
 
@@ -140,7 +140,7 @@ Ch 24 에서 도입한 GPT 시대 학습 4단계 표의 *단계 2 (continual pre
 - **`instruction tuning` 의미의 SFT 가 아님** — `labels = -100` 자리가 *pad 만* (Ch 24 와 동일). prompt-response 쌍 데이터 형식이 아니라 *연속된 일반 텍스트*
 - **`continual pretraining` 그 자체** — *사전학습된 본체 + 새 도메인 데이터 + 같은 CausalLM task* 의 조합. *데이터만 바뀐 단계 1 의 연장*
 
-> SFT (단계 3) 는 Ch 27 에서 본격. *왜 모델이 instruction 을 따라가게 되는가* 는 `labels[:prompt_len] = -100` 한 줄로 정확히 설명됩니다. 본 챕터의 collator 출력 (거의 모든 자리 = 학습 신호) 이 그 한 줄과 정확히 대비되는 *학습 단계 2 의 기준선*.""")
+> SFT (단계 3) 는 Ch 28 에서 본격. *왜 모델이 instruction 을 따라가게 되는가* 는 `labels[:prompt_len] = -100` 한 줄로 정확히 설명됩니다. 본 챕터의 collator 출력 (거의 모든 자리 = 학습 신호) 이 그 한 줄과 정확히 대비되는 *학습 단계 2 의 기준선*.""")
 
 # ----- 5. Loss 노트 -----
 md(r"""## 📐 Loss — 변화 없음, 다만 *시작점* 이 다름
@@ -698,7 +698,7 @@ md(r"""## 🎯 체크포인트 질문
 
 1. Ch 24 의 학습 첫 step loss 는 약 `ln(2048) ≈ 7.62` 에서 시작했습니다. Ch 25 는 random baseline 이 `ln(50257) ≈ 10.82` 인데 *시작 loss 가 약 3.0-4.0* 입니다. 두 챕터의 *시작 loss 차이* 가 의미하는 바는 무엇인가요? (랜덤 추측 / 사전학습된 본체 / vocab 차원의 관계)
 2. 본 챕터의 lr (`2e-5`) 가 Ch 24 의 lr (`3e-4`) 보다 *약 15배 작은* 이유를 *catastrophic forgetting* 키워드로 설명해 보세요. 만약 Ch 25 에서도 `3e-4` 를 썼다면 무슨 일이 일어날까요?
-3. *Continual pretraining* (단계 2, 본 챕터) 과 *SFT* (단계 3, Ch 27) 의 가장 큰 차이는 *`labels = -100` 자리* 입니다. 본 챕터의 collator 가 만드는 `labels` 패턴과, Ch 27 에서 등장할 `labels[:prompt_len] = -100` 한 줄의 차이를 직접 비교해 설명해 보세요.
+3. *Continual pretraining* (단계 2, 본 챕터) 과 *SFT* (단계 3, Ch 28) 의 가장 큰 차이는 *`labels = -100` 자리* 입니다. 본 챕터의 collator 가 만드는 `labels` 패턴과, Ch 28 에서 등장할 `labels[:prompt_len] = -100` 한 줄의 차이를 직접 비교해 설명해 보세요.
 4. Ch 25 AFTER 의 generation 이 Ch 24 보다 좋아 보인다면, *모델 크기 (3M → 124M)* 의 효과인가 *사전학습 데이터 (없음 → WebText 40GB)* 의 효과인가? 본 챕터의 실험 셋업으로는 둘을 분리할 수 있나요? (분리하려면 어떤 추가 실험이 필요할까요?)""")
 
 # ----- 19. FAQ -----
@@ -719,7 +719,7 @@ md(r"""## ❓ FAQ
 
 - **BERT 시대 fine-tune**: *task adaptation* — 본체 + 새 head (`Linear(H, K)`) + 새 task loss. Ch 9-23 의 분류 챕터들.
 - **GPT 시대 continual pretraining**: *데이터 적응* — 본체 + 같은 head + 같은 loss + 새 데이터. **본 챕터.**
-- **GPT 시대 SFT**: *행동 정렬* — 본체 + 같은 head + 같은 loss + instruction-response 데이터 + `-100` 마스킹. Ch 27.
+- **GPT 시대 SFT**: *행동 정렬* — 본체 + 같은 head + 같은 loss + instruction-response 데이터 + `-100` 마스킹. Ch 28.
 
 정확히 부르자면 본 챕터는 *fine-tune 이 아니라 continual pretraining*. *task 가 안 바뀌고 데이터만 바뀐* 게 핵심.
 
@@ -741,7 +741,7 @@ TrainingArguments(learning_rate=3e-4, ...)
 TrainingArguments(learning_rate=2e-5, ...)
 ```
 
-HF 의 continual pretraining / fine-tuning 표준 lr 범위: `1e-5` - `5e-5`. SFT (Ch 27) 도 비슷한 범위.
+HF 의 continual pretraining / fine-tuning 표준 lr 범위: `1e-5` - `5e-5`. SFT (Ch 28) 도 비슷한 범위.
 
 ### Q3. (이론) Ch 24 (3M) 가 같은 데이터로 학습했는데 Ch 25 (124M) 결과가 훨씬 좋다면, *모델 크기의 위력* 인가 *사전학습의 위력* 인가?
 
@@ -827,13 +827,13 @@ trainer = Trainer(
 
 다른 곳: *model 인자에 넘기는 인스턴스* 와 *args 의 lr / step 설정* 두 곳. 나머지는 *글자 그대로 동일*.
 
-> 그게 *학습 단계 2 (continual pretraining)* 의 미적 본질 — *trainer / collator / loss 코드 재사용*. 단계 3 (SFT, Ch 27) 에서도 *대부분 같습니다*, 다만 *collator 가 `labels[:prompt_len] = -100` 마스킹* 한다는 점이 추가될 뿐.
+> 그게 *학습 단계 2 (continual pretraining)* 의 미적 본질 — *trainer / collator / loss 코드 재사용*. 단계 3 (SFT, Ch 28) 에서도 *대부분 같습니다*, 다만 *collator 가 `labels[:prompt_len] = -100` 마스킹* 한다는 점이 추가될 뿐.
 
 ### Q7. (이론) 다음 챕터 (Ch 26 한국어 GPT scratch) 와의 관계는?
 
 Ch 26 는 *Ch 24 의 한국어판* — *작은 GPT + 한국어 TinyStories-Korean + BPE 직접 학습* 패턴. *Ch 25 의 한국어판 (한국어 사전학습 GPT + continual pretraining)* 이 *아닌* 이유:
 
-- **한국어 사전학습 GPT 가 부족** — `skt/kogpt2-base-v2` (125M) 등이 있지만 *영어 gpt2 만큼 표준화된 토크나이저·본체 조합* 이 아님. Ch 27 SFT 에서 KoGPT2 가 등장
+- **한국어 사전학습 GPT 가 부족** — `skt/kogpt2-base-v2` (125M) 등이 있지만 *영어 gpt2 만큼 표준화된 토크나이저·본체 조합* 이 아님. Ch 28 SFT 에서 KoGPT2 가 등장
 - **한국어 토크나이저 새로 학습이 필요** — Q4 에서 봤듯 영어 BPE 는 한국어를 못 다룸. *한국어 BBPE 를 직접 학습* 하는 게 정공법
 - **Phase 4 의 한국어 사전학습 단계 1 챕터** — Ch 22 (한국어 BERT scratch) 의 GPT 판
 
@@ -865,13 +865,14 @@ md(r"""## 다음 챕터 예고
 | Ch 24 | 1 (영어) | 작은 GPT scratch | TinyStories | 단계 1 출발 |
 | **Ch 25 ← 여기** | **2** | **`gpt2` 124M** | **TinyStories (동일)** | **단계 2: continual pretraining** |
 | Ch 26 | 1 (한국어) | 작은 GPT scratch | TinyStories-Korean | 한국어 단계 1 |
-| Ch 27 | 3 | KoGPT2 + SFT | KoAlpaca 등 instruction 데이터 | **단계 3: SFT** |
-| Ch 29 | 4 | SFT 모델 + DPO | preference 쌍 데이터 | **단계 4: DPO** |
-| Ch 30 | 4 | SFT 모델 + GRPO | verifier reward | **단계 4: GRPO** |
+| Ch 27 | 2 (한국어) | KoGPT2 125M | TinyStories-Korean | **한국어 단계 2: continual pretraining** (본 챕터의 한국어 짝) |
+| Ch 28 | 3 | KoGPT2 + SFT | KoAlpaca 등 instruction 데이터 | **단계 3: SFT** |
+| Ch 30 | 4 | SFT 모델 + DPO | preference 쌍 데이터 | **단계 4: DPO** |
+| Ch 31 | 4 | SFT 모델 + GRPO | verifier reward | **단계 4: GRPO** |
 
 > *왜 영어 사전학습 모델 (gpt2) 을 한국어에 그대로 적용하기 어려운가* 의 답이 Ch 26 의 동기입니다 — *토크나이저가 한국어를 못 다루면 본체 weight 가 유효한 신호가 아니라* 사실상 random init 과 같은 상태. 한국어는 *처음부터* 가 정공법.
 
-> **변하는 축** (Ch 25 → Ch 26): *언어 + 학습 단계* 두 축. *직접 짝* 은 Ch 24 ↔ Ch 26 (같은 단계 1, 언어만 다름) / Ch 25 ↔ (가상의 한국어 continual pretraining, KoGPT2 + 한국어 도메인 데이터) 가 됩니다.""")
+> **변하는 축** (Ch 25 → Ch 26): *언어 + 학습 단계* 두 축. *직접 짝* 은 Ch 24 ↔ Ch 26 (같은 단계 1, 언어만 다름) / **Ch 25 ↔ Ch 27** (같은 단계 2 continual pretraining, KoGPT2 + 한국어 TinyStories) 입니다. 영어·한국어가 *scratch + continual pretraining* 으로 완전 대칭.""")
 
 
 # ----- 노트북 저장 -----
@@ -908,10 +909,10 @@ Phase 4 의 두 번째 챕터. Ch 24 에서 *random init 작은 GPT (3M) 를 Tin
 |---|---|---|---|
 | 1 | Pretraining | | Ch 24 (영어), Ch 26 (한국어) |
 | **2** | **Continual pretraining** (계속 사전학습 / continual learning) | **✅ ← 여기** | **Ch 25** |
-| 3 | SFT (Instruction tuning) | | Ch 27 |
-| 4 | Alignment (DPO / GRPO) | | Ch 29-30 |
+| 3 | SFT (Instruction tuning) | | Ch 28 |
+| 4 | Alignment (DPO / GRPO) | | Ch 30-31 |
 
-> **Ch 25 ≠ SFT** — *task adaptation 의미의 fine-tune 이 아니라 같은 CausalLM task 를 새 데이터로 더 학습*. head 안 바뀜, loss·trainer 안 바뀜. SFT 는 Ch 27 에서 본격.
+> **Ch 25 ≠ SFT** — *task adaptation 의미의 fine-tune 이 아니라 같은 CausalLM task 를 새 데이터로 더 학습*. head 안 바뀜, loss·trainer 안 바뀜. SFT 는 Ch 28 에서 본격.
 
 ## 다루는 핵심 개념
 - **`AutoModelForCausalLM.from_pretrained("gpt2")`** — OpenAI WebText 약 40GB 로 사전학습된 124M params 본체. *모델 로드 한 줄* 로 학습 단계 2 진입
@@ -923,7 +924,7 @@ Phase 4 의 두 번째 챕터. Ch 24 에서 *random init 작은 GPT (3M) 를 Tin
 - **사전학습된 본체의 시작 loss** — random baseline (`ln(50257) ≈ 10.82`) 이 아니라 *약 3.0-4.0* 에서 시작. *Ch 24 와 본질적 차이*
 - **3-way generation 비교** — Ch 24 (3M scratch) vs Ch 25 BEFORE (gpt2 그대로) vs Ch 25 AFTER (continual pretrain). *모델 크기와 사전학습 효과는 분리 불가능* 의 정량 표시
 - **Catastrophic forgetting** — 긴 학습 / 큰 lr 일 때 사전학습된 일반 도메인 능력이 손실되는 현상. 짧은 학습 + 작은 lr 로 완화
-- **Continual pretraining ↔ SFT (Ch 27) 의 정확한 경계** — `labels = -100` 자리가 *pad 만 (단계 2)* vs *prompt 부분 (단계 3)*
+- **Continual pretraining ↔ SFT (Ch 28) 의 정확한 경계** — `labels = -100` 자리가 *pad 만 (단계 2)* vs *prompt 부분 (단계 3)*
 
 ## Loss
 `CrossEntropyLoss` (next-token, `mlm=False`) — *Ch 24 와 완전히 동일*. `labels = input_ids.clone()`, pad 만 `-100`. 다만 *vocab 차원이 2,048 → 50,257 로 변하고* *시작 weight 가 random 이 아닌 사전학습된 본체* 라는 점이 *loss 곡선의 시작 지점* 을 결정.
@@ -963,7 +964,7 @@ device 자동 감지 (CUDA / MPS / CPU) — 로컬 Mac MPS 에서도 실행 가�
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표) 를 참고하세요.
 
 ## 다음 챕터
-[26_gpt_tinystories_korean](../26_gpt_tinystories_korean/) (예정) — *Ch 24 의 한국어판*. 작은 GPT scratch + 한국어 BPE 직접 학습 + 한국어 TinyStories. *왜 영어 사전학습 모델 (gpt2) 을 한국어에 그대로 적용하기 어려운가* 의 답 — *토크나이저는 본체와 운명공동체* 원칙이 한국어에서 *scratch* 를 강제. SFT (단계 3) 는 Ch 27 (KoGPT2 + KoAlpaca) 에서 본격 등장.
+[26_ko_tiny_gpt](../26_ko_tiny_gpt/) (예정) — *Ch 24 의 한국어판*. 작은 GPT scratch + 한국어 BBPE 직접 학습 + 한국어 TinyStories. *왜 영어 사전학습 모델 (gpt2) 을 한국어에 그대로 적용하기 어려운가* 의 답 — *토크나이저는 본체와 운명공동체* 원칙이 한국어에서 *scratch* 를 강제. 그 다음 Ch 27 (KoGPT2 + 한국어 TinyStories continual pretraining — 본 챕터 Ch 25 의 한국어 짝), SFT (단계 3) 는 Ch 28 (KoGPT2 + KoAlpaca) 에서 본격 등장.
 """
 
 OUT_README.write_text(README, encoding="utf-8")

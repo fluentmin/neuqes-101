@@ -11,10 +11,10 @@ Phase 4 의 두 번째 챕터. Ch 24 에서 *random init 작은 GPT (3M) 를 Tin
 |---|---|---|---|
 | 1 | Pretraining | | Ch 24 (영어), Ch 26 (한국어) |
 | **2** | **Continual pretraining** (계속 사전학습 / continual learning) | **✅ ← 여기** | **Ch 25** |
-| 3 | SFT (Instruction tuning) | | Ch 27 |
-| 4 | Alignment (DPO / GRPO) | | Ch 29-30 |
+| 3 | SFT (Instruction tuning) | | Ch 28 |
+| 4 | Alignment (DPO / GRPO) | | Ch 30-31 |
 
-> **Ch 25 ≠ SFT** — *task adaptation 의미의 fine-tune 이 아니라 같은 CausalLM task 를 새 데이터로 더 학습*. head 안 바뀜, loss·trainer 안 바뀜. SFT 는 Ch 27 에서 본격.
+> **Ch 25 ≠ SFT** — *task adaptation 의미의 fine-tune 이 아니라 같은 CausalLM task 를 새 데이터로 더 학습*. head 안 바뀜, loss·trainer 안 바뀜. SFT 는 Ch 28 에서 본격.
 
 ## 다루는 핵심 개념
 - **`AutoModelForCausalLM.from_pretrained("gpt2")`** — OpenAI WebText 약 40GB 로 사전학습된 124M params 본체. *모델 로드 한 줄* 로 학습 단계 2 진입
@@ -26,7 +26,7 @@ Phase 4 의 두 번째 챕터. Ch 24 에서 *random init 작은 GPT (3M) 를 Tin
 - **사전학습된 본체의 시작 loss** — random baseline (`ln(50257) ≈ 10.82`) 이 아니라 *약 3.0-4.0* 에서 시작. *Ch 24 와 본질적 차이*
 - **3-way generation 비교** — Ch 24 (3M scratch) vs Ch 25 BEFORE (gpt2 그대로) vs Ch 25 AFTER (continual pretrain). *모델 크기와 사전학습 효과는 분리 불가능* 의 정량 표시
 - **Catastrophic forgetting** — 긴 학습 / 큰 lr 일 때 사전학습된 일반 도메인 능력이 손실되는 현상. 짧은 학습 + 작은 lr 로 완화
-- **Continual pretraining ↔ SFT (Ch 27) 의 정확한 경계** — `labels = -100` 자리가 *pad 만 (단계 2)* vs *prompt 부분 (단계 3)*
+- **Continual pretraining ↔ SFT (Ch 28) 의 정확한 경계** — `labels = -100` 자리가 *pad 만 (단계 2)* vs *prompt 부분 (단계 3)*
 
 ## Loss
 `CrossEntropyLoss` (next-token, `mlm=False`) — *Ch 24 와 완전히 동일*. `labels = input_ids.clone()`, pad 만 `-100`. 다만 *vocab 차원이 2,048 → 50,257 로 변하고* *시작 weight 가 random 이 아닌 사전학습된 본체* 라는 점이 *loss 곡선의 시작 지점* 을 결정.
@@ -66,4 +66,4 @@ device 자동 감지 (CUDA / MPS / CPU) — 로컬 Mac MPS 에서도 실행 가�
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표) 를 참고하세요.
 
 ## 다음 챕터
-[26_gpt_tinystories_korean](../26_gpt_tinystories_korean/) (예정) — *Ch 24 의 한국어판*. 작은 GPT scratch + 한국어 BPE 직접 학습 + 한국어 TinyStories. *왜 영어 사전학습 모델 (gpt2) 을 한국어에 그대로 적용하기 어려운가* 의 답 — *토크나이저는 본체와 운명공동체* 원칙이 한국어에서 *scratch* 를 강제. SFT (단계 3) 는 Ch 27 (KoGPT2 + KoAlpaca) 에서 본격 등장.
+[26_ko_tiny_gpt](../26_ko_tiny_gpt/) (예정) — *Ch 24 의 한국어판*. 작은 GPT scratch + 한국어 BBPE 직접 학습 + 한국어 TinyStories. *왜 영어 사전학습 모델 (gpt2) 을 한국어에 그대로 적용하기 어려운가* 의 답 — *토크나이저는 본체와 운명공동체* 원칙이 한국어에서 *scratch* 를 강제. 그 다음 Ch 27 (KoGPT2 + 한국어 TinyStories continual pretraining — 본 챕터 Ch 25 의 한국어 짝), SFT (단계 3) 는 Ch 28 (KoGPT2 + KoAlpaca) 에서 본격 등장.
