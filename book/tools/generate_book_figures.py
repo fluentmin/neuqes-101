@@ -994,6 +994,53 @@ def ch25_ch24_loss_compare() -> None:
     finish("ch25_ch24_loss_compare.png")
 
 
+def ch26_loss_vram_trace() -> None:
+    steps = np.arange(0, 1501, 150)
+    train = np.array([8.12, 6.18, 5.02, 4.18, 3.62, 3.28, 3.04, 2.90, 2.78, 2.69, 2.61])
+    eval_loss = np.array([8.24, 6.42, 5.28, 4.46, 3.88, 3.48, 3.22, 3.06, 2.94, 2.84, 2.76])
+    vram_steps = np.arange(150, 1501, 150)
+    peak = np.array([3.5, 3.7, 3.8, 3.9, 3.9, 4.0, 4.0, 4.1, 4.1, 4.1])
+    reserved = peak + 0.35
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.8, 3.8))
+    ax1.plot(steps, train, "o-", color=BLUE, label="train")
+    ax1.plot(steps, eval_loss, "s-", color=RED, label="eval")
+    ax1.axhline(np.log(4000), color=INK, linestyle=":", linewidth=1.0, label="ln(4000)")
+    ax1.set_xlabel("step")
+    ax1.set_ylabel("CLM loss")
+    ax1.set_title("Ch26 Korean scratch GPT - TinyStories-Korean loss")
+    ax1.legend(frameon=False, fontsize=8)
+
+    ax2.plot(vram_steps, peak, "o-", color=GREEN, label="peak")
+    ax2.plot(vram_steps, reserved, "s--", color=SLATE, alpha=0.7, label="reserved")
+    ax2.set_xlabel("step")
+    ax2.set_ylabel("VRAM (GiB)")
+    ax2.set_ylim(0, 5)
+    ax2.set_title("T4 VRAM trace")
+    ax2.legend(frameon=False, fontsize=8)
+    finish("ch26_loss_vram_trace.png")
+
+
+def ch26_ch24_loss_compare() -> None:
+    labels = ["random baseline", "end eval loss"]
+    ch24 = np.array([np.log(2048), 2.63])
+    ch26 = np.array([np.log(4000), 2.76])
+    x = np.arange(len(labels))
+    fig, ax = plt.subplots(figsize=(6.8, 3.8))
+    width = 0.34
+    ax.bar(x - width / 2, ch24, width, color=BLUE, label="Ch24 English")
+    ax.bar(x + width / 2, ch26, width, color=GREEN, label="Ch26 Korean")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("loss")
+    ax.set_title("Scratch CLM - English vs Korean TinyStories")
+    ax.legend(frameon=False)
+    for xpos, vals in [(x[0] - width / 2, ch24[0]), (x[1] - width / 2, ch24[1]),
+                       (x[0] + width / 2, ch26[0]), (x[1] + width / 2, ch26[1])]:
+        ax.text(xpos, vals + 0.08, f"{vals:.2f}", ha="center", fontsize=8, color=INK)
+    finish("ch26_ch24_loss_compare.png")
+
+
 def main() -> None:
     theme()
     ch01_star_distribution()
@@ -1039,6 +1086,8 @@ def main() -> None:
     ch24_loss_vram_trace()
     ch25_loss_vram_trace()
     ch25_ch24_loss_compare()
+    ch26_loss_vram_trace()
+    ch26_ch24_loss_compare()
 
 
 if __name__ == "__main__":

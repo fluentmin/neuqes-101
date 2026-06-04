@@ -688,6 +688,40 @@ CHAPTERS = [
             "사전학습 본체",
         ),
     ),
+    Chapter(
+        26,
+        "ko_tiny_gpt",
+        "한국어 작은 GPT 사전학습 (TinyStories-Korean Causal LM)",
+        "한국어 작은 GPT 사전학습 (TinyStories-Korean CLM)",
+        "작은 GPT2를 한국어 BBPE 토크나이저와 TinyStories-Korean으로 from-scratch next-token 사전학습",
+        (
+            "Korean GPT",
+            "TinyStories-Korean",
+            "g0ster/TinyStories-Korean",
+            "byte-level BPE",
+            "BBPE",
+            "Korean tokenizer",
+            "CausalLM",
+            "CrossEntropyLoss",
+            "next-token prediction",
+            "GPT2Config",
+            "GPT2LMHeadModel",
+            "DataCollatorForLanguageModeling",
+            "labels=-100",
+            "group_texts",
+            "KoGPT2",
+            "skt/kogpt2-base-v2",
+            "한국어 GPT",
+            "한국어 토크나이저",
+            "한국어 BBPE",
+            "한국어 TinyStories",
+            "직접 사전학습",
+            "한글 토큰화",
+            "학습 전 생성",
+            "학습 후 생성",
+            "한국어 생성",
+        ),
+    ),
 ]
 
 
@@ -1204,6 +1238,33 @@ EXTRA_INDEXES = {
         "사전학습 효과",
         "SFT 경계",
         "프롬프트 마스킹",
+    ),
+    26: (
+        "BpeTrainer",
+        "ByteLevel",
+        "ByteLevelDecoder",
+        "PreTrainedTokenizerFast",
+        "special_tokens",
+        "endoftext token",
+        "story restoration",
+        "streaming dataset",
+        "Korean BBPE vs GPT-2 BPE",
+        "token length comparison",
+        "random baseline",
+        "ln(vocab)",
+        "perplexity",
+        "VRAM trace",
+        "model.generate",
+        "sampling hyperparameter",
+        "continual pretraining preview",
+        "story 복원",
+        "줄 단위 데이터",
+        "토큰 길이 비교",
+        "무작위 기준선",
+        "한국어 사전학습",
+        "한국어 생성 비교",
+        "KoGPT2 reference",
+        "한국어 continual pretraining",
     ),
 }
 
@@ -2330,7 +2391,7 @@ def display_math_to_numbered_equations(latex: str, chapter_number: int) -> str:
 
 def link_chapter_references(latex: str) -> str:
     """Turn prose references such as 3장 and 9-13장 into hyperlinked refs."""
-    single = r"(?:[1-9]|1[0-9]|2[0-5])"
+    single = r"(?:[1-9]|1[0-9]|2[0-6])"
     range_pat = re.compile(
         rf"(?<!ch:)(?<!ref\{{ch:)(?<!tab:ch)(?<!eq:ch)\b({single})\s*[-–]\s*({single})장"
     )
@@ -3489,6 +3550,18 @@ def synthetic_output_text(source: str) -> str:
         ])
     if "trainer.train" in source_lower or "train_result" in source_lower:
         return "TrainOutput(global_step=..., training_loss=..., metrics={...})"
+    if "gpt2lmheadmodel" in source_lower or "automodelforcausallm" in source_lower:
+        return "\n".join([
+            "model:             GPT2LMHeadModel / AutoModelForCausalLM",
+            "parameters:        ...",
+            "lm_head:           Linear(H, vocab_size)",
+        ])
+    if "datacollatorforlanguagemodeling" in source_lower or "mlm=false" in source_lower:
+        return "\n".join([
+            "total positions:   ...",
+            "ignored (-100):    pad positions only",
+            "train signal:      almost every token",
+        ])
     if "logits" in source_lower or "probs" in source_lower or "predict(" in source_lower:
         return "\n".join([
             "logits shape: (..., ...)",
@@ -3498,8 +3571,8 @@ def synthetic_output_text(source: str) -> str:
         ])
     if "tokenizer" in source_lower or "token" in source_lower or "vocab" in source_lower:
         return "\n".join([
-            "Class: DistilBertTokenizerFast",
-            "vocab: 30,522",
+            "tokenizer:        ...",
+            "vocab_size:       ...",
             "tokens / input_ids: [...]",
         ])
     if "param" in source_lower or "classifier" in source_lower or "model.config" in source_lower:
