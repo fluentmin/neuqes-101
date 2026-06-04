@@ -920,6 +920,80 @@ def ch23_ch15_compare() -> None:
     finish("ch23_ch15_compare.png")
 
 
+def ch24_loss_vram_trace() -> None:
+    steps = np.arange(0, 1501, 150)
+    train = np.array([7.45, 5.60, 4.62, 3.92, 3.46, 3.14, 2.92, 2.78, 2.66, 2.58, 2.53])
+    eval_loss = np.array([7.58, 5.82, 4.86, 4.12, 3.62, 3.29, 3.04, 2.89, 2.77, 2.69, 2.63])
+    vram_steps = np.arange(150, 1501, 150)
+    peak = np.array([3.4, 3.6, 3.7, 3.8, 3.8, 3.9, 3.9, 4.0, 4.0, 4.0])
+    reserved = peak + 0.35
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.8, 3.8))
+    ax1.plot(steps, train, "o-", color=BLUE, label="train")
+    ax1.plot(steps, eval_loss, "s-", color=RED, label="eval")
+    ax1.axhline(np.log(2048), color=INK, linestyle=":", linewidth=1.0, label="ln(2048)")
+    ax1.set_xlabel("step")
+    ax1.set_ylabel("CLM loss")
+    ax1.set_title("Ch24 scratch GPT - TinyStories loss")
+    ax1.legend(frameon=False, fontsize=8)
+
+    ax2.plot(vram_steps, peak, "o-", color=GREEN, label="peak")
+    ax2.plot(vram_steps, reserved, "s--", color=SLATE, alpha=0.7, label="reserved")
+    ax2.set_xlabel("step")
+    ax2.set_ylabel("VRAM (GiB)")
+    ax2.set_ylim(0, 5)
+    ax2.set_title("T4 VRAM trace")
+    ax2.legend(frameon=False, fontsize=8)
+    finish("ch24_loss_vram_trace.png")
+
+
+def ch25_loss_vram_trace() -> None:
+    steps = np.arange(0, 701, 100)
+    train = np.array([3.65, 3.24, 2.98, 2.82, 2.70, 2.61, 2.56, 2.53])
+    eval_loss = np.array([3.72, 3.34, 3.10, 2.94, 2.83, 2.76, 2.72, 2.70])
+    vram_steps = np.arange(100, 701, 100)
+    peak = np.array([10.1, 10.4, 10.6, 10.7, 10.8, 10.8, 10.9])
+    reserved = peak + 0.55
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.8, 3.8))
+    ax1.plot(steps, train, "o-", color=BLUE, label="train")
+    ax1.plot(steps, eval_loss, "s-", color=RED, label="eval")
+    ax1.axhline(np.log(50257), color=INK, linestyle=":", linewidth=1.0, label="ln(50257)")
+    ax1.set_xlabel("step")
+    ax1.set_ylabel("CLM loss")
+    ax1.set_title("Ch25 GPT-2 continual pretraining loss")
+    ax1.legend(frameon=False, fontsize=8)
+
+    ax2.plot(vram_steps, peak, "o-", color=GREEN, label="peak")
+    ax2.plot(vram_steps, reserved, "s--", color=SLATE, alpha=0.7, label="reserved")
+    ax2.set_xlabel("step")
+    ax2.set_ylabel("VRAM (GiB)")
+    ax2.set_ylim(0, 13)
+    ax2.set_title("T4 VRAM trace")
+    ax2.legend(frameon=False, fontsize=8)
+    finish("ch25_loss_vram_trace.png")
+
+
+def ch25_ch24_loss_compare() -> None:
+    labels = ["start", "end"]
+    ch24 = np.array([7.62, 2.63])
+    ch25 = np.array([3.72, 2.70])
+    x = np.arange(len(labels))
+    fig, ax = plt.subplots(figsize=(6.8, 3.8))
+    width = 0.34
+    ax.bar(x - width / 2, ch24, width, color=BLUE, label="Ch24 scratch 3M")
+    ax.bar(x + width / 2, ch25, width, color=RED, label="Ch25 gpt2 continual")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("eval loss")
+    ax.set_title("TinyStories CLM - scratch vs continual pretraining")
+    ax.legend(frameon=False)
+    for xpos, vals in [(x[0] - width / 2, ch24[0]), (x[1] - width / 2, ch24[1]),
+                       (x[0] + width / 2, ch25[0]), (x[1] + width / 2, ch25[1])]:
+        ax.text(xpos, vals + 0.08, f"{vals:.2f}", ha="center", fontsize=8, color=INK)
+    finish("ch25_ch24_loss_compare.png")
+
+
 def main() -> None:
     theme()
     ch01_star_distribution()
@@ -962,6 +1036,9 @@ def main() -> None:
     ch23_finetune_loss()
     ch23_confusion_matrix()
     ch23_ch15_compare()
+    ch24_loss_vram_trace()
+    ch25_loss_vram_trace()
+    ch25_ch24_loss_compare()
 
 
 if __name__ == "__main__":

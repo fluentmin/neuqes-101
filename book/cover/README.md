@@ -19,7 +19,7 @@ book/cover/
 latexmk -xelatex book/main.tex
 ```
 
-산출물: `book/build/neuqes-101-ch01-23-manuscript.pdf` 의 첫 페이지가 이 표지.
+산출물: `book/build/neuqes-101-ch01-25-manuscript.pdf` 의 첫 페이지가 이 표지.
 
 ### 단독 빌드 (표지만 시연)
 
@@ -87,10 +87,10 @@ fc-cache -f -v
 |---|---|
 | `\hfTitleLineOne` | 텍스트 분석을 위한 |
 | `\hfTitleLineTwo` | Hugging Face 입문 |
-| `\hfSubtitle` | 손으로 따라가며 익히는 텍스트 분류 · 23장 원고 |
+| `\hfSubtitle` | 손으로 따라가며 익히는 텍스트 분류 · 25장 원고 |
 | `\hfRunMark` | HF · 101 |
 | `\hfVersionMark` | v1.0 · 2026 |
-| `\hfBandKicker` | Hugging Face 입문 커리큘럼 · 23장 원고 (손글씨 톤) |
+| `\hfBandKicker` | Hugging Face 입문 커리큘럼 · 25장 원고 (손글씨 톤) |
 | `\hfBlurb` | 4줄 본문 카피 |
 | `\hfAuthor` | 황윤구 |
 | `\hfAxisOneK` … `\hfAxisFourV` | 4축 칩 키/값 |
