@@ -27,7 +27,7 @@ Ch 25 (영어 gpt2 continual pretraining) 의 *한국어 짝*. Ch 26 에서 *ran
 
 ## 다루는 핵심 개념
 - **`AutoModelForCausalLM.from_pretrained("skt/kogpt2-base-v2")`** — 대규모 한국어 코퍼스로 사전학습된 125M params 본체. *모델 로드 한 줄* 로 학습 단계 2 진입
-- **`AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")`** — KoGPT2 BBPE (vocab 51,200) 그대로. *토크나이저는 본체와 운명공동체*
+- **`PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", ...)`** — KoGPT2 BBPE (vocab 51,200) 그대로. *토크나이저는 본체와 운명공동체*
 - **`if tokenizer.pad_token is None: tokenizer.pad_token = tokenizer.eos_token`** — KoGPT2 의 pad 컨벤션 (없을 때만 EOS 재활용)
 - **lr `2e-5`** — continual pretraining 표준 (Ch 26 의 `5e-4` 보다 약 25배 작음). *catastrophic forgetting 방지*. 영어 Ch 25 와 같은 값
 - **`transformers.Trainer` + `DataCollatorForLanguageModeling(mlm=False)`** — *Ch 26 과 정확히 같은 코드*. 학습 단계 2 의 정의

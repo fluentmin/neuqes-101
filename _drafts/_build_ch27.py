@@ -111,7 +111,7 @@ Phase 4 는 영어 (Ch 24-25) 와 한국어 (Ch 26-27) 가 *같은 학습 단계
 | Data collator | `DataCollatorForLanguageModeling(mlm=False)` | `DataCollatorForLanguageModeling(mlm=False)` | **같음** |
 | Loss | CE next-token (`labels = input_ids.clone()`) | CE next-token (`labels = input_ids.clone()`) | **같음** |
 | 본체 출발점 | `GPT2LMHeadModel(config)` random init (약 3M) | `AutoModelForCausalLM.from_pretrained("skt/kogpt2-base-v2")` (125M) | **다름** |
-| 토크나이저 | BBPE 직접 학습 (vocab 약 4,000) | `AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")` (vocab 51,200) | **다름** (본체와 운명공동체) |
+| 토크나이저 | BBPE 직접 학습 (vocab 약 4,000) | `PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", ...)` (vocab 51,200) | **다름** (본체와 운명공동체) |
 | 학습률 | 5e-4 (scratch 표준) | **2e-5** (continual pretraining 표준) | **다름** |
 | 학습 step | 약 1,500 | **약 1 epoch (수백 step)** | **다름** (본체 이미 학습됨) |
 
@@ -123,7 +123,7 @@ md(r"""## 🔄 변경점 (Diff from Ch 26)
 | 축 | Ch 26 (한국어 GPT scratch) | Ch 27 (본 챕터, KoGPT2 continual pretraining) |
 |---|---|---|
 | **본체** | 작은 GPT2 (약 3M params, random init) | **KoGPT2 `skt/kogpt2-base-v2`** (125M, 대규모 한국어 코퍼스 사전학습) ← *출발점 변화* |
-| **토크나이저** | BBPE 직접 학습 (vocab 약 4,000) | **`AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")`** (vocab 51,200) ← *본체에 맞춰 함께 변함* |
+| **토크나이저** | BBPE 직접 학습 (vocab 약 4,000) | **`PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", ...)`** (vocab 51,200) ← *본체에 맞춰 함께 변함* |
 | 데이터 | 한국어 TinyStories 30K | **한국어 TinyStories 30K (동일)** ← 통제 변수 |
 | Trainer | `transformers.Trainer` | **`transformers.Trainer` (동일)** |
 | Data collator | `DataCollatorForLanguageModeling(mlm=False)` | **(동일)** |
@@ -198,7 +198,7 @@ $\text{PPL} = e^{L}$:
 # ----- 6. 토크나이저 노트 -----
 md(r"""## 🔤 토크나이저 노트 — KoGPT2 BBPE 그대로 (vocab 51,200)
 
-본 챕터에서는 토크나이저를 *학습하지 않습니다*. `AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")` 한 줄로 SKT 가 대규모 한국어 코퍼스 위에 학습해 둔 byte-level BPE (BBPE) 를 그대로 가져옵니다.
+본 챕터에서는 토크나이저를 *학습하지 않습니다*. `PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", ...)` 로 SKT 가 대규모 한국어 코퍼스 위에 학습해 둔 byte-level BPE (BBPE, vocab 51,200) 를 그대로 가져옵니다 (special token 명시 필요 — 바로 아래 주의 참고).
 
 ### 왜 직접 학습하지 않는가 — *토크나이저는 본체와 운명공동체*
 
@@ -220,15 +220,23 @@ KoGPT2 본체의 input embedding `wte` (51200 × 768) 와 LM head (768 × 51200)
 | 학습 주체 | 본 챕터에서 직접 학습 (Ch 26) | **SKT 가 미리 학습** (그대로 사용) |
 | 특수 토큰 | `<|endoftext|>` (bos = eos = pad) | KoGPT2 컨벤션 (`</s>` 등, pad 는 별도 지정 필요할 수 있음) |
 
-### KoGPT2 의 pad token 처리
+### ⚠️ KoGPT2 토크나이저 로드 주의 — `AutoTokenizer` 가 잘못 fallback 합니다
 
-KoGPT2 는 *pad token 이 지정되어 있지 않을 수 있습니다* — 그래서 batch 학습 시 안전하게 한 줄을 추가합니다:
+KoGPT2 (`skt/kogpt2-base-v2`) 는 **`AutoTokenizer.from_pretrained(...)` 가 영어 GPT2 토크나이저로 잘못 fallback** 하는 *알려진 함정* 이 있습니다. 그러면 special token 이 `<|endoftext|>` 로 잡히고, 한국어가 *완전히 깨진 토큰* 으로 인코딩됩니다 (예: `"옛날 옛날에"` → `[501, 500, ...]` → `'�����'`).
+
+SKT 공식 방식대로 **`PreTrainedTokenizerFast` + special token 명시** 로 로드해야 합니다:
 
 ```python
-tokenizer = AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")
-if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token  # 없으면 EOS 재활용
+from transformers import PreTrainedTokenizerFast
+tokenizer = PreTrainedTokenizerFast.from_pretrained(
+    "skt/kogpt2-base-v2",
+    bos_token="</s>", eos_token="</s>", unk_token="<unk>",
+    pad_token="<pad>", mask_token="<mask>",
+)
+# 이렇게 로드하면 "옛날 옛날에" -> [12346, 35970] -> "옛날 옛날에" 정상 왕복
 ```
+
+> 실무 교훈: *사전학습 모델마다 권장 토크나이저 로드 방식이 다를 수 있습니다.* 모델 카드의 example code 를 확인하고, *encode → decode 왕복* 으로 한 번 검증하는 습관이 이런 함정을 막습니다.
 
 EOS 토큰을 pad 로 재활용. `group_texts` 패턴에서 chunk 길이가 모두 같으면 pad 가 거의 없어 실용적으로는 영향 없음. (영어 Ch 25 에서 `tokenizer.pad_token = tokenizer.eos_token` 했던 것과 같은 패턴 — 다만 KoGPT2 는 이미 pad 가 지정돼 있을 수도 있어 `if None` 가드.)
 
@@ -331,12 +339,17 @@ md(r"""## 2. KoGPT2 토크나이저·모델 로드 — *모델 로드 한 줄로
 
 본 챕터의 *유일한 큰 변화*. Ch 26 의 `GPT2LMHeadModel(config)` random init 대신 `AutoModelForCausalLM.from_pretrained("skt/kogpt2-base-v2")` 한 줄. 토크나이저도 같이 가져옵니다. 영어 Ch 25 의 `gpt2` 로드와 정확히 같은 패턴 — 모델 id 만 한국어 KoGPT2.""")
 
-code(r"""from transformers import AutoTokenizer, AutoModelForCausalLM
+code(r"""from transformers import PreTrainedTokenizerFast, AutoModelForCausalLM
 
 t0 = time.time()
-tokenizer = AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")
-if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token   # KoGPT2 의 pad 컨벤션 (없으면 EOS 재활용)
+# 주의: KoGPT2 는 AutoTokenizer 가 영어 GPT2 토크나이저로 잘못 fallback 합니다.
+# (special token 이 <|endoftext|> 로 잡히고 한국어가 깨짐.) SKT 공식 방식대로
+# PreTrainedTokenizerFast 로 special token 을 직접 지정해 로드해야 합니다.
+tokenizer = PreTrainedTokenizerFast.from_pretrained(
+    "skt/kogpt2-base-v2",
+    bos_token="</s>", eos_token="</s>", unk_token="<unk>",
+    pad_token="<pad>", mask_token="<mask>",
+)
 
 model = AutoModelForCausalLM.from_pretrained("skt/kogpt2-base-v2").to(device)
 # pad token id 를 본체 config 에도 동기화
@@ -367,14 +380,16 @@ md(r"""### Ch 26 ↔ Ch 27 코드 diff — *모델·토크나이저 로드 두 �
 # config = GPT2Config(vocab_size=4000, n_layer=4, n_head=4, n_embd=256, ...)
 # model = GPT2LMHeadModel(config)
 
-# Ch 27 (continual pretraining) - 단 몇 줄로
-tokenizer = AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")
-if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
+# Ch 27 (continual pretraining) - 단 몇 줄로 (KoGPT2 는 토크나이저 로드만 주의)
+tokenizer = PreTrainedTokenizerFast.from_pretrained(
+    "skt/kogpt2-base-v2",
+    bos_token="</s>", eos_token="</s>", unk_token="<unk>",
+    pad_token="<pad>", mask_token="<mask>",
+)
 model = AutoModelForCausalLM.from_pretrained("skt/kogpt2-base-v2")
 ```
 
-> *trainer·collator·loss 는 같음* — *모델 로드 한 줄 + 토크나이저 한 줄* 로 학습 단계 2 (continual pretraining) 에 진입합니다. 그게 본 챕터의 메시지. 영어 Ch 25 의 `from_pretrained("gpt2")` 와 정확히 같은 구조.""")
+> *trainer·collator·loss 는 같음* — *모델 로드 한 줄 + 토크나이저 로드* 로 학습 단계 2 (continual pretraining) 에 진입합니다. 그게 본 챕터의 메시지. 영어 Ch 25 의 `from_pretrained("gpt2")` 와 같은 구조 — 다만 **KoGPT2 는 `AutoTokenizer` 가 영어 GPT2 로 잘못 fallback 하는 함정** 이 있어 `PreTrainedTokenizerFast` + special token 명시가 필요합니다 (실무에서 자주 만나는 *사전학습 모델별 토크나이저 로드 주의점*).""")
 
 # ----- 10. 토큰화 + group_texts -----
 md(r"""## 3. 토큰화 + `group_texts` — *Ch 26 과 완전히 같은 패턴*
@@ -730,7 +745,7 @@ md(r"""## 📦 이번 챕터에 등장한 라이브러리·함수
 | 이름 | 한 줄 설명 | Ch 26 과 차이 |
 |---|---|---|
 | `AutoModelForCausalLM.from_pretrained("skt/kogpt2-base-v2")` | KoGPT2 (125M, 대규모 한국어 사전학습) 본체 로드 | **새로 등장** (Ch 26 은 `GPT2LMHeadModel(config)` random init) |
-| `AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")` | KoGPT2 BBPE 토크나이저 (vocab 51,200) 로드 | **새로 등장** (Ch 26 은 직접 학습 BBPE) |
+| `PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", ...)` | KoGPT2 BBPE 토크나이저 (vocab 51,200) 로드 | **새로 등장** (Ch 26 은 직접 학습 BBPE) |
 | `if tokenizer.pad_token is None: tokenizer.pad_token = tokenizer.eos_token` | KoGPT2 의 pad 컨벤션 (없으면 EOS 재활용) | **새로 등장** (Ch 26 은 PreTrainedTokenizerFast 인자로 직접 지정) |
 | `transformers.Trainer` | HuggingFace 표준 학습 루프 | **공유** (Ch 26 과 동일 클래스, 동일 인자 구조) |
 | `DataCollatorForLanguageModeling(mlm=False)` | CausalLM collator (`labels = input_ids.clone()` 자동) | **공유** (Ch 26 과 정확히 같음) |
@@ -814,8 +829,13 @@ HF 의 continual pretraining / fine-tuning 표준 lr 범위: `1e-5` - `5e-5`. SF
 **작동은 하지만 비효율적** 입니다 — KoGPT2 BBPE 는 *byte-level* 이라 영어도 UNK 없이 표현하지만, *한국어 코퍼스 중심* 으로 학습돼 영어 어절의 병합 규칙이 약합니다. 그래서 *같은 영어 문장이 영어 gpt2 BPE 보다 다소 많은 토큰* 으로 쪼개질 수 있습니다.
 
 ```python
-ko_tok = AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")
-en_tok = AutoTokenizer.from_pretrained("gpt2")
+from transformers import PreTrainedTokenizerFast, AutoTokenizer
+ko_tok = PreTrainedTokenizerFast.from_pretrained(
+    "skt/kogpt2-base-v2",
+    bos_token="</s>", eos_token="</s>", unk_token="<unk>",
+    pad_token="<pad>", mask_token="<mask>",
+)                                          # KoGPT2 는 반드시 이 방식으로
+en_tok = AutoTokenizer.from_pretrained("gpt2")   # 영어 gpt2 는 AutoTokenizer OK
 sent = "Once upon a time, a little rabbit lived in the forest."
 print(len(ko_tok(sent)["input_ids"]))   # 한국어 중심 vocab -> 영어는 다소 많은 토큰
 print(len(en_tok(sent)["input_ids"]))   # 영어 중심 vocab -> 적은 토큰
@@ -840,18 +860,34 @@ Ch 27 에서는 *짧은 (1 epoch) continual pretraining + 작은 lr (`2e-5`)* �
 
 본 챕터는 *방법 1* 만 적용. *방법 3 (LoRA)* 는 본 커리큘럼 범위 밖이지만 *실무에서는 표준 옵션*.
 
-### Q6. (실무) KoGPT2 의 pad token 은 어떻게 처리하나요? 왜 `if None` 가드를 두나요?
+### Q6. (실무) 왜 KoGPT2 는 `AutoTokenizer` 가 아니라 `PreTrainedTokenizerFast` 로 로드하나요?
 
-KoGPT2 (`skt/kogpt2-base-v2`) 는 토크나이저 버전에 따라 *pad token 이 지정돼 있을 수도, 없을 수도* 있습니다. 그래서 안전하게 *없을 때만* EOS 로 채웁니다:
+**`PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", ...)` 는 영어 GPT2 토크나이저로 잘못 fallback** 하기 때문입니다. 그 결과 special token 이 `<|endoftext|>` 로 잡히고 한국어가 깨집니다 — 직접 확인해 보면:
 
 ```python
-tokenizer = AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")
-if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
-model.config.pad_token_id = tokenizer.pad_token_id   # 본체 config 에도 동기화
+from transformers import AutoTokenizer
+bad = AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")
+print(type(bad).__name__)                 # GPT2Tokenizer (slow, 영어 fallback)
+print(bad.encode("옛날 옛날에"))            # [501, 500, 529, ...] (잘못된 id)
+print(repr(bad.decode(bad.encode("옛날 옛날에"))))   # '�����' (깨짐)
 ```
 
-영어 Ch 25 의 gpt2 는 *항상 pad 가 없어서* 무조건 `tokenizer.pad_token = tokenizer.eos_token` 했습니다. KoGPT2 는 이미 지정돼 있을 수도 있어 *기존 pad 를 덮어쓰지 않도록* `if None` 가드를 둡니다. `group_texts` 로 chunk 길이가 모두 같으면 pad 가 거의 없어 실용적으로는 영향이 미미하지만, generation 의 `pad_token_id` 인자에 쓰이므로 *반드시 지정* 해야 경고가 사라집니다.
+SKT 공식 방식 — `PreTrainedTokenizerFast` + special token 명시:
+
+```python
+from transformers import PreTrainedTokenizerFast
+tokenizer = PreTrainedTokenizerFast.from_pretrained(
+    "skt/kogpt2-base-v2",
+    bos_token="</s>", eos_token="</s>", unk_token="<unk>",
+    pad_token="<pad>", mask_token="<mask>",
+)
+print(type(tokenizer).__name__)            # fast tokenizer, vocab 51,200
+print(tokenizer.encode("옛날 옛날에"))      # [12346, 35970] (정상)
+print(repr(tokenizer.decode([12346, 35970])))   # '옛날 옛날에' (정상 왕복)
+model.config.pad_token_id = tokenizer.pad_token_id   # 본체 config 동기화
+```
+
+이렇게 로드하면 `pad_token` 이 `<pad>` 로 제대로 잡혀 별도 가드도 필요 없습니다. 영어 Ch 25 의 gpt2 는 `AutoTokenizer` 가 정상 작동했지만 (`pad` 만 eos 로 보충), KoGPT2 는 *로드 방식 자체* 가 다릅니다 — **모델 카드 example code 확인 + encode/decode 왕복 검증** 이 이런 함정을 막는 습관입니다.
 
 ### Q7. (이론) 다음 챕터 (Ch 28 KoGPT2 SFT) 와의 관계는?
 
@@ -954,7 +990,7 @@ Ch 25 (영어 gpt2 continual pretraining) 의 *한국어 짝*. Ch 26 에서 *ran
 
 ## 다루는 핵심 개념
 - **`AutoModelForCausalLM.from_pretrained("skt/kogpt2-base-v2")`** — 대규모 한국어 코퍼스로 사전학습된 125M params 본체. *모델 로드 한 줄* 로 학습 단계 2 진입
-- **`AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")`** — KoGPT2 BBPE (vocab 51,200) 그대로. *토크나이저는 본체와 운명공동체*
+- **`PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2", ...)`** — KoGPT2 BBPE (vocab 51,200) 그대로. *토크나이저는 본체와 운명공동체*
 - **`if tokenizer.pad_token is None: tokenizer.pad_token = tokenizer.eos_token`** — KoGPT2 의 pad 컨벤션 (없을 때만 EOS 재활용)
 - **lr `2e-5`** — continual pretraining 표준 (Ch 26 의 `5e-4` 보다 약 25배 작음). *catastrophic forgetting 방지*. 영어 Ch 25 와 같은 값
 - **`transformers.Trainer` + `DataCollatorForLanguageModeling(mlm=False)`** — *Ch 26 과 정확히 같은 코드*. 학습 단계 2 의 정의
