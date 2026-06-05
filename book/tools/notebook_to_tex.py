@@ -722,6 +722,42 @@ CHAPTERS = [
             "한국어 생성",
         ),
     ),
+    Chapter(
+        27,
+        "ko_gpt2_continual_pretrain",
+        "KoGPT2 계속 사전학습 (Korean Continual Pretraining)",
+        "KoGPT2 계속 사전학습 (Korean CPT)",
+        "KoGPT2를 같은 TinyStories-Korean 데이터로 continual pretraining하며 한국어 scratch GPT와 비교",
+        (
+            "KoGPT2",
+            "skt/kogpt2-base-v2",
+            "continual pretraining",
+            "continual learning",
+            "Korean continual pretraining",
+            "AutoModelForCausalLM",
+            "PreTrainedTokenizerFast",
+            "DataCollatorForLanguageModeling",
+            "CausalLM",
+            "CrossEntropyLoss",
+            "labels=-100",
+            "learning_rate=2e-5",
+            "gradient_accumulation_steps",
+            "catastrophic forgetting",
+            "TinyStories-Korean",
+            "g0ster/TinyStories-Korean",
+            "KoGPT2 tokenizer",
+            "encode-decode round trip",
+            "한국어 continual pretraining",
+            "계속 사전학습",
+            "한국어 사전학습 본체",
+            "KoGPT2 토크나이저",
+            "토크나이저 왕복 검증",
+            "파국적 망각",
+            "학습률",
+            "그래디언트 누적",
+            "한국어 생성 비교",
+        ),
+    ),
 ]
 
 
@@ -1265,6 +1301,39 @@ EXTRA_INDEXES = {
         "한국어 생성 비교",
         "KoGPT2 reference",
         "한국어 continual pretraining",
+    ),
+    27: (
+        "AutoTokenizer fallback",
+        "English GPT2 fallback",
+        "special token explicit loading",
+        "bos_token",
+        "eos_token",
+        "unk_token",
+        "pad_token",
+        "mask_token",
+        "KoGPT2 BBPE",
+        "vocab 51200",
+        "random baseline",
+        "ln(vocab)",
+        "catastrophic forgetting",
+        "effective batch",
+        "VRAM trace",
+        "Ch 25 vs Ch 27",
+        "Ch 26 vs Ch 27",
+        "SFT boundary",
+        "prompt masking",
+        "tokenizer fertility",
+        "Korean vocab share",
+        "byte decomposition",
+        "jamo decomposition",
+        "한국어 토크나이저 품질",
+        "한국어 vocab 점유율",
+        "자모 분해",
+        "byte 분해",
+        "fertility",
+        "토큰화 품질",
+        "SFT 경계",
+        "프롬프트 마스킹",
     ),
 }
 
@@ -2391,7 +2460,7 @@ def display_math_to_numbered_equations(latex: str, chapter_number: int) -> str:
 
 def link_chapter_references(latex: str) -> str:
     """Turn prose references such as 3장 and 9-13장 into hyperlinked refs."""
-    single = r"(?:[1-9]|1[0-9]|2[0-6])"
+    single = r"(?:[1-9]|1[0-9]|2[0-7])"
     range_pat = re.compile(
         rf"(?<!ch:)(?<!ref\{{ch:)(?<!tab:ch)(?<!eq:ch)\b({single})\s*[-–]\s*({single})장"
     )
@@ -3313,6 +3382,35 @@ def synthetic_output_text(source: str) -> str:
             "    sep_token:    '[SEP]'  (id=3)",
             "    mask_token:   '[MASK]' (id=4)",
             "tokens (...): ['[CLS]', '이', '영화', '##는', '정말', ...]",
+        ])
+    if "skt/kogpt2-base-v2" in source_lower and "pretrainedtokenizerfast.from_pretrained" in source_lower:
+        return "\n".join([
+            "tokenizer:        skt/kogpt2-base-v2",
+            "class:            PreTrainedTokenizerFast",
+            "vocab_size:       51,200",
+            "special tokens:   bos/eos='</s>', unk='<unk>', pad='<pad>', mask='<mask>'",
+            "round trip:       encode -> decode check passed",
+        ])
+    if "autotokenizer" in source_lower and "fallback" in source_lower and "kogpt2" in source_lower:
+        return "\n".join([
+            "AutoTokenizer fallback risk:",
+            "  expected: KoGPT2 tokenizer",
+            "  failure: English GPT-2 tokenizer-like behavior",
+            "fix: PreTrainedTokenizerFast + explicit special tokens",
+        ])
+    if "skt/kogpt2-base-v2" in source_lower and "automodelforcausallm.from_pretrained" in source_lower:
+        return "\n".join([
+            "model:             skt/kogpt2-base-v2",
+            "class:             AutoModelForCausalLM",
+            "parameters:        about 125M",
+            "lm_head:           Linear(H, 51200)",
+        ])
+    if "g0ster/tinystories-korean" in source_lower and ("story" in source_lower or "eot" in source_lower):
+        return "\n".join([
+            "dataset:           g0ster/TinyStories-Korean",
+            "restored stories:  30,000 train / 500 eval",
+            "boundary:          <|endoftext|>",
+            "format:            line stream -> story list",
         ])
     if "wikimedia/wikipedia" in source_lower and "sampled train" in source_lower:
         return "\n".join([

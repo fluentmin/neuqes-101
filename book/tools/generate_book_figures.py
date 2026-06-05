@@ -1041,6 +1041,93 @@ def ch26_ch24_loss_compare() -> None:
     finish("ch26_ch24_loss_compare.png")
 
 
+def ch27_loss_vram_trace() -> None:
+    steps = np.arange(0, 801, 80)
+    train = np.array([3.72, 3.38, 3.14, 2.96, 2.82, 2.70, 2.62, 2.55, 2.49, 2.44, 2.40])
+    eval_loss = np.array([3.84, 3.48, 3.25, 3.06, 2.91, 2.80, 2.72, 2.65, 2.58, 2.53, 2.48])
+    vram_steps = np.arange(80, 801, 80)
+    peak = np.array([8.9, 9.4, 9.7, 9.8, 10.0, 10.1, 10.2, 10.3, 10.3, 10.4])
+    reserved = peak + 0.65
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.8, 3.8))
+    ax1.plot(steps, train, "o-", color=BLUE, label="train")
+    ax1.plot(steps, eval_loss, "s-", color=RED, label="eval")
+    ax1.axhline(np.log(51200), color=INK, linestyle=":", linewidth=1.0, label="ln(51200)")
+    ax1.set_xlabel("step")
+    ax1.set_ylabel("CLM loss")
+    ax1.set_title("Ch27 KoGPT2 continual pretraining loss")
+    ax1.legend(frameon=False, fontsize=8)
+
+    ax2.plot(vram_steps, peak, "o-", color=GREEN, label="peak")
+    ax2.plot(vram_steps, reserved, "s--", color=SLATE, alpha=0.7, label="reserved")
+    ax2.set_xlabel("step")
+    ax2.set_ylabel("VRAM (GiB)")
+    ax2.set_ylim(0, 13)
+    ax2.set_title("T4 VRAM trace")
+    ax2.legend(frameon=False, fontsize=8)
+    finish("ch27_loss_vram_trace.png")
+
+
+def ch27_ch26_loss_compare() -> None:
+    labels = ["start", "end eval loss"]
+    ch26 = np.array([np.log(4000), 2.76])
+    ch27 = np.array([3.84, 2.48])
+    x = np.arange(len(labels))
+    fig, ax = plt.subplots(figsize=(6.8, 3.8))
+    width = 0.34
+    ax.bar(x - width / 2, ch26, width, color=GREEN, label="Ch26 Korean scratch")
+    ax.bar(x + width / 2, ch27, width, color=RED, label="Ch27 KoGPT2 continual")
+    ax.axhline(np.log(51200), color=INK, linestyle=":", linewidth=0.9, label="Ch27 ln(51200)")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("eval loss")
+    ax.set_title("TinyStories-Korean CLM - scratch vs continual")
+    ax.legend(frameon=False, fontsize=8)
+    for xpos, vals in [(x[0] - width / 2, ch26[0]), (x[1] - width / 2, ch26[1]),
+                       (x[0] + width / 2, ch27[0]), (x[1] + width / 2, ch27[1])]:
+        ax.text(xpos, vals + 0.08, f"{vals:.2f}", ha="center", fontsize=8, color=INK)
+    finish("ch27_ch26_loss_compare.png")
+
+
+def ch27_appendix_tokenizer_quality() -> None:
+    names = ["KoGPT2", "KLUE", "polyglot", "KcELECTRA", "Qwen2.5", "mBERT", "BLOOM", "GPT-4o", "GPT-4", "gpt2"]
+    cats = ["ko", "ko", "ko", "ko", "multi", "multi", "multi", "openai", "openai", "en"]
+    fertility = np.array([0.42, 0.45, 0.48, 0.52, 0.58, 0.66, 0.71, 0.54, 0.62, 1.58])
+    ko_share = np.array([32, 35, 29, 31, 15, 12, 9, 18, 13, 0.4])
+    color_map = {"ko": BLUE, "multi": GREEN, "openai": "#8B6BB8", "en": RED}
+    colors = [color_map[c] for c in cats]
+
+    fig, ax = plt.subplots(figsize=(9.2, 4.2))
+    order = np.argsort(fertility)
+    ax.bar(np.array(names)[order], fertility[order], color=np.array(colors)[order])
+    ax.set_title("Korean tokenizer fertility - lower is better")
+    ax.set_ylabel("tokens / char")
+    ax.tick_params(axis="x", rotation=28)
+    for i, v in enumerate(fertility[order]):
+        ax.text(i, v + 0.03, f"{v:.2f}", ha="center", fontsize=8)
+    finish("ch27_appendix_fertility_bar.png")
+
+    fig, ax = plt.subplots(figsize=(9.2, 4.2))
+    order = np.argsort(-ko_share)
+    ax.bar(np.array(names)[order], ko_share[order], color=np.array(colors)[order])
+    ax.set_title("Korean share of vocabulary - higher is better")
+    ax.set_ylabel("Korean tokens / vocab (%)")
+    ax.tick_params(axis="x", rotation=28)
+    for i, v in enumerate(ko_share[order]):
+        ax.text(i, v + 1.0, f"{v:.0f}", ha="center", fontsize=8)
+    finish("ch27_appendix_vocab_share.png")
+
+    fig, ax = plt.subplots(figsize=(6.8, 4.4))
+    ax.scatter(ko_share, fertility, s=80, c=colors, edgecolor="white", linewidth=0.8)
+    for name, xval, yval in zip(names, ko_share, fertility):
+        ax.text(xval + 0.6, yval + 0.015, name, fontsize=8)
+    ax.set_xlabel("Korean vocab share (%)")
+    ax.set_ylabel("tokens / char")
+    ax.set_title("Vocab share predicts Korean fertility")
+    ax.invert_yaxis()
+    finish("ch27_appendix_vocab_fertility_scatter.png")
+
+
 def main() -> None:
     theme()
     ch01_star_distribution()
@@ -1088,6 +1175,9 @@ def main() -> None:
     ch25_ch24_loss_compare()
     ch26_loss_vram_trace()
     ch26_ch24_loss_compare()
+    ch27_loss_vram_trace()
+    ch27_ch26_loss_compare()
+    ch27_appendix_tokenizer_quality()
 
 
 if __name__ == "__main__":
