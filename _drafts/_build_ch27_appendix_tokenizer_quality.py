@@ -5,7 +5,7 @@ Ch 27 부록 — 한국어 토크나이저 품질 분석.
 메인 챕터 (Ch 27, KoGPT2 continual pretraining) 는 *토크나이저는 본체와 운명공동체*
 라는 점과 *AutoTokenizer 가 KoGPT2 를 영어 GPT2 로 잘못 fallback 하는 함정* 을 다뤘습니다.
 이 부록은 그 심화 — *왜 토크나이저가 모델의 한국어 품질을 예측하는 선행 지표인가* 를
-여러 다국어 LLM 토크나이저를 실제 숫자로 비교해 보여줍니다.
+최근 한국어·다국어 GPT 계열 LLM 토크나이저를 실제 숫자로 비교해 보여줍니다.
 
 핵심 지표 4가지:
 - Fertility (한국어 문장당 토큰 수, tokens/char): 낮을수록 압축률↑·추론 빠름·context 효율↑
@@ -13,9 +13,11 @@ Ch 27 부록 — 한국어 토크나이저 품질 분석.
 - 자모/byte 분해 여부: 음절·형태소 = 좋음, 자모/byte 깨짐 = 나쁨
 - OOV·신조어·외래어 처리: UNK 없이 자연스러운 subword 면 좋음
 
-비교 토크나이저: KoGPT2 / klue / polyglot-ko / KcELECTRA (한국어 특화) +
-Qwen2.5 / mBERT / bloom·xglm (다국어) + tiktoken o200k·cl100k (OpenAI) +
-gpt2 (영어 BPE 극단 대조군). 로드 실패 건은 try/except 로 skip.
+비교 토크나이저는 모두 GPT(decoder-only) 계열입니다. 최근(2023-2025) 한국어 LLM
+(KoGPT2·polyglot-ko·EXAONE 3.5·A.X-4.0·SOLAR·Bllossom·Open-Ko-Llama3·Trillion) +
+다국어 LLM (Qwen2.5·Mistral·Gemma2) + 최신 OpenAI (tiktoken o200k·cl100k) +
+gpt2 (영어 BPE 극단 대조군). 토크나이저 weight 만 받으므로 7B/10B+ 큰 모델도 OK.
+gated·trust_remote_code 모델은 try/except 로 감싸 로드된 것만 비교에 포함합니다.
 
 모델 본체는 로드하지 않고 토크나이저만 다뤄 CPU 로 충분합니다 (T4 metadata 는 Colab
 일관성 유지용). 빌더 패턴은 메인 빌더 `_build_ch27.py` 와 같은 cells / _cid / md / code
@@ -71,9 +73,9 @@ md(r"""# Chapter 27 부록 — 한국어 토크나이저 품질 분석
 1. **토크나이저는 본체와 운명공동체** — KoGPT2 본체는 자기 토크나이저의 vocab (51,200) 으로만 글을 봅니다. 토크나이저가 한국어를 잘 쪼개야 본체도 잘 배웁니다.
 2. **`AutoTokenizer` 가 KoGPT2 를 영어 GPT2 로 잘못 fallback 하는 함정** — 그래서 `PreTrainedTokenizerFast` 로 special token 을 직접 지정해 로드했습니다.
 
-이 부록은 그 심화입니다. 실무에서 한국어 LLM 을 고를 때, 가중치를 받아 직접 추론을 돌려 보기 *전에* 토크나이저 vocab 만 열어 봐도 그 모델의 한국어 품질을 꽤 예측할 수 있습니다. 그 직관을 **여러 다국어 LLM 토크나이저를 실제 숫자로 비교** 해 정량으로 확인합니다.
+이 부록은 그 심화입니다. 실무에서 한국어 LLM 을 고를 때, 가중치를 받아 직접 추론을 돌려 보기 *전에* 토크나이저 vocab 만 열어 봐도 그 모델의 한국어 품질을 꽤 예측할 수 있습니다. 그 직관을 **최근 한국어·다국어 GPT 계열 LLM 토크나이저를 실제 숫자로 비교** 해 정량으로 확인합니다.
 
-비교 대상은 한국어 특화 (KoGPT2·KLUE·polyglot-ko·KcELECTRA), 다국어 LLM (Qwen2.5·mBERT·BLOOM/XGLM), 최신 OpenAI (`tiktoken` 의 GPT-4o·GPT-4 토크나이저), 그리고 영어 BPE 극단 대조군 (`gpt2`) 입니다. 본체 가중치는 받지 않고 토크나이저만 다루므로 **GPU 불필요 — CPU 로 충분** 합니다. 약 5-10분 (토크나이저 다운로드 시간).
+비교 대상은 모두 **GPT(decoder-only) 계열** 입니다. 최근(2023-2025) 한국어 LLM (KoGPT2·polyglot-ko·LG EXAONE 3.5·SKT A.X-4.0·Upstage SOLAR·Bllossom·Open-Ko-Llama3·Trillion), 다국어 LLM (Qwen2.5·Mistral·Gemma2), 최신 OpenAI (`tiktoken` 의 GPT-4o·GPT-4 토크나이저), 그리고 영어 BPE 극단 대조군 (`gpt2`) 을 모읍니다. **토크나이저만 다루므로 7B·10B+ 큰 모델도 부담 없습니다** — 본체 가중치는 받지 않고 vocab·merge 파일 (수 MB) 만 내려받기 때문입니다. **GPU 불필요 — CPU 로 충분** 합니다. 약 5-10분 (토크나이저 다운로드 시간).
 
 ---""")
 
@@ -96,16 +98,16 @@ LLM 의 한국어 품질을 좌우하는 큰 축은 둘입니다.
 | **자모/byte 분해** | `옛날` → `옛`/`날` (음절) vs `ㅇㅖㅅ` (자모) vs `�` (byte) | 음절·형태소 = 좋음, 자모/byte = 나쁨 |
 | **OOV·신조어·외래어** | `킹받네` / `recursion` 처리 | UNK 없이 자연스러운 subword |
 
-§1-§4 에서 이 지표들을 하나씩 재고, §5 에서 종합해 *vocab 으로 품질을 예측* 하는 그림을 그립니다.
+§1-§4 에서 이 지표들을 하나씩 재고, §5 에서 종합해 *vocab 으로 품질을 예측* 하는 그림을 그립니다. 비교 대상은 모두 GPT(decoder-only) 계열이라, *생성형 한국어 LLM 을 고를 때* 토크나이저로 1차 스크리닝하는 실무 시나리오에 그대로 들어맞습니다.
 
 ---""")
 
 # ----- 3. 환경 셋업 -----
 md(r"""## 🛠️ 환경 셋업
 
-토크나이저만 비교하므로 모델 본체는 로드하지 않습니다. `tiktoken` 은 OpenAI 의 GPT-4o·GPT-4 토크나이저 비교를 위해 추가로 설치합니다. **GPU 불필요 (CPU 로 충분)** — Colab 런타임은 기본 그대로 두어도 됩니다.""")
+토크나이저만 비교하므로 모델 본체는 로드하지 않습니다. `tiktoken` 은 OpenAI 의 GPT-4o·GPT-4 토크나이저 비교를 위해, `sentencepiece` 는 일부 SentencePiece 계열 (SOLAR·Mistral·Gemma 등) 의 slow 토크나이저 fallback 을 위해 함께 설치합니다. **GPU 불필요 (CPU 로 충분)** — Colab 런타임은 기본 그대로 두어도 됩니다.""")
 
-code(r"""%pip install -q -U transformers tiktoken""")
+code(r"""%pip install -q -U transformers tiktoken sentencepiece""")
 
 code(r"""import warnings
 warnings.filterwarnings("ignore")
@@ -124,22 +126,24 @@ print(f"tiktoken:     {tiktoken.__version__}")
 print("note: tokenizers only — no model weights, CPU is enough.")""")
 
 # ----- 4. 토크나이저 로드 -----
-md(r"""## 1. 🔤 토크나이저 로드 — 여러 다국어 LLM 을 한 dict 로
+md(r"""## 1. 🔤 토크나이저 로드 — 최근 GPT 계열 한국어·다국어 LLM 을 한 dict 로
 
-비교 대상을 한 dict 에 모읍니다. 각 토크나이저는 `encode(text) -> list[int]` 인터페이스로 통일하기 위해 얇은 wrapper 로 감쌉니다 (`transformers` 와 `tiktoken` 의 인터페이스가 다르기 때문).
+비교 대상을 한 dict 에 모읍니다. 모두 GPT(decoder-only) 계열 — 최근 한국어 LLM 과 한국어를 지원하는 다국어 LLM 입니다. 각 토크나이저는 `encode(text) -> list[int]` 인터페이스로 통일하기 위해 얇은 wrapper 로 감쌉니다 (`transformers` 와 `tiktoken` 의 인터페이스가 다르기 때문).
 
-**KoGPT2 는 메인 챕터에서 배운 방식 그대로** `PreTrainedTokenizerFast` + special token 직접 지정으로 로드합니다 (`AutoTokenizer` 의 영어 GPT2 fallback 함정 회피).
+**KoGPT2 는 메인 챕터에서 배운 방식 그대로** `PreTrainedTokenizerFast` + special token 직접 지정으로 로드합니다 (`AutoTokenizer` 의 영어 GPT2 fallback 함정 회피). 나머지는 `AutoTokenizer.from_pretrained(..., trust_remote_code=True)` 로 받습니다 — EXAONE·A.X 처럼 커스텀 토크나이저 코드를 쓰는 모델 때문입니다.
 
-로드는 모두 `try/except` 로 감쌉니다. gated 모델 (meta-llama, google/gemma 등) 은 HF 로그인이 필요해 제외했고, 네트워크·버전 사정으로 일부가 실패해도 *로드된 것만* 으로 분석을 진행합니다 (한두 개 빠져도 결론은 흔들리지 않습니다).""")
+로드는 모두 `try/except` 로 감쌉니다. 일부 모델 (HyperCLOVA X SEED·KakaoBrain KoGPT 등) 은 **gated** 라 HF 로그인 (`huggingface-cli login` 또는 Colab 에서 `notebook_login()`) 후에야 받을 수 있어, 토큰 없이 실행하면 자동으로 skip 됩니다. 토큰이 있으면 그대로 비교에 합류합니다. 7B·10B+ 모델도 **토크나이저 파일 (수 MB) 만** 내려받으므로 빠릅니다 (본체 가중치 미다운로드). 네트워크·버전 사정으로 한두 개가 빠져도 결론은 흔들리지 않습니다.""")
 
 code(r'''from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
 
 def _bytelevel_decoder():
     """GPT-2 식 byte-level BPE 의 (unicode 문자 -> 원래 byte) 역매핑 테이블.
-    polyglot-ko / Qwen / BLOOM / gpt2 의 vocab 토큰은 원래 UTF-8 byte 를 보기 좋은
-    unicode 문자로 치환해 저장합니다 (예: 'ìĺ¤'). 한글 판별을 위해 이 매핑을 거꾸로
-    돌려 byte 로 복원한 뒤 UTF-8 로 다시 디코드합니다."""
+    polyglot-ko / Qwen / EXAONE / A.X / Llama 계열 / gpt2 처럼 byte-level BPE 를 쓰는
+    토크나이저의 vocab 토큰은 원래 UTF-8 byte 를 보기 좋은 unicode 문자로 치환해
+    저장합니다 (예: 'ìĺ¤'). 한글 판별을 위해 이 매핑을 거꾸로 돌려 byte 로 복원한 뒤
+    UTF-8 로 다시 디코드합니다. SentencePiece 계열 (SOLAR/Mistral/Gemma) 은 byte 치환이
+    아니라 '▁' 공백 표식을 쓰므로, 이 매핑에 걸리지 않고 아래 fallback 으로 처리됩니다."""
     bs = (
         list(range(ord("!"), ord("~") + 1))
         + list(range(ord("¡"), ord("¬") + 1))
@@ -192,9 +196,10 @@ class HFWrapper:
 
     def vocab_tokens(self):
         # vocab 토큰을 사람이 읽는 문자열로 디코드해 리스트로 반환.
-        # 주의: byte-level BPE (polyglot-ko, Qwen, BLOOM, gpt2) 의 get_vocab() 키는
-        # byte 가 mangling 된 문자열(예: 'ìĺ¤') 이라 그대로는 한글 판별이 안 됩니다.
-        # decode_vocab_token 으로 byte-level·WordPiece·SentencePiece 를 한 번에 복원.
+        # 주의: byte-level BPE (polyglot-ko, Qwen, EXAONE, A.X, Llama 계열, gpt2) 의
+        # get_vocab() 키는 byte 가 mangling 된 문자열(예: 'ìĺ¤') 이라 그대로는 한글
+        # 판별이 안 됩니다. decode_vocab_token 으로 byte-level·SentencePiece(▁) 를
+        # 한 번에 복원합니다.
         return [decode_vocab_token(t) for t in self.tok.get_vocab().keys()]
 
 
@@ -228,7 +233,14 @@ class TiktokenWrapper:
         return out''')
 
 code(r'''# 로드할 토크나이저 목록 — (라벨, 카테고리, 로더 함수)
-# 카테고리: ko = 한국어 특화, multi = 다국어 LLM, openai = tiktoken, en = 영어 대조군
+# 카테고리: ko = 한국어 LLM, multi = 다국어 LLM, openai = tiktoken, en = 영어 대조군
+# 모두 GPT(decoder-only) 계열입니다.
+
+
+def try_load_hf(name, **kw):
+    # 토크나이저만 받음 (모델 weight 미다운로드). trust_remote_code 는 EXAONE·A.X 등
+    # 커스텀 토크나이저 코드 모델 대응. gated 등 실패는 None 반환 후 호출부에서 skip.
+    return AutoTokenizer.from_pretrained(name, trust_remote_code=True, **kw)
 
 
 def _load_kogpt2():
@@ -240,17 +252,28 @@ def _load_kogpt2():
     )
 
 
+# 한국어 LLM (2023-2025) — 최대한 폭넓게. gated 는 HF 로그인 시에만 합류.
 SPECS = [
-    ("KoGPT2",       "ko",     "hf",       _load_kogpt2),
-    ("KLUE-BERT",    "ko",     "hf",       lambda: AutoTokenizer.from_pretrained("klue/bert-base")),
-    ("polyglot-ko",  "ko",     "hf",       lambda: AutoTokenizer.from_pretrained("EleutherAI/polyglot-ko-1.3b")),
-    ("KcELECTRA",    "ko",     "hf",       lambda: AutoTokenizer.from_pretrained("beomi/KcELECTRA-base")),
-    ("Qwen2.5",      "multi",  "hf",       lambda: AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")),
-    ("mBERT",        "multi",  "hf",       lambda: AutoTokenizer.from_pretrained("google-bert/bert-base-multilingual-cased")),
-    ("BLOOM",        "multi",  "hf",       lambda: AutoTokenizer.from_pretrained("bigscience/bloom-560m")),
+    ("KoGPT2",        "ko",     "hf",       _load_kogpt2),
+    ("polyglot-ko",   "ko",     "hf",       lambda: try_load_hf("EleutherAI/polyglot-ko-1.3b")),
+    ("EXAONE-3.5",    "ko",     "hf",       lambda: try_load_hf("LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct")),
+    ("A.X-4.0",       "ko",     "hf",       lambda: try_load_hf("skt/A.X-4.0")),
+    ("SOLAR-10.7B",   "ko",     "hf",       lambda: try_load_hf("upstage/SOLAR-10.7B-Instruct-v1.0")),
+    ("Bllossom-3B",   "ko",     "hf",       lambda: try_load_hf("Bllossom/llama-3.2-Korean-Bllossom-3B")),
+    ("Open-Ko-Llama3","ko",     "hf",       lambda: try_load_hf("beomi/Llama-3-Open-Ko-8B")),
+    ("Trillion-7B",   "ko",     "hf",       lambda: try_load_hf("trillionlabs/Trillion-7B-preview")),
+    # gated — HF 로그인 + 모델 약관 동의 시 합류 (토큰 없으면 자동 skip)
+    ("HyperCLOVAX",   "ko",     "hf",       lambda: try_load_hf("naver-hyperclovax/HyperCLOVAX-SEED-Text-Instruct-1.5B")),
+    ("KakaoBrain-KoGPT","ko",   "hf",       lambda: try_load_hf("kakaobrain/kogpt", revision="KoGPT6B-ryan1.5b-float16")),
+    # 다국어 LLM (한국어 지원) — 대조
+    ("Qwen2.5",       "multi",  "hf",       lambda: try_load_hf("Qwen/Qwen2.5-7B-Instruct")),
+    ("Mistral-7B",    "multi",  "hf",       lambda: try_load_hf("mistralai/Mistral-7B-v0.3")),
+    ("Gemma2-2B",     "multi",  "hf",       lambda: try_load_hf("google/gemma-2-2b")),
+    # 최신 OpenAI 토크나이저 (tiktoken)
     ("GPT-4o (o200k)", "openai", "tiktoken", lambda: tiktoken.get_encoding("o200k_base")),
     ("GPT-4 (cl100k)", "openai", "tiktoken", lambda: tiktoken.get_encoding("cl100k_base")),
-    ("gpt2 (en)",    "en",     "hf",       lambda: AutoTokenizer.from_pretrained("gpt2")),
+    # 영어 BPE 극단 대조군
+    ("gpt2 (en)",     "en",     "hf",       lambda: try_load_hf("gpt2")),
 ]
 
 tokenizers = {}   # 라벨 -> wrapper
@@ -262,12 +285,13 @@ for label, cat, kind, loader in SPECS:
         wrapper = TiktokenWrapper(label, obj) if kind == "tiktoken" else HFWrapper(label, obj)
         tokenizers[label] = wrapper
         category[label] = cat
-        print(f"[ok]   {label:16s} ({cat:6s})  type={type(obj).__name__:24s}  vocab={wrapper.vocab_size:,}")
+        print(f"[ok]   {label:18s} ({cat:6s})  type={type(obj).__name__:22s}  vocab={wrapper.vocab_size:,}")
     except Exception as e:
         msg = str(e).splitlines()[0][:80] if str(e) else type(e).__name__
-        print(f"[skip] {label:16s} ({cat:6s})  -> {msg}")
+        print(f"[skip] {label:18s} ({cat:6s})  -> {msg}")
 
-print(f"\nloaded {len(tokenizers)} tokenizers: {list(tokenizers.keys())}")''')
+print(f"\nloaded {len(tokenizers)} tokenizers: {list(tokenizers.keys())}")
+print("note: gated models (HyperCLOVAX, KakaoBrain-KoGPT) need HF login to join.")''')
 
 # ----- 5. 검증 문장 셋 -----
 md(r"""## 2. 📝 검증 문장 셋 — 한국어 4개 도메인
@@ -478,7 +502,9 @@ md(r"""## 7. §5 종합 — vocab 으로 품질 예측하기
 - x 축: **vocab 한국어 점유율 (%)** — 높을수록 오른쪽.
 - y 축: **fertility (tokens/char)** — 낮을수록 아래.
 
-**오른쪽 아래** (한국어 vocab ↑ + fertility ↓) 에 있을수록 *한국어 LLM 의 토크나이저로 유리* 합니다. KoGPT2·polyglot-ko 같은 한국어 특화 토크나이저가 그쪽에, `gpt2` 같은 영어 BPE 가 왼쪽 위 (vocab 한국어 0% + fertility 폭증) 에 위치합니다. 다국어 LLM 은 보통 그 사이 어딘가입니다 — 한국어를 포기하진 않았지만 vocab 예산을 100여 개 언어에 나눠 쓴 결과입니다.""")
+**오른쪽 아래** (한국어 vocab ↑ + fertility ↓) 에 있을수록 *한국어 LLM 의 토크나이저로 유리* 합니다. KoGPT2·polyglot-ko 처럼 vocab 을 한국어에 집중한 토크나이저가 그쪽에, `gpt2` 같은 영어 BPE 가 왼쪽 위 (vocab 한국어 0% + fertility 폭증) 에 위치합니다. 다국어 LLM (Qwen2.5·Mistral·Gemma2) 은 보통 그 사이 어딘가입니다 — 한국어를 포기하진 않았지만 vocab 예산을 수십·수백 개 언어에 나눠 쓴 결과입니다.
+
+흥미로운 점은 *한국어 LLM* 안에서도 갈린다는 것입니다. EXAONE·A.X 처럼 한국어 토큰을 vocab 에 대거 넣어 직접 BBPE 를 학습한 모델은 fertility 가 낮고 한국어 점유율이 높습니다. 반면 Llama 계열을 이어받은 한국어 파인튜닝 (Bllossom·Open-Ko-Llama3) 은 *본체는 한국어로 추가 학습했지만 토크나이저 vocab 은 다국어 그대로* 라, 한국어 점유율이 낮고 fertility 도 한국어 전용보다 높게 나옵니다. 토크나이저가 *모델 이름이 아니라 vocab 설계* 를 따른다는 점을 그대로 보여 줍니다.""")
 
 code(r'''merged = pd.merge(
     fert_mean.rename(columns={"tokens_per_char": "fertility"}),
@@ -529,7 +555,7 @@ md(r"""## 8. 🔬 해석 — 왜 vocab 이 선행 지표인가
 md(r"""## 🎯 체크포인트 질문
 
 1. **fertility 의 분모** — 한국어 fertility 를 `tokens/word` (어절 기준) 가 아니라 `tokens/char` (글자 기준) 로 잰 이유는 무엇인가요? 영어에서는 왜 `tokens/word` 가 흔히 쓰일까요?
-2. **다국어 토크나이저의 위치** — 산점도에서 다국어 LLM (Qwen·mBERT·BLOOM) 이 한국어 특화와 영어 BPE *사이* 에 놓이는 이유를 vocab 예산 배분 관점에서 설명해 보세요.
+2. **다국어 토크나이저의 위치** — 산점도에서 다국어 LLM (Qwen2.5·Mistral·Gemma2) 이 한국어 LLM 과 영어 BPE *사이* 에 놓이는 이유를 vocab 예산 배분 관점에서 설명해 보세요.
 3. **선행 지표의 한계** — 한국어 vocab 점유율이 높은데도 실제 한국어 품질이 낮은 모델이 있을 수 있습니다. 어떤 경우에 그렇고, 왜 토크나이저가 *충분조건* 이 아닌가요?""")
 
 md(r"""## ❓ FAQ
