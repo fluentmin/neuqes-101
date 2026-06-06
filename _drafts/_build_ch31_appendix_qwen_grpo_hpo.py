@@ -180,10 +180,14 @@ MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"   # Ch 29 에서 쓴 작은 instruct �
 t0 = time.time()
 # Qwen 은 AutoTokenizer 함정 없음 (KoGPT2 와 차이)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-# 주의: Qwen2.5 는 config 기본이 bfloat16 이라 그대로 로드하면 fp16 GradScaler 와
-# 충돌합니다 (T4: "_amp_foreach_non_finite_check_and_unscale_cuda not implemented
-# for BFloat16"). T4 는 bf16 미지원이므로 fp16 으로 통일해 로드합니다.
-LOAD_DTYPE = torch.float16 if USE_FP16 else torch.float32
+# 주의 — dtype 과 AMP 의 관계 (T4 에서 자주 막히는 지점):
+#   - Qwen2.5 는 config 기본이 bfloat16. 그대로 로드하면 fp16 GradScaler 가
+#     bf16 gradient 를 unscale 못 함 (T4 는 bf16 미지원).
+#   - 그렇다고 fp16 으로 통째로 로드하면 "fp16 gradient 는 unscale 불가" 에러.
+#   - 정석 mixed precision = *모델 파라미터는 fp32*, AMP(fp16=True)가 forward 연산만
+#     fp16 으로 돌리고 master weight 는 fp32 로 둠 → scaler 가 정상 동작.
+# 따라서 모델은 fp32 로 로드하고, fp16 은 GRPOConfig(fp16=True) 의 AMP 에 맡깁니다.
+LOAD_DTYPE = torch.float32
 policy = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=LOAD_DTYPE).to(device)
 if tokenizer.pad_token_id is not None:
     policy.config.pad_token_id = tokenizer.pad_token_id
