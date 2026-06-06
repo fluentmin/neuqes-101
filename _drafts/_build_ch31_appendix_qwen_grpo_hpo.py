@@ -180,7 +180,11 @@ MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"   # Ch 29 에서 쓴 작은 instruct �
 t0 = time.time()
 # Qwen 은 AutoTokenizer 함정 없음 (KoGPT2 와 차이)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-policy = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(device)
+# 주의: Qwen2.5 는 config 기본이 bfloat16 이라 그대로 로드하면 fp16 GradScaler 와
+# 충돌합니다 (T4: "_amp_foreach_non_finite_check_and_unscale_cuda not implemented
+# for BFloat16"). T4 는 bf16 미지원이므로 fp16 으로 통일해 로드합니다.
+LOAD_DTYPE = torch.float16 if USE_FP16 else torch.float32
+policy = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=LOAD_DTYPE).to(device)
 if tokenizer.pad_token_id is not None:
     policy.config.pad_token_id = tokenizer.pad_token_id
 print(f"load done: {time.time()-t0:.1f}s")
@@ -483,7 +487,7 @@ code(r"""def quick_grpo_reward(num_gen, steps=6, lr=1e-6, temperature=0.7, beta=
 
     절대값보다 *경향* 비교용 (T4 비용 통제 위해 step 작게).
     '''
-    m = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(device)
+    m = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=LOAD_DTYPE).to(device)
     if tokenizer.pad_token_id is not None:
         m.config.pad_token_id = tokenizer.pad_token_id
     cfg = GRPOConfig(
