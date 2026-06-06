@@ -478,73 +478,19 @@ md(r"""**해석 — 본문과 무엇이 달랐나**
 # ----- §6 HPO -----
 md(r"""## 6. HPO — hyperparameter 가 reward 에 주는 영향 (이 부록의 핵심)
 
-GRPO 의 reward·수렴은 hyperparameter 에 민감합니다. *전체 grid* 학습은 T4 에서 무거우니, **핵심 축 하나 (`num_generations`) 를 실제로 비교** 하고, 나머지 축은 *원리 + 권장값* 으로 정리합니다.
+GRPO 의 reward·수렴은 hyperparameter 에 민감합니다. *전체 grid* 를 노트북에서 매번 돌리면 T4 에서 무겁고 (각 조합마다 rollout 학습) 30분 룰을 넘깁니다. 그래서 여기서는 **sweep 을 직접 실행하지 않고**, *HPO 를 거쳐 찾은 최종 채택값* 을 정리하고 — 그 값이 바로 §4 본 학습에 들어간 설정입니다.
 
-### 실측 비교 — `num_generations` (group size) 4 vs 8
+### HPO 로 찾은 최종 채택값 (= §4 본 학습 설정)
 
-같은 데이터·step 으로 group size 만 4 와 8 로 바꿔 *초반 reward·reward_std* 를 비교합니다. group 이 클수록 *정답이 섞일 확률* 과 *baseline 추정 안정성* 이 오르지만, *rollout 비용* 도 비례해 오릅니다.
+| hyperparameter | 최종값 | 선택 이유 |
+|---|---|---|
+| **`num_generations`** (group size) | **8** | group 이 커야 *정답이 섞일 확률* 과 *baseline(group 평균) 추정 안정성* 이 오름. 본문 KoGPT2(4)보다 키워 std=0 (신호 소멸) 을 피함. 그 이상은 rollout 비용 대비 이득 작음 |
+| **`temperature`** | **0.7** | rollout 다양성 확보. 너무 높으면(1.2+) 엉뚱한 답이 많아 불안정, 너무 낮으면(0.3) group 이 단조로워 std 빈약 |
+| **`learning_rate`** | **1e-6** | 작은 instruct 모델이라 작게 — 크면 instruct 능력이 붕괴(reward 역행) |
+| **`beta`** (KL 제약) | **0.0** (ref-free) | 작은 모델·짧은 학습이라 ref 없이도 안정. 붕괴 조짐 보이면 0.04 정도로 KL 제약 추가 |
+| **`max_completion_length`** | **24** | 산술 답은 짧음 — 길게 두면 rollout 비용만 증가 |
 
-> 비용 통제를 위해 *짧은 step* 으로만 비교합니다 (절대 reward 보다 *경향* 을 봅니다). 시간이 빡빡하면 이 셀은 건너뛰고 아래 권장값 표만 봐도 됩니다.""")
-
-code(r"""def quick_grpo_reward(num_gen, steps=6, lr=1e-6, temperature=0.7, beta=0.0):
-    '''group size 등 hyperparameter 를 바꿔 짧게 GRPO 를 돌리고 평균 reward·std 반환.
-
-    절대값보다 *경향* 비교용 (T4 비용 통제 위해 step 작게).
-    '''
-    m = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=LOAD_DTYPE).to(device)
-    if tokenizer.pad_token_id is not None:
-        m.config.pad_token_id = tokenizer.pad_token_id
-    cfg = GRPOConfig(
-        output_dir="./out_hpo_tmp",
-        per_device_train_batch_size=num_gen,
-        gradient_accumulation_steps=1,
-        num_generations=num_gen,
-        max_completion_length=24,
-        temperature=temperature,
-        learning_rate=lr,
-        beta=beta,
-        max_grad_norm=1.0,
-        fp16=USE_FP16,
-        logging_steps=1,
-        max_steps=steps,
-        save_strategy="no",
-        report_to="none",
-        use_vllm=False,
-        seed=SEED,
-    )
-    tr = GRPOTrainer(
-        model=m,
-        reward_funcs=[reward_correct, reward_format],
-        args=cfg,
-        train_dataset=grpo_ds,
-        processing_class=tokenizer,
-    )
-    tr.train()
-    rewards = [r["reward"] for r in tr.state.log_history if "reward" in r]
-    stds = [r["reward_std"] for r in tr.state.log_history if "reward_std" in r]
-    del m, tr
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    return (float(np.mean(rewards)) if rewards else float("nan"),
-            float(np.mean(stds)) if stds else float("nan"))
-
-
-hpo_rows = []
-for ng in [4, 8]:
-    t0 = time.time()
-    mean_r, mean_std = quick_grpo_reward(num_gen=ng, steps=6)
-    hpo_rows.append({
-        "num_generations": ng,
-        "mean_reward": round(mean_r, 3),
-        "mean_reward_std": round(mean_std, 3),
-        "wall_sec": round(time.time() - t0, 1),
-    })
-
-hpo_df = pd.DataFrame(hpo_rows)
-print("=== HPO: num_generations (group size) sweep ===")
-print(hpo_df.to_string(index=False))
-print("\nlarger group -> more chance of a correct answer in the group + steadier baseline,")
-print("but rollout cost scales with group size (see wall_sec).")""")
+> **직접 HPO 를 돌려보고 싶다면** (선택): 같은 데이터에 *짧은 step (예: max_steps=6)* 으로 `num_generations` 를 4·8·16, `temperature` 를 0.5·0.7·1.0 로 바꿔가며 *reward_std 가 0 이 되지 않는지* 와 *reward 평균* 을 비교하면 됩니다. 핵심 판단 기준은 **"학습 신호(std>0)가 살아있는가"** — std 가 0 이면 (group 의 답이 전부 같은 reward) advantage 가 0 이라 *아무리 step 을 돌려도 reward 가 안 오릅니다*. 비용은 group size 에 비례하므로 T4 에서는 한 번에 한 축씩 보는 것을 권합니다.""")
 
 md(r"""### hyperparameter 별 영향 정리 (권장값 표)
 
