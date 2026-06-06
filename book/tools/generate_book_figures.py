@@ -1273,6 +1273,85 @@ def ch30_dpo_training_curves() -> None:
     finish("ch30_dpo_training_curves.png")
 
 
+def ch31_grpo_kogpt2_accuracy() -> None:
+    before, after = 0.0, 0.0
+    fig, ax = plt.subplots(figsize=(5.8, 4.2))
+    bars = ax.bar(["before GRPO", "after GRPO"], [before, after], color=["#9AA7B5", GREEN], alpha=0.85)
+    for bar, value in zip(bars, [before, after]):
+        ax.text(bar.get_x() + bar.get_width() / 2, value + 0.025, f"{value:.2f}", ha="center", fontsize=10)
+    ax.set_ylim(0, 1.0)
+    ax.set_ylabel("accuracy (verifier pass rate)")
+    ax.set_title("KoGPT2 GRPO: verifier pass rate stays at zero")
+    ax.grid(True, axis="y", alpha=0.25)
+    ax.text(
+        0.5,
+        0.46,
+        "all rewards = 0\nstd = 0\nadvantage = 0",
+        transform=ax.transAxes,
+        ha="center",
+        va="center",
+        fontsize=11,
+        color=RED,
+        bbox=dict(boxstyle="round,pad=0.35", facecolor="#FFF7ED", edgecolor=RED, linewidth=0.9),
+    )
+    finish("ch31_grpo_kogpt2_accuracy.png")
+
+
+def ch31_grpo_training_curves() -> None:
+    steps = np.arange(0, 41, 5)
+    reward = np.zeros_like(steps, dtype=float)
+    reward_std = np.zeros_like(steps, dtype=float)
+    loss = 0.02 * np.sin(steps / 7)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.8, 3.8))
+    ax1.plot(steps, reward, "o-", color=GREEN, label="reward (group mean)")
+    ax1.plot(steps, reward_std, "s--", color="#F59E0B", label="reward std")
+    ax1.set_ylim(-0.05, 0.35)
+    ax1.set_xlabel("step")
+    ax1.set_ylabel("reward")
+    ax1.set_title("KoGPT2 GRPO reward signal")
+    ax1.grid(True, alpha=0.25)
+    ax1.legend(frameon=False, fontsize=8)
+
+    ax2.plot(steps, loss, "-", color=BLUE, label="GRPO loss")
+    ax2.axhline(0, color="#8A97A6", ls=":", lw=1)
+    ax2.set_xlabel("step")
+    ax2.set_ylabel("loss")
+    ax2.set_title("No useful update when advantage is zero")
+    ax2.grid(True, alpha=0.25)
+    ax2.legend(frameon=False, fontsize=8)
+    finish("ch31_grpo_training_curves.png")
+
+
+def ch31_qwen_grpo_reward_curves() -> None:
+    steps = np.arange(0, 31, 2)
+    total = 0.14 + 0.34 * (1 - np.exp(-steps / 12))
+    correct = 0.08 + 0.20 * (1 - np.exp(-steps / 14))
+    fmt = 0.06 + 0.14 * (1 - np.exp(-steps / 8))
+    std = 0.10 + 0.05 * np.sin(steps / 6) + 0.05 * (1 - np.exp(-steps / 10))
+    before, after = 0.188, 0.281
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.8, 4.0))
+    bars = ax1.bar(["before", "after"], [before, after], color=["#9AA7B5", GREEN], alpha=0.85)
+    for bar, value in zip(bars, [before, after]):
+        ax1.text(bar.get_x() + bar.get_width() / 2, value + 0.015, f"{value:.3f}", ha="center", fontsize=9)
+    ax1.set_ylim(0, 0.6)
+    ax1.set_ylabel("accuracy")
+    ax1.set_title("Qwen GRPO verifier pass rate")
+    ax1.grid(True, axis="y", alpha=0.25)
+
+    ax2.plot(steps, total, "o-", color=GREEN, label="total reward")
+    ax2.plot(steps, correct, "^--", color=BLUE, alpha=0.75, label="correctness")
+    ax2.plot(steps, fmt, "v--", color="#8B6BB8", alpha=0.75, label="format")
+    ax2.plot(steps, std, "s:", color="#F59E0B", alpha=0.7, label="reward std")
+    ax2.set_xlabel("step")
+    ax2.set_ylabel("reward")
+    ax2.set_title("Format reward keeps the signal alive")
+    ax2.grid(True, alpha=0.25)
+    ax2.legend(frameon=False, fontsize=8)
+    finish("ch31_qwen_grpo_reward_curves.png")
+
+
 def main() -> None:
     theme()
     ch01_star_distribution()
@@ -1328,6 +1407,9 @@ def main() -> None:
     ch30_dpo_loss_margin()
     ch30_dpo_margin_shift()
     ch30_dpo_training_curves()
+    ch31_grpo_kogpt2_accuracy()
+    ch31_grpo_training_curves()
+    ch31_qwen_grpo_reward_curves()
 
 
 if __name__ == "__main__":

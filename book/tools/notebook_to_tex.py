@@ -878,6 +878,47 @@ CHAPTERS = [
             "응답 구간 손실",
         ),
     ),
+    Chapter(
+        31,
+        "grpo",
+        "GRPO: 검증 가능한 보상으로 정렬 (Verifiable Reward)",
+        "GRPO 정렬 (Verifiable Reward)",
+        "preference 쌍 대신 verifier가 자동 채점하는 reward로 policy를 정렬하는 GRPO 학습 단계를 정리",
+        (
+            "GRPO",
+            "Group Relative Policy Optimization",
+            "verifiable reward",
+            "verifier",
+            "group relative advantage",
+            "rollout group",
+            "reward std",
+            "critic-free RL",
+            "PPO",
+            "DPO",
+            "DeepSeek-R1",
+            "GRPOTrainer",
+            "GRPOConfig",
+            "num_generations",
+            "format reward",
+            "correctness reward",
+            "Qwen2.5-0.5B-Instruct",
+            "fp16 AMP",
+            "fp32 load",
+            "dtype",
+            "SFT",
+            "alignment",
+            "검증 가능한 보상",
+            "검증기",
+            "그룹 상대 어드밴티지",
+            "롤아웃 그룹",
+            "보상 표준편차",
+            "critic 없는 강화학습",
+            "형식 보상",
+            "정답 보상",
+            "능력 증폭",
+        ),
+        ("appendix_qwen_grpo_hpo.ipynb",),
+    ),
 ]
 
 
@@ -1550,6 +1591,40 @@ EXTRA_INDEXES = {
         "사실성",
         "지시 준수",
         "이진화 선호",
+    ),
+    31: (
+        "reward=0",
+        "std=0",
+        "advantage=0",
+        "baseline",
+        "group mean",
+        "response generation",
+        "verifier pass rate",
+        "arithmetic reward",
+        "base capability",
+        "reward hacking",
+        "RL before SFT",
+        "DeepSeek-R1 style",
+        "Qwen appendix",
+        "HPO",
+        "hyperparameter",
+        "temperature",
+        "learning_rate",
+        "beta=0.0",
+        "max_steps",
+        "format compliance",
+        "Diffusion LM",
+        "Phase 5",
+        "보상 0",
+        "기준선",
+        "그룹 평균",
+        "자동 채점",
+        "산술 보상",
+        "기반 능력",
+        "보상 해킹",
+        "하이퍼파라미터",
+        "형식 준수",
+        "Diffusion 언어모델",
     ),
 }
 
@@ -2693,7 +2768,7 @@ def display_math_to_numbered_equations(latex: str, chapter_number: int) -> str:
 
 def link_chapter_references(latex: str) -> str:
     """Turn prose references such as 3장 and 9-13장 into hyperlinked refs."""
-    single = r"(?:[1-9]|[12][0-9]|30)"
+    single = r"(?:[1-9]|[12][0-9]|3[01])"
     range_pat = re.compile(
         rf"(?<!ch:)(?<!ref\{{ch:)(?<!tab:ch)(?<!eq:ch)\b({single})\s*[-–]\s*({single})장"
     )
@@ -3646,6 +3721,18 @@ def synthetic_output_text(source: str) -> str:
             "  eos_token  : </s>  id=1",
             "  pad_token  : <pad>  id=3",
         ])
+    if "policy model" in source_lower and "#params" in source_lower and "qwen/qwen2.5-0.5b-instruct" in source_lower:
+        return "\n".join([
+            "load done: ...s",
+            "",
+            "=== policy model ===",
+            "model        : Qwen/Qwen2.5-0.5B-Instruct",
+            "#params      : 494.03 M",
+            "tokenizer    : Qwen2TokenizerFast",
+            "vocab_size   : 151,643",
+            "load dtype   : torch.float32",
+            "AMP fp16     : True  (T4; bf16 not used)",
+        ])
     if "reference model: frozen" in source_lower and "kl 제약" in source_lower:
         return "\n".join([
             "reference model: frozen  (trainable params = 0)",
@@ -3689,6 +3776,124 @@ def synthetic_output_text(source: str) -> str:
         ])
     if "peak vram" in source_lower and "policy + reference" in source_lower:
         return "peak VRAM (max over training): ... MiB  (policy + reference, bs=2, grad_accum=8, fp16)"
+    if "make_arithmetic" in source_lower and "train:" in source_lower and "sample 0" in source_lower:
+        if "apply_chat_template" in source_lower or "qwen" in source_lower:
+            return "\n".join([
+                "train: 128 samples,  eval: 64 samples",
+                "",
+                "=== sample 0 ===",
+                "--- prompt (model input) ---",
+                "<|im_start|>user",
+                "7 - 1 = ? Solve it. Write only the final answer in the format: 정답: N",
+                "<|im_end|>",
+                "<|im_start|>assistant",
+                "--- answer (for verifier) ---",
+                "6",
+            ])
+        return "\n".join([
+            "train: 256 samples,  eval: 64 samples",
+            "",
+            "=== sample 0 ===",
+            "--- prompt (model input) ---",
+            "### 명령어:",
+            "7 - 1 = ?",
+            "",
+            "### 응답:",
+            "--- answer (for verifier) ---",
+            "6",
+        ])
+    if "verifier demo - prompt" in source_lower and "reward_correct" in source_lower:
+        return "\n".join([
+            "========================================================",
+            "verifier demo - prompt: '3 + 5 = ?', gold answer: 8",
+            "========================================================",
+            "  reward=1.0  completion='The answer is 8.'",
+            "  reward=0.0  completion='answer: 7'",
+            "  reward=1.0  completion='8'",
+            "  reward=0.0  completion='I don't know'",
+        ])
+    if "demo_completions" in source_lower and "reward_format" in source_lower and "정답: 8" in source:
+        return "\n".join([
+            "============================================================",
+            "two verifier rewards - correctness + format",
+            "============================================================",
+            "completion       correct  format  total",
+            "정답: 8             1.0     0.2    1.2",
+            "answer is 8         1.0     0.0    1.0",
+            "정답: 7             0.0     0.2    0.2",
+            "no idea             0.0     0.0    0.0",
+        ])
+    if "group relative advantage - by hand" in source_lower:
+        return "\n".join([
+            "============================================================",
+            "group relative advantage - by hand (group mean as baseline, no critic)",
+            "============================================================",
+            "rewards          : [1. 0. 1. 0.]",
+            "group mean       : 0.500   <- baseline (replaces critic)",
+            "group std        : 0.500",
+            "advantage        : [ 1. -1.  1. -1.]",
+            "------------------------------------------------------------",
+            "  y1: reward=1  advantage=+1.00  -> prob UP (above avg)",
+            "  y2: reward=0  advantage=-1.00  -> prob DOWN (below avg)",
+            "  y3: reward=1  advantage=+1.00  -> prob UP (above avg)",
+            "  y4: reward=0  advantage=-1.00  -> prob DOWN (below avg)",
+            "",
+            "advantage for various group compositions:",
+            "  rewards=[1, 0, 1, 0] -> advantage=[ 1. -1.  1. -1.]",
+            "  rewards=[1, 1, 1, 1] -> advantage=[0. 0. 0. 0.]  (all same -> no learning signal)",
+            "  rewards=[0, 0, 0, 0] -> advantage=[0. 0. 0. 0.]  (all same -> no learning signal)",
+        ])
+    if "when the model gets nothing right" in source_lower:
+        return "\n".join([
+            "============================================================",
+            "when the model gets NOTHING right (correctness all zero):",
+            "============================================================",
+            "correctness only : rewards=[0.0, 0.0, 0.0, 0.0]",
+            "  -> advantage   : [0. 0. 0. 0.]   (all 0 = NO signal)",
+            "+ format reward  : rewards=[0.2, 0.0, 0.2, 0.0]",
+            "  -> advantage   : [ 1. -1.  1. -1.]   (signal restored!)",
+            "------------------------------------------------------------",
+            "format reward keeps std>0 so GRPO can still learn (to follow format first)",
+        ])
+    if "before grpo - arithmetic accuracy" in source_lower and "acc_after" not in source_lower:
+        return "\n".join([
+            "BEFORE GRPO - arithmetic accuracy (verifier pass rate): 0.000",
+        ])
+    if "before grpo - qwen arithmetic accuracy" in source_lower and "acc_after" not in source_lower:
+        return "\n".join([
+            "BEFORE GRPO - Qwen arithmetic accuracy (verifier pass rate): 0.188",
+            "  -> base reward > 0  ==> group has diversity (std>0)  ==> GRPO can start",
+        ])
+    if "=== grpo summary ===" in source_lower:
+        if "out_qwen_grpo" in source_lower:
+            return "\n".join([
+                "=== GRPO summary ===",
+                "elapsed     : ... min",
+                "global_step : 30",
+                "train_loss  : ...",
+                "final peak  : ... MiB",
+            ])
+        return "\n".join([
+            "=== GRPO summary ===",
+            "elapsed     : ... min",
+            "global_step : ...",
+            "train_loss  : ...",
+            "final peak  : ... MiB",
+        ])
+    if "after  grpo - arithmetic accuracy" in source_lower and "acc_after" in source_lower:
+        return "\n".join([
+            "AFTER  GRPO - arithmetic accuracy (verifier pass rate): 0.000",
+            "BEFORE GRPO - arithmetic accuracy                     : 0.000",
+            "delta                                                 : +0.000",
+        ])
+    if "after  grpo - qwen arithmetic accuracy" in source_lower and "acc_after" in source_lower:
+        return "\n".join([
+            "AFTER  GRPO - Qwen arithmetic accuracy (verifier pass rate): 0.281",
+            "BEFORE GRPO - Qwen arithmetic accuracy                     : 0.188",
+            "delta                                                      : +0.094",
+        ])
+    if "peak vram" in source_lower and "policy only" in source_lower and "num_generations" in source_lower:
+        return "peak VRAM (max over training): ... MiB  (policy only, ref-free, num_generations=4, fp16)"
     if "english corpus:" in source_lower:
         return "\n".join([
             "english corpus: 5,000 sentences",
@@ -4280,6 +4485,16 @@ def demote_markdown_headings(markdown: str) -> str:
     return "\n".join(lines) + ("\n" if markdown.endswith("\n") else "")
 
 
+def appendix_section_title(chapter_number: int, first_heading: str) -> str:
+    if chapter_number == 29:
+        return "부록: 생성형 LLM 평가 항해 가이드"
+    if chapter_number == 31:
+        return "부록: Qwen GRPO와 HPO 요약"
+    title = re.sub(r"^#+\s*", "", first_heading).strip()
+    title = re.sub(r"^Chapter\s+\d+\s*부록\s*[—:-]\s*", "부록: ", title)
+    return title or "부록"
+
+
 def append_notebook_cells(
     chunks: list[str],
     nb: dict,
@@ -4299,7 +4514,7 @@ def append_notebook_cells(
             first = source.strip().splitlines()[0]
             if first.startswith("# Chapter"):
                 if appendix and not appendix_title_added:
-                    chunks.append("\\section{부록: 생성형 LLM 평가 항해 가이드}")
+                    chunks.append(f"\\section{{{latex_escape_prose(appendix_section_title(chapter_number, first))}}}")
                     appendix_title_added = True
                     chunks.append("")
                 continue
