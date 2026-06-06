@@ -1630,6 +1630,8 @@ labels[:prompt_len] = [-100] * prompt_len
 
 이 절은 검증된 부록 노트북의 핵심 결과를 원고에 옮긴 것입니다. 원천 파일은 \inlinecode{appendix\_korean\_tokenizer\_quality.ipynb}입니다. 목적은 단순합니다. 한국어 LLM을 다룰 때 토크나이저 vocabulary만 보아도 어느 정도 품질 위험을 예측할 수 있어야 합니다. 본 장에서 다룬 KoGPT2의 \inlinecode{AutoTokenizer} fallback 문제도 같은 맥락입니다. 잘못된 토크나이저를 쓰면 모델 본체가 맞더라도 한국어가 byte 또는 자모 단위로 과하게 쪼개지고, fertility가 커지며, 같은 문장을 처리하는 비용이 증가합니다.
 
+비교 대상은 모두 GPT 계열 decoder-only 토크나이저입니다. 한국어 LLM 계열(KoGPT2, polyglot-ko, EXAONE 3.5, A.X-4.0, SOLAR, Bllossom, Open-Ko-Llama3, Trillion), 한국어를 지원하는 다국어 LLM 계열(Qwen2.5, Mistral, Gemma2), OpenAI의 GPT-4o/GPT-4 토크나이저, 그리고 영어 BPE 대조군 \inlinecode{gpt2}를 함께 놓았습니다. 모델 본체 가중치는 로드하지 않고 토크나이저만 비교하므로, 이 분석은 가중치를 내려받기 전 1차 품질 점검에 해당합니다.
+
 \begin{booktable}{한국어 토크나이저 품질 지표 요약}{tab:ch27-appendix-tokenizer-metrics}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
@@ -1645,23 +1647,50 @@ Fertility & 한 한국어 문장이 평균 몇 토큰으로 쪼개지는가 & �
 \end{adjustbox}
 \end{booktable}
 
-\begin{bookfigurelabel}[H]{10개 다국어 토크나이저의 한국어 fertility 비교}{fig:ch27-appendix-fertility}
+\begin{booktable}{GPT 계열 14개 토크나이저의 한국어 fertility 대표 결과}{tab:ch27-appendix-fertility-ranking}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{@{}rllrl@{}}
+\toprule
+순위 & 토크나이저 & 분류 & Fertility & 해석 \\
+\midrule
+1 & A.X-4.0 & 한국어 LLM & \textbf{0.431} & 가장 낮음. 같은 한국어를 가장 짧은 토큰열로 표현합니다. \\
+2 & EXAONE-3.5 & 한국어 LLM & 0.476 & 한국어 vocab 배정이 크고 fertility도 낮습니다. \\
+3 & polyglot-ko & 한국어 LLM & 0.523 & 한국어 전용 계열의 압축 효율이 확인됩니다. \\
+4 & GPT-4o (o200k) & OpenAI & 0.541 & 다국어 효율이 개선된 최신 tiktoken 계열입니다. \\
+5 & KoGPT2 & 한국어 LLM & \textbf{0.564} & 본 장의 기준 모델. 영어 BPE fallback 대비 충분히 낮습니다. \\
+6 & Qwen2.5 & 다국어 LLM & 0.612 & 다국어 vocab이지만 한국어를 비교적 효율적으로 처리합니다. \\
+7 & Trillion-7B & 한국어 LLM & 0.653 & 한국어 지원은 있으나 상위권 한국어 전용 vocab보다는 큽니다. \\
+8 & SOLAR-10.7B & 한국어 LLM & 0.706 & 기반 vocab의 영향이 남아 있습니다. \\
+9 & Gemma2-2B & 다국어 LLM & 0.758 & 다국어 범용 토크나이저의 중간 지점입니다. \\
+10 & GPT-4 (cl100k) & OpenAI & 0.792 & GPT-4o보다 한국어 압축 효율이 낮습니다. \\
+11 & Bllossom-3B & 한국어 Llama 계열 & 0.841 & 본체는 한국어화됐지만 vocab은 기반 모델 영향을 받습니다. \\
+12 & Open-Ko-Llama3 & 한국어 Llama 계열 & 0.873 & 한국어 추가학습과 토크나이저 설계가 분리될 수 있음을 보여줍니다. \\
+13 & Mistral-7B & 다국어 LLM & 1.018 & 한국어 문장이 더 많은 토큰으로 분해됩니다. \\
+14 & gpt2 (en) & 영어 BPE 대조군 & \textbf{2.616} & 한국어가 byte 조각으로 깨지는 극단 대조군입니다. \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{booktable}
+
+표~\ref{tab:ch27-appendix-fertility-ranking}의 핵심은 두 가지입니다. 첫째, A.X-4.0의 fertility 0.431이 가장 낮아 같은 한국어 문장을 가장 적은 토큰으로 담습니다. 둘째, KoGPT2는 0.564로 충분히 낮지만, 영어 전용 \inlinecode{gpt2}는 2.616까지 치솟습니다. 즉 \inlinecode{AutoTokenizer}가 KoGPT2 대신 영어 GPT-2 계열로 fallback하면 단순한 구현 실수가 아니라 context 길이, 추론 비용, 학습 효율을 동시에 악화시키는 문제가 됩니다.
+
+\begin{bookfigurelabel}[H]{GPT 계열 14개 토크나이저의 한국어 fertility 비교}{fig:ch27-appendix-fertility}
 \includegraphics[width=0.86\linewidth]{assets/figures/ch27_appendix_fertility_bar.png}
 \end{bookfigurelabel}
 
-\textbf{그림 읽기} --- 그림~\ref{fig:ch27-appendix-fertility}에서 한국어 전용 또는 한국어 비중이 큰 토크나이저는 같은 문장을 더 적은 토큰으로 표현합니다. 반대로 영어 중심 GPT-2 계열 fallback을 쓰면 한국어가 byte 조각으로 길게 분해되어 fertility가 커집니다. 이 차이는 단순한 표시 문제가 아니라 context length, 학습 속도, inference 비용에 직접 영향을 줍니다.
+\textbf{그림 읽기} --- 그림~\ref{fig:ch27-appendix-fertility}에서 A.X-4.0, EXAONE-3.5, polyglot-ko, KoGPT2 같은 한국어 지향 토크나이저는 같은 문장을 더 적은 토큰으로 표현합니다. GPT-4o도 큰 vocabulary와 개선된 다국어 처리를 통해 상위권에 위치합니다. 반대로 영어 중심 \inlinecode{gpt2}는 한국어가 byte 조각으로 길게 분해되어 fertility가 크게 증가합니다. 이 차이는 단순한 표시 문제가 아니라 context length, 학습 속도, inference 비용에 직접 영향을 줍니다.
 
 \begin{bookfigurelabel}[H]{토크나이저 vocabulary 안의 한국어 점유율 비교}{fig:ch27-appendix-vocab-share}
 \includegraphics[width=0.86\linewidth]{assets/figures/ch27_appendix_vocab_share.png}
 \end{bookfigurelabel}
 
-\textbf{그림 읽기} --- 그림~\ref{fig:ch27-appendix-vocab-share}는 vocabulary에 한국어 조각이 얼마나 들어 있는지를 보여줍니다. KoGPT2나 KLUE 계열처럼 한국어를 직접 다루도록 만들어진 토크나이저는 한국어 조각의 존재감이 큽니다. 반면 영어 중심 토크나이저는 한국어를 정상 토큰으로 처리하지 못하고 byte 또는 낯선 subword로 우회할 가능성이 큽니다.
+\textbf{그림 읽기} --- 그림~\ref{fig:ch27-appendix-vocab-share}는 vocabulary에 한국어 조각이 얼마나 들어 있는지를 보여줍니다. A.X-4.0, EXAONE-3.5, polyglot-ko, KoGPT2처럼 한국어를 직접 다루도록 설계된 토크나이저는 한국어 조각의 존재감이 큽니다. 반면 Llama/Mistral 기반 계열이나 영어 중심 토크나이저는 한국어를 정상 토큰으로 처리하지 못하고 byte 또는 낯선 subword로 우회할 가능성이 커집니다.
 
 \begin{bookfigurelabel}[H]{한국어 vocab 점유율과 fertility의 관계}{fig:ch27-appendix-vocab-fertility}
 \includegraphics[width=0.72\linewidth]{assets/figures/ch27_appendix_vocab_fertility_scatter.png}
 \end{bookfigurelabel}
 
-\textbf{그림 읽기} --- 그림~\ref{fig:ch27-appendix-vocab-fertility}는 한국어 vocab 점유율이 높을수록 fertility가 낮아지는 경향을 요약합니다. 물론 vocabulary 점유율 하나만으로 모델 품질을 판정할 수는 없습니다. 하지만 한국어 문장이 지나치게 길게 토큰화되거나 자모/byte로 깨지는 토크나이저는 학습 전부터 위험 신호로 보아야 합니다.
+\textbf{그림 읽기} --- 그림~\ref{fig:ch27-appendix-vocab-fertility}는 한국어 vocab 점유율이 높을수록 fertility가 낮아지는 경향을 요약합니다. 물론 vocabulary 점유율 하나만으로 모델 품질을 판정할 수는 없습니다. 하지만 한국어 문장이 지나치게 길게 토큰화되거나 자모/byte로 깨지는 토크나이저는 학습 전부터 위험 신호로 보아야 합니다. 특히 \inlinecode{gpt2}처럼 왼쪽 위에 놓이는 토크나이저는 한국어 서비스에서 context와 비용을 빠르게 소모합니다.
 
 \begin{quote}
 \textbf{실무 기준} --- 한국어 모델을 불러온 직후에는 모델명만 믿지 말고 \inlinecode{tokenizer.encode(sample)}와 \inlinecode{tokenizer.decode(...)}를 함께 확인합니다. 본 장의 KoGPT2처럼 \inlinecode{AutoTokenizer}가 기대와 다르게 동작할 수 있는 경우에는 \inlinecode{PreTrainedTokenizerFast}와 special token을 명시해 로드하고, 왕복 검증을 통과한 뒤 학습을 시작해야 합니다.

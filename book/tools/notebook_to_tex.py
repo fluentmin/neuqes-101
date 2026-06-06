@@ -36,6 +36,7 @@ class Chapter:
     short_title: str
     focus: str
     indexes: tuple[str, ...]
+    extra_notebooks: tuple[str, ...] = ()
 
     @property
     def notebook(self) -> Path:
@@ -758,6 +759,125 @@ CHAPTERS = [
             "한국어 생성 비교",
         ),
     ),
+    Chapter(
+        28,
+        "sft",
+        "KoGPT2 SFT (Instruction Tuning)",
+        "KoGPT2 SFT (Instruction Tuning)",
+        "KoGPT2를 KoAlpaca instruction-response 데이터로 SFT해 지시를 따르는 행동 정렬을 확인",
+        (
+            "KoGPT2",
+            "SFT",
+            "Instruction Tuning",
+            "Supervised Fine-Tuning",
+            "behavior alignment",
+            "KoAlpaca",
+            "beomi/KoAlpaca-v1.1a",
+            "trl",
+            "SFTTrainer",
+            "SFTConfig",
+            "completion_only_loss=True",
+            "completion_mask",
+            "labels=-100",
+            "response-only loss",
+            "prompt masking",
+            "PreTrainedTokenizerFast",
+            "AutoModelForCausalLM",
+            "CrossEntropyLoss",
+            "지시 튜닝",
+            "지도 미세조정",
+            "행동 정렬",
+            "응답 구간 손실",
+            "프롬프트 마스킹",
+            "KoAlpaca",
+            "답변 토큰",
+            "instruction following",
+        ),
+    ),
+    Chapter(
+        29,
+        "benchmark_eval",
+        "분야별 벤치마크 평가 (Benchmark Evaluation)",
+        "벤치마크 평가 (Benchmark Evaluation)",
+        "생성형 LLM 평가가 분류 평가와 다른 이유를 task format, log-likelihood, few-shot, LLM-as-judge 관점에서 정리",
+        (
+            "Benchmark Evaluation",
+            "LLM evaluation",
+            "KoBEST",
+            "Qwen2.5-0.5B-Instruct",
+            "multiple choice",
+            "log-likelihood",
+            "acc_norm",
+            "exact match",
+            "generation evaluation",
+            "answer extraction",
+            "few-shot",
+            "zero-shot",
+            "in-context learning",
+            "lm-evaluation-harness",
+            "lm-eval",
+            "LLM-as-judge",
+            "human evaluation",
+            "Goodhart's law",
+            "contamination",
+            "leaderboard",
+            "벤치마크 평가",
+            "생성형 평가",
+            "객관식 평가",
+            "로그우도",
+            "길이 정규화",
+            "정답 추출",
+            "퓨샷",
+            "제로샷",
+            "문맥 내 학습",
+            "LLM 심판",
+            "사람 평가",
+            "벤치마크 오염",
+            "리더보드",
+        ),
+        ("appendix_eval_landscape.ipynb",),
+    ),
+    Chapter(
+        30,
+        "dpo",
+        "DPO: 사람 선호로 정렬 (Preference Alignment)",
+        "DPO 정렬 (Preference Alignment)",
+        "reward model 없이 preference 쌍으로 policy를 직접 정렬하는 DPO 학습 단계를 정리",
+        (
+            "DPO",
+            "Direct Preference Optimization",
+            "preference alignment",
+            "alignment",
+            "chosen",
+            "rejected",
+            "reward margin",
+            "implicit reward",
+            "reference model",
+            "frozen reference",
+            "KL constraint",
+            "DPOTrainer",
+            "DPOConfig",
+            "beta",
+            "RLAIF",
+            "UltraFeedback",
+            "maywell/ko_Ultrafeedback_binarized",
+            "policy model",
+            "PPO",
+            "reward model",
+            "labels=-100",
+            "response-only",
+            "사람 선호",
+            "선호 정렬",
+            "정렬 학습",
+            "선택 응답",
+            "거절 응답",
+            "보상 마진",
+            "참조 모델",
+            "고정 참조",
+            "KL 제약",
+            "응답 구간 손실",
+        ),
+    ),
 ]
 
 
@@ -1335,11 +1455,108 @@ EXTRA_INDEXES = {
         "SFT 경계",
         "프롬프트 마스킹",
     ),
+    28: (
+        "DataCollatorForCompletionOnlyLM removed",
+        "TRL 1.5.1",
+        "SFTConfig(completion_only_loss=True)",
+        "prompt column",
+        "completion column",
+        "completion mask",
+        "prompt tokens masked",
+        "answer tokens learned",
+        "labels=-100 thread",
+        "MLM vs CausalLM vs SFT",
+        "instruction following",
+        "behavior alignment",
+        "fine-tuning meaning shift",
+        "task head vs behavior alignment",
+        "response template",
+        "chat template",
+        "KoGPT2 SFT",
+        "KoAlpaca SFT",
+        "응답 마스킹",
+        "지시 따르기",
+        "행동 정렬",
+        "파인튜닝 의미 변화",
+        "프롬프트 제외",
+        "답변만 학습",
+        "completion_only_loss",
+    ),
+    29: (
+        "KoBEST HellaSwag",
+        "KoBEST BoolQ",
+        "HFLM",
+        "simple_evaluate",
+        "TaskManager",
+        "loglikelihood",
+        "acc",
+        "stderr",
+        "MMLU",
+        "KMMLU",
+        "GSM8K",
+        "HumanEval",
+        "MT-Bench",
+        "LogicKor",
+        "Chatbot Arena",
+        "position bias",
+        "verbosity bias",
+        "judge ceiling",
+        "gold standard",
+        "Goodhart's law",
+        "EXAONE",
+        "Gemma",
+        "Qwen",
+        "GLM",
+        "DeepSeek",
+        "tech report",
+        "평가 생태계",
+        "평가 도구",
+        "평가 함정",
+        "정확도",
+        "정규식 추출",
+        "판정 편향",
+        "전문가 평가",
+        "대중 평가",
+        "평가 항해 전략",
+    ),
+    30: (
+        "DPO loss",
+        "margin=0",
+        "loss=0.6931",
+        "sigmoid loss",
+        "policy",
+        "frozen ref",
+        "ref_model=None",
+        "completion-only preference",
+        "instruction-following",
+        "truthfulness",
+        "honesty",
+        "helpfulness",
+        "binarized preference",
+        "GPT-4 judge",
+        "PPO 4 models",
+        "T4 training",
+        "gradient_accumulation_steps",
+        "fp16",
+        "reward accuracy",
+        "DPO beta",
+        "선호 쌍",
+        "마진 직관",
+        "기준 정책",
+        "정책 최적화",
+        "품질 정렬",
+        "정직성",
+        "유용성",
+        "사실성",
+        "지시 준수",
+        "이진화 선호",
+    ),
 }
 
 
 EMOJI_PATTERN = re.compile(
     "["
+    "\U0001F100-\U0001F1FF"
     "\U0001F300-\U0001FAFF"
     "\U00002600-\U000027BF"
     "\U0000FE0F"
@@ -1373,8 +1590,19 @@ def sanitize_symbols(text: str) -> str:
     return (
         text.replace("❌", "X")
         .replace("✅", "OK")
+        .replace("📚", "")
         .replace("⚠️", "주의")
         .replace("⚠", "주의")
+        .replace("①", "1")
+        .replace("②", "2")
+        .replace("③", "3")
+        .replace("④", "4")
+        .replace("⑤", "5")
+        .replace("⑥", "6")
+        .replace("⑦", "7")
+        .replace("⑧", "8")
+        .replace("⑨", "9")
+        .replace("⑩", "10")
         .replace("\ufe0f", "")
     )
 
@@ -1388,7 +1616,10 @@ def normalize_markdown_math_symbols(text: str) -> str:
         .replace("≥", r"$\ge$")
         .replace("×", r"$\times$")
         .replace("→", r"$\to$")
+        .replace("←", r"$\leftarrow$")
+        .replace("↓", r"$\downarrow$")
         .replace("↔", r"$\leftrightarrow$")
+        .replace("≠", r"$\ne$")
         .replace("−", "-")
     )
 
@@ -1847,6 +2078,8 @@ def polish_book_prose(latex: str) -> str:
         "OvR fit 성공!": "OvR 학습 성공",
         "실제 별점": "정답 별점",
         "다음 장를": "다음 장을",
+        "평가 장라": "평가 장이라",
+        "30장 부터": "30장부터",
         "1·2장와": "1·2장과",
         "2장와": "2장과",
         "2장. sklearn Regression --- 시작점": "2장. 회귀 분석 (Regression \\& MSE) --- 첫 모델과 손실",
@@ -2460,7 +2693,7 @@ def display_math_to_numbered_equations(latex: str, chapter_number: int) -> str:
 
 def link_chapter_references(latex: str) -> str:
     """Turn prose references such as 3장 and 9-13장 into hyperlinked refs."""
-    single = r"(?:[1-9]|1[0-9]|2[0-7])"
+    single = r"(?:[1-9]|[12][0-9]|30)"
     range_pat = re.compile(
         rf"(?<!ch:)(?<!ref\{{ch:)(?<!tab:ch)(?<!eq:ch)\b({single})\s*[-–]\s*({single})장"
     )
@@ -3076,6 +3309,8 @@ def split_long_call(line: str, max_width: int = 58) -> list[str] | None:
         return None
     indent = re.match(r"^\s*", line).group(0)
     stripped = line.strip()
+    if stripped.startswith("return "):
+        return None
     if stripped.startswith(("print(", "#")):
         return None
     if "(" not in stripped or "," not in stripped or stripped.endswith("\\"):
@@ -3230,6 +3465,230 @@ def output_to_latex(source: str, outputs: list[dict]) -> str:
 
 def synthetic_output_text(source: str) -> str:
     source_lower = source.lower()
+    if "exact_match" in source and "extract_int_match" in source:
+        return "\n".join([
+            "question        : 6 곱하기 4는?",
+            "gold answer     : '24'",
+            "",
+            "answer_a = '정답은 24입니다.'",
+            "   exact match        : False",
+            "   extract-int match  : True",
+            "",
+            "answer_b = '이십사'",
+            "   exact match        : False",
+            "   extract-int match  : False",
+            "",
+            "=> exact match is brittle when the output format changes.",
+        ])
+    if (
+        "torch.cuda.is_available" in source
+        and "use_fp16" in source_lower
+        and "vram total" not in source_lower
+        and "dpo summary" not in source_lower
+    ):
+        return "\n".join([
+            "device : cuda  (Tesla T4)  # or mps/cpu depending on runtime",
+            "torch  : ...",
+            "fp16   : True",
+        ])
+    if "qwen/qwen2.5-0.5b-instruct" in source_lower and "n_params" in source_lower:
+        return "\n".join([
+            "model     : Qwen/Qwen2.5-0.5B-Instruct",
+            "params    : about 500M",
+            "vocab     : ...",
+            "eos token : '<|im_end|>'",
+        ])
+    if "demo_prompt" in source_lower and "mc_predict" in source_lower and "demo_df" in source_lower:
+        return "\n".join([
+            "    choice  logprob_sum  logprob_mean",
+            " 2입니다.       ...          ...",
+            " 3입니다.       ...          ...",
+            " 5입니다.       ...          ...",
+            "10입니다.       ...          ...",
+            "",
+            "predicted (sum)  : 2입니다.",
+            "predicted (mean) : 2입니다.",
+        ])
+    if "kobest_v1" in source_lower and "hellaswag" in source_lower and "column_names" in source_lower:
+        return "\n".join([
+            "HellaSwag subset : 50 문항 (4지선다)",
+            "columns          : ['context', 'ending_1', 'ending_2', 'ending_3', 'ending_4', 'label']",
+            "",
+            "--- example ---",
+            "context : ...",
+            "ending_1 : ...",
+            "ending_2 : ...",
+            "ending_3 : ...",
+            "ending_4 : ...",
+            "label   : ...",
+        ])
+    if "kobest hellaswag" in source_lower and "acc_norm" in source_lower:
+        return "\n".join([
+            "KoBEST HellaSwag  (n=50)",
+            "  acc      (sum  / log-prob)     : ...",
+            "  acc_norm (mean / length-norm)  : ...",
+            "  random baseline (1/4)          : 0.250",
+        ])
+    if "kobest boolq" in source_lower and "random baseline : 0.500" in source_lower:
+        return "\n".join([
+            "KoBEST BoolQ  (n=50)",
+            "  acc             : ...",
+            "  random baseline : 0.500  (2지선다)",
+        ])
+    if "few-shot 산술 정확도" in source:
+        return "\n".join([
+            "               question                 generated  pred  answer    ok",
+            "       6 곱하기 4는 얼마인가요?       정답은 24입니다    24      24  True",
+            "      15 더하기 9는 얼마인가요?       정답은 24입니다    24      24  True",
+            "       20 빼기 8은 얼마인가요?        정답은 12입니다    12      12  True",
+            "       7 곱하기 7은 얼마인가요?       정답은 49입니다    49      49  True",
+            "",
+            "few-shot 산술 정확도 : 1.000  (n=6)",
+        ])
+    if "zero-shot (0 examples)" in source_lower and "few-shot (2 examples)" in source_lower:
+        return "\n".join([
+            "              setting  accuracy",
+            " zero-shot (0 examples)     0.333",
+            " few-shot (2 examples)      1.000",
+            "",
+            "in-context learning effect : +0.667  (few - zero)",
+        ])
+    if "import lm_eval" in source_lower and "has_lm_eval" in source_lower:
+        return "\n".join([
+            "lm-eval version : ...",
+            "# if missing:",
+            "lm-eval 미설치 - 이 셀은 건너뜁니다.",
+        ])
+    if "simple_evaluate" in source_lower and "kobest_boolq" in source_lower:
+        return "\n".join([
+            "[kobest_boolq]",
+            "  acc           : ...",
+            "  acc_stderr    : ...",
+            "  acc_norm      : ...",
+            "",
+            "# if lm-eval is unavailable, use the direct implementation above.",
+        ])
+    if "taskmanager" in source_lower and "all_tasks" in source_lower:
+        return "\n".join([
+            "lm-eval available tasks : ...",
+            "  [mmlu      ] ['mmlu', 'mmlu_continuation', ...]",
+            "  [hellaswag ] ['hellaswag', ...]",
+            "  [gsm8k     ] ['gsm8k', ...]",
+            "  [kobest    ] ['kobest_boolq', 'kobest_hellaswag', ...]",
+        ])
+    if "judge_prompt" in source_lower and "position bias" in source_lower:
+        return "\n".join([
+            "You are an impartial judge. Compare two AI answers to the same question.",
+            "Judge by: helpfulness, correctness, and clarity.",
+            "",
+            "[Question]",
+            "건강한 식습관 3가지를 알려줘.",
+            "",
+            "Output ONLY one of: \"A\", \"B\", or \"tie\". Then a one-line reason.",
+            "============================================================",
+            "position bias 줄이기: A/B 순서를 바꿔 한 번 더 채점하고 결과를 평균합니다.",
+        ])
+    if "lgai-exaone/exaone-4.0-32b" in source_lower and "hfapi" in source_lower:
+        return "\n".join([
+            "model                                      downloads    likes",
+            "----------------------------------------------------------------",
+            "LGAI-EXAONE/EXAONE-4.0-32B                         ...      ...",
+            "google/gemma-3-27b-it                              ...      ...",
+            "Qwen/Qwen3-32B                                     ...      ...",
+            "zai-org/GLM-4.5                                    ...      ...",
+            "deepseek-ai/DeepSeek-R1                            ...      ...",
+            "",
+            "note: download count is a usage signal, NOT a quality score.",
+        ])
+    if "import trl" in source_lower and "use_fp16" in source_lower and "vram total" in source_lower:
+        return "\n".join([
+            "trl          : 1.5.1",
+            "device       : cuda  (Tesla T4)",
+            "VRAM total   : 15.00 GiB",
+            "torch        : ...",
+            "use fp16     : True",
+        ])
+    if "maywell/ko_ultrafeedback_binarized" in source_lower and "after filter + subset" in source_lower:
+        return "\n".join([
+            "raw dataset: Dataset({",
+            "    features: ['prompt', 'chosen', 'rejected', ...],",
+            "    num_rows: ...",
+            "})",
+            "",
+            "fields: ['prompt', 'chosen', 'rejected', ...]",
+            "after filter + subset: 1,500 samples",
+        ])
+    if "formatted dataset" in source_lower and "preference sample 0" in source_lower:
+        return "\n".join([
+            "formatted dataset: Dataset({",
+            "    features: ['prompt', 'chosen', 'rejected'],",
+            "    num_rows: 1500",
+            "})",
+            "",
+            "=== preference sample 0 ===",
+            "--- prompt ---",
+            "### 명령어:",
+            "...",
+            "### 응답:",
+            "--- chosen (선호) ---",
+            "...",
+            "--- rejected (덜 선호) ---",
+            "...",
+        ])
+    if "policy model" in source_lower and "#params" in source_lower and "kogpt2-base-v2" in source_lower:
+        return "\n".join([
+            "load done: ...s",
+            "",
+            "=== policy model ===",
+            "#params      : 125.16 M",
+            "vocab_size   : 51,200",
+            "tokenizer    : PreTrainedTokenizerFast",
+            "  eos_token  : </s>  id=1",
+            "  pad_token  : <pad>  id=3",
+        ])
+    if "reference model: frozen" in source_lower and "kl 제약" in source_lower:
+        return "\n".join([
+            "reference model: frozen  (trainable params = 0)",
+            "policy   : 학습 대상 (gradient 흐름)",
+            "reference: 고정 (gradient 안 흐름) - KL 제약의 닻",
+        ])
+    if "dpo loss - 한 샘플로 손계산" in source_lower:
+        return "\n".join([
+            "============================================================",
+            "DPO loss - 한 샘플로 손계산 (response-only log-prob)",
+            "============================================================",
+            "log pi_theta(chosen)    :   ...",
+            "log pi_ref  (chosen)    :   ...",
+            "log pi_theta(rejected)  :   ...",
+            "log pi_ref  (rejected)  :   ...",
+            "------------------------------------------------------------",
+            "implicit reward (chosen)   r_w =    0.000",
+            "implicit reward (rejected) r_l =    0.000",
+            "margin = r_w - r_l             =    0.000",
+            "DPO loss = -log sigmoid(beta*margin) =   0.6931   (beta=0.1)",
+        ])
+    if "before dpo - reward margin" in source_lower and "acc_before" in source_lower:
+        return "\n".join([
+            "BEFORE DPO - reward margin (n=64)",
+            "  mean margin     : 0.000",
+            "  reward accuracy : 0.500  (ratio of margin>0; approx. 0.5 before training)",
+        ])
+    if "=== dpo summary ===" in source_lower:
+        return "\n".join([
+            "=== DPO summary ===",
+            "elapsed     : ... min",
+            "global_step : ...",
+            "train_loss  : ...",
+            "final peak  : ... MiB",
+        ])
+    if "after dpo - reward margin" in source_lower and "before_margins" in source_lower:
+        return "\n".join([
+            "AFTER DPO - reward margin (n=64)",
+            "  mean margin     : positive shift  (before: near 0)",
+            "  reward accuracy : improved        (before: near 0.5)",
+        ])
+    if "peak vram" in source_lower and "policy + reference" in source_lower:
+        return "peak VRAM (max over training): ... MiB  (policy + reference, bs=2, grad_accum=8, fp16)"
     if "english corpus:" in source_lower:
         return "\n".join([
             "english corpus: 5,000 sentences",
@@ -3340,7 +3799,7 @@ def synthetic_output_text(source: str) -> str:
             "loaded tokens   : ['[CLS]', 'the', 'food', 'was', ...]",
             "match           : True",
         ])
-    if "pretrainedtokenizerfast" in source_lower:
+    if "pretrainedtokenizerfast" in source_lower and "skt/kogpt2-base-v2" not in source_lower:
         return "\n".join([
             "vocab_size      : 8000",
             "pad_token_id    : 0",
@@ -3390,6 +3849,71 @@ def synthetic_output_text(source: str) -> str:
             "vocab_size:       51,200",
             "special tokens:   bos/eos='</s>', unk='<unk>', pad='<pad>', mask='<mask>'",
             "round trip:       encode -> decode check passed",
+        ])
+    if "beomi/koalpaca-v1.1a" in source_lower or "koalpaca" in source_lower and "prompt" in source_lower and "completion" in source_lower:
+        return "\n".join([
+            "dataset:           beomi/KoAlpaca-v1.1a",
+            "sampled train:     3,000 instruction-response pairs",
+            "columns:           prompt, completion",
+            "format:            ### 명령어: ...  ### 응답: ...",
+        ])
+    if "prompt tokens" in source_lower and "completion tokens" in source_lower and "labels learned" in source_lower:
+        return "\n".join([
+            "prompt tokens     : 38",
+            "completion tokens : 142  (incl. EOS)",
+            "total tokens      : 180",
+            "",
+            "labels learned    : 142 / 180  (prompt masked = 38)",
+        ])
+    if "per-token labels" in source_lower and "prompt is masked" in source_lower:
+        return "\n".join([
+            "==============================================================================",
+            "Per-token labels - prompt is masked (-100), only response is learned",
+            "==============================================================================",
+            " pos  token          input_id  label   learn?",
+            "   0  '###'             ...    -100   - (prompt, -100)",
+            "   1  ' 명령어'         ...    -100   - (prompt, -100)",
+            " ...  ...               ...    -100   - (prompt, -100)",
+            "  38  ' 답변'           ...     ...   Y (response)",
+            "  39  '은'              ...     ...   Y (response)",
+            " ...  ...               ...     ...   Y (response)",
+            " 179  '</s>'            ...     ...   Y (response)",
+        ])
+    if "sftconfig" in source_lower and "completion_only_loss=true" in source_lower:
+        return "\n".join([
+            "SFTConfig:",
+            "  completion_only_loss: True",
+            "  max_length:           512",
+            "  per_device_train_batch_size: 2",
+            "  gradient_accumulation_steps: 8",
+            "  fp16:                 True",
+        ])
+    if "after sft" in source_lower and "koalpaca instruction tuning" in source_lower:
+        return "\n".join([
+            "======================================================================",
+            "AFTER SFT - KoGPT2 + KoAlpaca instruction tuning",
+            "======================================================================",
+            "",
+            "[instruction] 피보나치 수열을 초등학생에게 설명해줘.",
+            "[answer] 피보나치 수열은 앞의 두 수를 더해서 다음 수를 만드는 규칙입니다...",
+            "",
+            "[instruction] 아래 문장을 긍정/부정으로 분류하고 이유를 한 문장으로 써줘: ...",
+            "[answer] 긍정입니다. 문장에 만족과 추천 의도가 드러나기 때문입니다...",
+        ])
+    if "before sft" in source_lower and "after sft" in source_lower and "compact table" in source_lower:
+        return "\n".join([
+            "================================================================================",
+            "BEFORE SFT (raw KoGPT2) vs AFTER SFT (KoGPT2 + KoAlpaca) - instruction following",
+            "================================================================================",
+            "",
+            "INSTRUCTION : 피보나치 수열을 초등학생에게 설명해줘.",
+            "BEFORE      : 피보나치 수열을 초등학생에게 설명해줘. 어느 날...",
+            "AFTER       : 피보나치 수열은 앞의 두 수를 더해서 다음 수를 만드는 규칙입니다...",
+            "",
+            "=== compact table ===",
+            "instruction                              before (raw)        after (sft)",
+            "피보나치 수열을 초등학생에게 설명해줘.     이어쓰기 경향        지시에 대한 설명",
+            "감성 분류와 이유를 써줘.                  지시 무시/산문       분류 + 이유",
         ])
     if "autotokenizer" in source_lower and "fallback" in source_lower and "kogpt2" in source_lower:
         return "\n".join([
@@ -3745,6 +4269,62 @@ def execute_notebook(path: Path) -> dict:
     return nb
 
 
+def demote_markdown_headings(markdown: str) -> str:
+    lines: list[str] = []
+    for line in markdown.splitlines():
+        if line.lstrip().startswith("#"):
+            indent = line[: len(line) - len(line.lstrip())]
+            lines.append(indent + "#" + line.lstrip())
+        else:
+            lines.append(line)
+    return "\n".join(lines) + ("\n" if markdown.endswith("\n") else "")
+
+
+def append_notebook_cells(
+    chunks: list[str],
+    nb: dict,
+    chapter_number: int,
+    *,
+    appendix: bool = False,
+) -> None:
+    explain_code = False
+    appendix_title_added = False
+
+    for cell in nb.get("cells", []):
+        source = "".join(cell.get("source", []))
+        if not source.strip():
+            continue
+
+        if cell.get("cell_type") == "markdown":
+            first = source.strip().splitlines()[0]
+            if first.startswith("# Chapter"):
+                if appendix and not appendix_title_added:
+                    chunks.append("\\section{부록: 생성형 LLM 평가 항해 가이드}")
+                    appendix_title_added = True
+                    chunks.append("")
+                continue
+            if first.lstrip().startswith("##"):
+                explain_code = any(
+                    section in first
+                    for section in (
+                        "토크나이저",
+                        "실습",
+                        "해부",
+                        "평가",
+                        "Multiple-choice",
+                        "Generation",
+                        "zero-shot",
+                        "few-shot",
+                    )
+                )
+            markdown_source = demote_markdown_headings(source) if appendix else source
+            chunks.append(markdown_to_latex(markdown_source, chapter_number))
+        elif cell.get("cell_type") == "code":
+            chunks.append(code_to_latex(source, include_notes=explain_code, outputs=cell.get("outputs", [])))
+
+        chunks.append("")
+
+
 def chapter_tex(chapter: Chapter, execute: bool = False) -> str:
     if execute:
         nb = execute_notebook(chapter.notebook)
@@ -3770,24 +4350,14 @@ def chapter_tex(chapter: Chapter, execute: bool = False) -> str:
         safe = latex_escape_prose(term)
         chunks.append(f"\\index{{{index_sort_key(term)}@{safe}}}")
     chunks.append("")
-    explain_code = False
+    append_notebook_cells(chunks, nb, chapter.number)
 
-    for cell in nb.get("cells", []):
-        source = "".join(cell.get("source", []))
-        if not source.strip():
-            continue
-
-        if cell.get("cell_type") == "markdown":
-            first = source.strip().splitlines()[0]
-            if first.startswith("# Chapter"):
-                continue
-            if first.lstrip().startswith("##"):
-                explain_code = any(section in first for section in ("토크나이저", "실습", "해부"))
-            chunks.append(markdown_to_latex(source, chapter.number))
-        elif cell.get("cell_type") == "code":
-            chunks.append(code_to_latex(source, include_notes=explain_code, outputs=cell.get("outputs", [])))
-
-        chunks.append("")
+    for extra_notebook in chapter.extra_notebooks:
+        extra_path = chapter.notebook.parent / extra_notebook
+        if not extra_path.exists():
+            raise FileNotFoundError(extra_path)
+        extra_nb = json.loads(extra_path.read_text(encoding="utf-8"))
+        append_notebook_cells(chunks, extra_nb, chapter.number, appendix=True)
 
     chapter_latex = "\n\n".join(chunks).rstrip() + "\n"
     chapter_latex = wrap_tabular_tables(chapter_latex, chapter.number)

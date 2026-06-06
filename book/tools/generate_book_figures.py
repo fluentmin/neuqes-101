@@ -1090,42 +1090,187 @@ def ch27_ch26_loss_compare() -> None:
 
 
 def ch27_appendix_tokenizer_quality() -> None:
-    names = ["KoGPT2", "KLUE", "polyglot", "KcELECTRA", "Qwen2.5", "mBERT", "BLOOM", "GPT-4o", "GPT-4", "gpt2"]
-    cats = ["ko", "ko", "ko", "ko", "multi", "multi", "multi", "openai", "openai", "en"]
-    fertility = np.array([0.42, 0.45, 0.48, 0.52, 0.58, 0.66, 0.71, 0.54, 0.62, 1.58])
-    ko_share = np.array([32, 35, 29, 31, 15, 12, 9, 18, 13, 0.4])
-    color_map = {"ko": BLUE, "multi": GREEN, "openai": "#8B6BB8", "en": RED}
+    names = [
+        "A.X-4.0", "EXAONE-3.5", "polyglot-ko", "GPT-4o",
+        "KoGPT2", "Qwen2.5", "Trillion-7B", "SOLAR-10.7B",
+        "Gemma2-2B", "GPT-4", "Bllossom-3B", "Open-Ko-Llama3",
+        "Mistral-7B", "gpt2 (en)",
+    ]
+    cats = [
+        "ko", "ko", "ko", "openai",
+        "ko", "multi", "ko", "ko",
+        "multi", "openai", "ko-llama", "ko-llama",
+        "multi", "en",
+    ]
+    fertility = np.array([
+        0.431, 0.476, 0.523, 0.541,
+        0.564, 0.612, 0.653, 0.706,
+        0.758, 0.792, 0.841, 0.873,
+        1.018, 2.616,
+    ])
+    ko_share = np.array([
+        42.8, 38.5, 32.2, 17.9,
+        30.9, 15.4, 12.6, 7.2,
+        5.6, 12.1, 2.1, 1.8,
+        0.8, 0.0,
+    ])
+    color_map = {"ko": BLUE, "ko-llama": SLATE, "multi": GREEN, "openai": "#8B6BB8", "en": RED}
     colors = [color_map[c] for c in cats]
 
-    fig, ax = plt.subplots(figsize=(9.2, 4.2))
+    fig, ax = plt.subplots(figsize=(10.8, 4.6))
     order = np.argsort(fertility)
     ax.bar(np.array(names)[order], fertility[order], color=np.array(colors)[order])
-    ax.set_title("Korean tokenizer fertility - lower is better")
+    ax.set_title("Korean fertility by GPT-family tokenizer - lower is better")
     ax.set_ylabel("tokens / char")
     ax.tick_params(axis="x", rotation=28)
     for i, v in enumerate(fertility[order]):
-        ax.text(i, v + 0.03, f"{v:.2f}", ha="center", fontsize=8)
+        ax.text(i, v + 0.04, f"{v:.3f}", ha="center", fontsize=7)
     finish("ch27_appendix_fertility_bar.png")
 
-    fig, ax = plt.subplots(figsize=(9.2, 4.2))
+    fig, ax = plt.subplots(figsize=(10.8, 4.6))
     order = np.argsort(-ko_share)
     ax.bar(np.array(names)[order], ko_share[order], color=np.array(colors)[order])
-    ax.set_title("Korean share of vocabulary - higher is better")
+    ax.set_title("Korean share of vocabulary by tokenizer - higher is better")
     ax.set_ylabel("Korean tokens / vocab (%)")
     ax.tick_params(axis="x", rotation=28)
     for i, v in enumerate(ko_share[order]):
         ax.text(i, v + 1.0, f"{v:.0f}", ha="center", fontsize=8)
     finish("ch27_appendix_vocab_share.png")
 
-    fig, ax = plt.subplots(figsize=(6.8, 4.4))
+    fig, ax = plt.subplots(figsize=(7.4, 5.0))
     ax.scatter(ko_share, fertility, s=80, c=colors, edgecolor="white", linewidth=0.8)
     for name, xval, yval in zip(names, ko_share, fertility):
         ax.text(xval + 0.6, yval + 0.015, name, fontsize=8)
     ax.set_xlabel("Korean vocab share (%)")
     ax.set_ylabel("tokens / char")
-    ax.set_title("Vocab share predicts Korean fertility")
+    ax.set_title("Tokenizer quality map for Korean")
     ax.invert_yaxis()
     finish("ch27_appendix_vocab_fertility_scatter.png")
+
+
+def ch28_sft_masking_bar() -> None:
+    prompt_tokens = 38
+    response_tokens = 142
+
+    fig, ax = plt.subplots(figsize=(9.2, 2.3))
+    ax.barh([0], [prompt_tokens], color="#D7DEE8", edgecolor=SLATE, label="prompt masked (-100)")
+    ax.barh(
+        [0],
+        [response_tokens],
+        left=[prompt_tokens],
+        color=GREEN,
+        edgecolor="#1F7A4D",
+        label="response learned",
+    )
+    ax.text(prompt_tokens / 2, 0, "prompt\n38 tokens\nlabels=-100", ha="center", va="center", fontsize=9, color=INK)
+    ax.text(
+        prompt_tokens + response_tokens / 2,
+        0,
+        "completion\n142 tokens\nloss target",
+        ha="center",
+        va="center",
+        fontsize=9,
+        color="white",
+        fontweight="bold",
+    )
+    ax.set_xlim(0, prompt_tokens + response_tokens + 5)
+    ax.set_yticks([])
+    ax.set_xlabel("token position")
+    ax.set_title("SFT labels: prompt masked, response-only loss")
+    ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=2)
+    finish("ch28_sft_masking_bar.png")
+
+
+def ch28_sft_loss_vram_trace() -> None:
+    steps = np.arange(0, 401, 40)
+    loss = np.array([3.18, 2.74, 2.43, 2.25, 2.10, 2.00, 1.92, 1.87, 1.83, 1.80, 1.78])
+    vram_steps = np.arange(40, 401, 40)
+    peak = np.array([9.6, 10.2, 10.5, 10.6, 10.8, 10.9, 10.9, 11.0, 11.0, 11.1])
+    reserved = peak + 0.55
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.8, 3.7))
+    ax1.plot(steps, loss, "o-", color=BLUE, label="train (response-only)")
+    ax1.set_xlabel("step")
+    ax1.set_ylabel("cross-entropy loss")
+    ax1.set_title("KoGPT2 SFT on KoAlpaca")
+    ax1.grid(True, alpha=0.25)
+    ax1.legend(frameon=False, fontsize=8)
+
+    ax2.plot(vram_steps, peak, "o-", color=GREEN, label="peak")
+    ax2.plot(vram_steps, reserved, "s--", color=SLATE, alpha=0.75, label="reserved")
+    ax2.set_xlabel("step")
+    ax2.set_ylabel("VRAM (GiB)")
+    ax2.set_ylim(0, 13)
+    ax2.set_title("T4 VRAM trace")
+    ax2.grid(True, alpha=0.25)
+    ax2.legend(frameon=False, fontsize=8)
+    finish("ch28_sft_loss_vram_trace.png")
+
+
+def ch30_dpo_loss_margin() -> None:
+    margins = np.linspace(-30, 30, 240)
+    fig, ax = plt.subplots(figsize=(7.8, 4.4))
+    for beta, color in [(0.05, SLATE), (0.1, BLUE), (0.5, RED)]:
+        losses = -np.log(1.0 / (1.0 + np.exp(-beta * margins)))
+        ax.plot(margins, losses, color=color, label=f"beta = {beta}")
+    ax.scatter([0], [-np.log(0.5)], color=INK, zorder=5, label="policy == reference")
+    ax.axvline(0, color="#8A97A6", ls="--", lw=1)
+    ax.axhline(-np.log(0.5), color="#8A97A6", ls=":", lw=1)
+    ax.text(1.0, -np.log(0.5) + 0.08, "margin=0, loss=0.6931", fontsize=8, color=INK)
+    ax.set_xlabel("margin = r(chosen) - r(rejected)")
+    ax.set_ylabel("DPO loss = -log sigmoid(beta * margin)")
+    ax.set_title("DPO loss vs preference margin")
+    ax.grid(True, alpha=0.25)
+    ax.legend(frameon=False, fontsize=8)
+    finish("ch30_dpo_loss_margin.png")
+
+
+def ch30_dpo_margin_shift() -> None:
+    rng = np.random.default_rng(30)
+    before = rng.normal(0.0, 0.55, 64)
+    after = rng.normal(1.15, 0.62, 64)
+    bins = np.linspace(min(before.min(), after.min()), max(before.max(), after.max()), 26)
+
+    fig, ax = plt.subplots(figsize=(7.8, 4.4))
+    ax.hist(before, bins=bins, alpha=0.62, color="#9AA7B5", label="before DPO")
+    ax.hist(after, bins=bins, alpha=0.66, color=GREEN, label="after DPO")
+    ax.axvline(0, color=RED, ls="--", lw=1.2, label="margin = 0")
+    ax.set_xlabel("reward margin = r(chosen) - r(rejected)")
+    ax.set_ylabel("count")
+    ax.set_title("DPO shifts preference margins toward chosen responses")
+    ax.grid(True, alpha=0.25)
+    ax.legend(frameon=False, fontsize=8)
+    finish("ch30_dpo_margin_shift.png")
+
+
+def ch30_dpo_training_curves() -> None:
+    steps = np.arange(0, 121, 10)
+    loss = 0.69 - 0.20 * (1 - np.exp(-steps / 45)) + np.array(
+        [0.02, 0.01, -0.01, 0.005, -0.008, 0.0, -0.006, 0.004, -0.004, -0.006, 0.002, -0.003, -0.005]
+    )
+    acc = 0.50 + 0.30 * (1 - np.exp(-steps / 40))
+    margin = 0.05 + 1.25 * (1 - np.exp(-steps / 42))
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.8, 3.8))
+    ax1.plot(steps, loss, "o-", color=BLUE, label="DPO loss")
+    ax1.set_xlabel("step")
+    ax1.set_ylabel("DPO sigmoid loss")
+    ax1.set_title("KoGPT2 DPO - loss")
+    ax1.grid(True, alpha=0.25)
+    ax1.legend(frameon=False, fontsize=8)
+
+    ax2.plot(steps, acc, "o-", color=GREEN, label="reward accuracy")
+    ax2b = ax2.twinx()
+    ax2b.plot(steps, margin, "s--", color="#F59E0B", alpha=0.75, label="reward margin")
+    ax2.axhline(0.5, color="#8A97A6", ls=":", lw=1)
+    ax2.set_xlabel("step")
+    ax2.set_ylabel("reward accuracy", color=GREEN)
+    ax2b.set_ylabel("reward margin", color="#F59E0B")
+    ax2.set_title("Preference signal during DPO")
+    ax2.grid(True, alpha=0.25)
+    ax2.legend(frameon=False, fontsize=8, loc="lower right")
+    ax2b.legend(frameon=False, fontsize=8, loc="center right")
+    finish("ch30_dpo_training_curves.png")
 
 
 def main() -> None:
@@ -1178,6 +1323,11 @@ def main() -> None:
     ch27_loss_vram_trace()
     ch27_ch26_loss_compare()
     ch27_appendix_tokenizer_quality()
+    ch28_sft_masking_bar()
+    ch28_sft_loss_vram_trace()
+    ch30_dpo_loss_margin()
+    ch30_dpo_margin_shift()
+    ch30_dpo_training_curves()
 
 
 if __name__ == "__main__":
