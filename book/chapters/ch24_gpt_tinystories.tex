@@ -127,7 +127,7 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Loss \\
 21 & \ref{ch:20}장 + 분류 헤드 & (\ref{ch:20}장과 동일) & Yelp 이진 (다른 도메인) & \inlinecode{Linear(H,\ 2)} & \inlinecode{CrossEntropyLoss} \\
 22 & 작은 BERT (한국어, scratch) & \inlinecode{klue/bert-base} (가져옴) & 한국어 위키 paragraphs & MLM head & \inlinecode{CrossEntropyLoss} (masked 15\%) \\
 23 & \ref{ch:22}장 + 분류 헤드 & (\ref{ch:22}장과 동일) & NSMC 이진 (다른 도메인) & \inlinecode{Linear(H,\ 2)} & \inlinecode{CrossEntropyLoss} \\
-\textbf{24 (현재)} & \textbf{작은 GPT2 (직접, scratch)} & \textbf{BPE (직접 학습, vocab=2048)} & \textbf{TinyStories 30K stories} & \textbf{\inlinecode{Linear(H,\ V)} (LM head, weight tied)} & \textbf{\inlinecode{CrossEntropyLoss} (next-token, 거의 모든 자리)} \\
+\textbf{24 \(\leftarrow\) 여기} & \textbf{작은 GPT2 (직접, scratch)} & \textbf{BPE (직접 학습, vocab=2048)} & \textbf{TinyStories 30K stories} & \textbf{\inlinecode{Linear(H,\ V)} (LM head, weight tied)} & \textbf{\inlinecode{CrossEntropyLoss} (next-token, 거의 모든 자리)} \\
 25 (다음) & \inlinecode{gpt2} (124M, OpenAI WebText 사전학습) & BPE (GPT2 그대로) & TinyStories (\ref{ch:24}장과 동일) & \inlinecode{Linear(H,\ V)} (LM head 그대로) & \inlinecode{CrossEntropyLoss} (next-token) - \textbf{continual pretraining} \\
 \bottomrule
 \end{tabular}
@@ -138,15 +138,15 @@ Ch & 모델 & 토크나이저 & 데이터 & Output Head & Loss \\
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
-\section{\texorpdfstring{Phase 전환 --- Encoder (BERT) \(\to\) Decoder (GPT) 패러다임}{Phase 전환 --- Encoder (BERT) \textbackslash to Decoder (GPT) 패러다임}}
+\section{\texorpdfstring{Phase 전환 --- Encoder (BERT) \(\to\) Decoder (GPT) 패러다임}{Phase 전환 --- Encoder (BERT) to Decoder (GPT) 패러다임}}
 
-\ref{ch:07}--\ref{ch:23}장의 BERT 장들이 \emph{encoder + masked token 예측 + task head 부착 fine-tune} 패러다임이라면, Phase 4 (24--31장) 는 \emph{decoder + next-token 예측 + LM head 그대로 + SFT(behavior alignment)} 패러다임입니다. 본 장이 그 출발점입니다.
+\ref{ch:07}--\ref{ch:23}장의 BERT 장들이 \emph{encoder + masked token 예측 + task head 부착 fine-tune} 패러다임이라면, Phase 4 (\ref{ch:24}--\ref{ch:31}장) 는 \emph{decoder + next-token 예측 + LM head 그대로 + SFT(behavior alignment)} 패러다임입니다. 본 장이 그 출발점입니다.
 
-\begin{booktable}{24장 Phase 전환 - Encoder (BERT)에서 Decoder (GPT)로}{tab:ch24-02}
+\begin{booktable}{24장 Phase 전환 - Encoder (BERT) to Decoder (GPT) 패러다임 표}{tab:ch24-02}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
-축 & Phase 1·2·3 (BERT, \ref{ch:07}--\ref{ch:23}장) & \textbf{Phase 4 (GPT, 24--31장)} \\
+축 & Phase 1·2·3 (BERT, \ref{ch:07}--\ref{ch:23}장) & \textbf{Phase 4 (GPT, \ref{ch:24}--\ref{ch:31}장)} \\
 \midrule
 
 본체 & Encoder (양방향 attention) & \textbf{Decoder (causal / masked attention)} \\
@@ -161,21 +161,113 @@ Downstream 적응 & head 교체 + 본체 fine-tune (\emph{task 적응}) & \textb
 \end{booktable}
 
 \begin{quote}
-본 장은 그 \emph{출발점}입니다. 작은 GPT 를 처음부터 학습해 \emph{next-token 예측이 어떻게 generation 으로 이어지는지} 를 직접 봅니다. \ref{ch:25}장과 27장은 continual pretraining을, 28장은 SFT를, 30--31장은 DPO와 GRPO를 같은 decoder-only 계열 본체 위에 차례로 얹어 봅니다.
+본 장은 그 \emph{출발점} --- 작은 GPT 를 처음부터 학습해 \emph{next-token 예측이 어떻게 generation 으로 이어지는지} 를 직접 봅니다. \ref{ch:25}장 (대규모 사전학습 \inlinecode{gpt2} 를 TinyStories 로 \textbf{continual pretraining}) / \ref{ch:28}장 (SFT) / \ref{ch:30}--\ref{ch:31}장 (DPO / GRPO) 가 같은 본체 위에 차곡차곡 쌓여 갑니다.
+\end{quote}
+
+
+
+\section{\texorpdfstring{Phase 3 \(\to\) Phase 4 다리 --- \emph{왜 갑자기 decoder 인가, 그리고 생성형 AI 의 등장}}{Phase 3 to Phase 4 다리 --- 왜 갑자기 decoder 인가, 그리고 생성형 AI 의 등장}}
+
+\ref{ch:23}장 (한국어 BERT 분류) 에서 \ref{ch:24}장 (GPT) 로 넘어오면 \emph{왜 갑자기 encoder 를 버리고 decoder 로 가지?} 라는 의문이 듭니다. 그 사이를 잇는 큰 그림을 한 화면에 정리합니다.
+
+\subsection{Transformer 의 세 갈래 --- encoder / decoder / encoder-decoder}
+
+원래 Transformer (Vaswani et al. 2017, \emph{Attention Is All You Need}) 는 \emph{번역} 을 위한 \textbf{encoder-decoder} 구조였습니다. 이후 두 절반이 \emph{각자} 떨어져 나와 독립 계열이 됩니다.
+
+\begin{booktable}{24장 Transformer 의 세 갈래 - encoder / decoder / encoder-decoder 표}{tab:ch24-03}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+갈래 & attention & 대표 모델 & 잘하는 task & 본 커리큘럼 \\
+\midrule
+
+\textbf{Encoder-only} & 양방향 (bidirectional) & BERT, RoBERTa, DistilBERT, klue/bert-base & 분류·NER·추출형 QA (\emph{이해}) & \textbf{Phase 1-3 (\ref{ch:07}--\ref{ch:23}장)} \\
+\textbf{Decoder-only} & causal (좌\(\to\)오 마스킹) & GPT-2/3/4, LLaMA, Mistral, KoGPT2 & generation·in-context learning·SFT/RLHF (\emph{생성}) & \textbf{Phase 4 (\ref{ch:24}--\ref{ch:31}장)} \\
+\textbf{Encoder-Decoder (seq2seq)} & encoder 양방향 + decoder causal + \textbf{cross-attention} & T5, BART, mBART, KoBART, KE-T5 & 번역·요약·생성형 QA (\emph{변환}) & (본 커리큘럼은 미포함 --- 맥락만) \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{booktable}
+
+\begin{quote}
+본 커리큘럼은 \emph{encoder-only (이해)} \(\to\) \emph{decoder-only (생성)} 의 두 축을 직접 구현하며 잇습니다. \textbf{seq2seq} 는 \emph{입력 시퀀스를 출력 시퀀스로 변환} (번역·요약) 하는 제3의 길로, 두 절반을 다시 합치고 \emph{cross-attention} 으로 연결합니다 --- 본 커리큘럼에선 다루지 않지만 \emph{지형의 한 축} 으로 기억해 두세요.
+\end{quote}
+
+\subsection{왜 BERT 는 generation 이 어려운가}
+
+BERT 의 \emph{양방향} attention 은 토큰 \(i\) 가 \emph{좌·우 전부} 를 봅니다. 그래서 \emph{다음 토큰을 좌\(\to\)오로 하나씩 뽑는} autoregressive 생성에는 부적합합니다 --- 미래 토큰을 이미 보고 있으니 “다음을 예측” 이 성립하지 않습니다. BERT 가 일부만 \texttt{{[}MASK{]}} 로 가려 복원하는 (MLM) 것도 이 \emph{양방향 cheating} 을 막기 위함이었습니다 (\ref{ch:20}장).
+
+generation 을 하려면 둘 중 하나가 필요합니다:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{causal masking} --- 미래를 가려 \emph{좌\(\to\)오 순차 생성} 을 가능케 함 \(\to\) \textbf{decoder (GPT), 본 장부터}
+\item
+  \textbf{반복 denoise} --- 양방향을 유지한 채 \emph{마스킹 비율을 일반화} 해 병렬 생성 \(\to\) \textbf{diffusion LM (후속 선택 주제)}
+\end{itemize}
+
+\begin{quote}
+즉 BERT 의 양방향성은 \emph{이해} 엔 강점, \emph{순차 생성} 엔 약점입니다. 이 한 가지 차이가 decoder-only GPT와 diffusion LM이라는 두 생성 계열을 가릅니다. 본 원고에서는 먼저 GPT 계열을 끝까지 정리합니다.
+\end{quote}
+
+\subsection{attention 의 진화}
+
+\begin{booktable}{24장 attention 의 진화 표}{tab:ch24-04}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{@{}lll@{}}
+\toprule
+단계 & attention 방식 & 모델 \\
+\midrule
+
+양방향 self & 모든 위치가 서로를 봄 & BERT (encoder) \\
+\textbf{causal masked self} & 과거(좌)만 봄 \(\to\) 미래 누출 차단 & \textbf{GPT (decoder), 본 장} \\
+cross-attention & decoder 가 encoder 출력을 참조 & seq2seq (T5/BART) \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{booktable}
+
+\subsection{생성형 AI 등장 타임라인 (큰 흐름)}
+
+\begin{booktable}{24장 생성형 AI 등장 타임라인 (큰 흐름) 표}{tab:ch24-05}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{@{}lll@{}}
+\toprule
+연도 & 사건 & 의미 \\
+\midrule
+
+2017 & Transformer (\emph{Attention Is All You Need}) & encoder-decoder, attention 의 출발 \\
+2018 & BERT (encoder) / GPT-1 (decoder) & \emph{이해} 와 \emph{생성} 두 갈래 분기 \\
+2019 & GPT-2 & 큰 decoder 의 generation 품질 --- 본 장의 reference 모델 \\
+2020 & GPT-3 & \textbf{in-context learning} (예시만 줘도 task 수행, fine-tune 없이) \\
+2022 & InstructGPT / ChatGPT & \textbf{SFT + RLHF} 로 \emph{지시를 따르는} 정렬 (\ref{ch:28}장, \ref{ch:30}장, \ref{ch:31}장의 주제) \\
+2023+ & GPT-4 / LLaMA / Mistral / KoGPT 등 & decoder-only LLM 의 시대 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{booktable}
+
+\begin{quote}
+본 커리큘럼 Phase 4 (\ref{ch:24}--\ref{ch:31}장) 가 이 타임라인을 \emph{압축 재현} 합니다 --- \emph{작은 GPT 사전학습 (본 장)} \(\to\) \emph{continual pretraining (\ref{ch:25}장)} \(\to\) \emph{SFT (\ref{ch:28}장)} \(\to\) \emph{alignment (\ref{ch:30}--\ref{ch:31}장)}. 2017-2022 의 흐름을 손으로 한 번 따라가 보는 셈입니다.
+\end{quote}
+
+\begin{quote}
+\textbf{참고} --- \emph{T4 30분 룰 너머} 로 GPT/LLM scratch 학습을 더 키워 보고 싶다면 \href{https://github.com/FareedKhan-dev/train-llm-from-scratch}{FareedKhan-dev/train-llm-from-scratch} 가 좋은 출발점입니다. Transformer 를 PyTorch 로 직접 구현하고 \emph{13M \(\to\) 2B params} 까지 consumer GPU 로 학습하는 과정 + \textbf{GPU별 실용 모델 크기 표} (예: T4 16GB \(\approx\) 1.5-2B, RTX 4090 24GB \(\approx\) 4B, A100 40GB \(\approx\) 6-8B) 가 인상적입니다 --- 본 장의 약 3M 모델이 \emph{어디까지 커질 수 있는지} 의 감을 줍니다.
 \end{quote}
 
 
 
 \section{변경점: \ref{ch:23}장 대비}
 
-\begin{booktable}{24장 변경점 요약}{tab:ch24-03}
+\begin{booktable}{24장 변경점 요약}{tab:ch24-06}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
 축 & \ref{ch:23}장 (한국어 BERT 분류 fine-tune) & \ref{ch:24}장 (GPT scratch + TinyStories) \\
 \midrule
 
-\textbf{모델 패밀리} & Encoder (\inlinecode{BertForSequenceClassification}) & \textbf{Decoder (\inlinecode{GPT2LMHeadModel})} --- \emph{Phase 전환의 핵심} \\
+\textbf{모델 패밀리} & Encoder (\inlinecode{BertForSequenceClassification}) & \textbf{Decoder (\inlinecode{GPT2LMHeadModel})} \(\leftarrow\) \emph{Phase 전환의 핵심} \\
 사전학습 task & MLM (\ref{ch:22}장 산출물 본체 + 분류 head) & \textbf{CausalLM (next-token, from scratch)} \\
 토크나이저 & \inlinecode{klue/bert-base} WordPiece (가져옴, vocab 32K) & \textbf{BPE 직접 학습} (vocab 2,048) \\
 데이터 & NSMC 한국어 영화 리뷰 (이진 라벨) & \textbf{TinyStories 영어 short stories} (라벨 없음) \\
@@ -188,7 +280,7 @@ Loss & \inlinecode{CrossEntropyLoss} (분류, K=2) & \textbf{\inlinecode{CrossEn
 \end{booktable}
 
 \begin{quote}
-\textbf{변경점이 한꺼번에 많은 이유} --- Phase 가 바뀌는 \emph{전환 장}이라 \emph{축 자체}가 새로 정의됩니다. \ref{ch:25}장부터는 다시 \emph{한 가지 축}만 바뀝니다. \ref{ch:25}장은 본체 출발점이 scratch에서 사전학습 모델로 바뀌고, 26장은 언어가 바뀌며, 28장은 학습 단계가 pretraining에서 SFT로 바뀝니다.
+\textbf{변경점이 한꺼번에 많은 이유} --- Phase 가 바뀌는 \emph{전환 장} 라 \emph{축 자체} 가 새로 정의됩니다. \ref{ch:25}장 부터는 다시 \emph{한 가지 축} 만 바뀝니다 (\ref{ch:25}장: 본체 출발점 = scratch \(\to\) 사전학습 모델, 같은 \emph{continual pretraining} task / \ref{ch:26}장: 언어 (한국어 scratch) / \ref{ch:27}장: 한국어 continual pretraining / \ref{ch:28}장: 학습 단계 = pretraining \(\to\) SFT, \texttt{labels{[}prompt{]}\ =\ -100}).
 \end{quote}
 
 
@@ -218,16 +310,16 @@ L_{\text{CLM}} = -\frac{1}{n-1} \sum_{i=1}^{n-1} \log P(x_{i+1} \mid x_1, \dots,
 
 \subsection{숫자로 감 잡기 (vocab=2048)}
 
-\begin{booktable}{24장 숫자로 감 잡기 (vocab=2048) 표}{tab:ch24-04}
+\begin{booktable}{24장 숫자로 감 잡기 (vocab=2048) 표}{tab:ch24-07}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
 모델 상태 & 정답 토큰 확률 & \(-\log p\) \\
 \midrule
 
-균등 추측 (random init 직후) & \(1/2048 \approx 4.88 \times 10^{-4}\) & \textbf{7.62} --- random baseline \\
+균등 추측 (random init 직후) & \(1/2048 \approx 4.88 \times 10^{-4}\) & \textbf{7.62} \(\leftarrow\) random baseline \\
 약하게 학습 (정답 확률 0.02) & \(0.02\) & 3.91 \\
-잘 학습된 작은 GPT (정답 확률 0.05-0.15) & \(0.05\) - \(0.15\) & \textbf{1.9 - 3.0} --- 이 장 목표 영역 \\
+잘 학습된 작은 GPT (정답 확률 0.05-0.15) & \(0.05\) - \(0.15\) & \textbf{1.9 - 3.0} \(\leftarrow\) 이 장 목표 영역 \\
 큰 사전학습 GPT (정답 확률 0.3+) & \(0.3\) & 1.20 \\
 완벽 (정답 확률 1.0) & \(1.0\) & 0.00 \\
 \bottomrule
@@ -249,7 +341,7 @@ L_{\text{CLM}} = -\frac{1}{n-1} \sum_{i=1}^{n-1} \log P(x_{i+1} \mid x_1, \dots,
 
 \(\text{PPL} = e^{L}\) --- \emph{다음 토큰을 평균 몇 후보 중에서 고민하는가}:
 
-\begin{booktable}{24장 Perplexity 표}{tab:ch24-05}
+\begin{booktable}{24장 Perplexity 표}{tab:ch24-08}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -258,7 +350,7 @@ CLM loss & PPL & 해석 \\
 
 7.62 & 2,048 & 균등 (전체 vocab) \\
 4.0 & 55 & 약 50 개 후보 \\
-2.5 & 12 & 약 12 개 후보 --- 본 장 목표 \\
+2.5 & 12 & 약 12 개 후보 \(\leftarrow\) 본 장 목표 \\
 1.0 & 2.7 & 거의 결정적 \\
 \bottomrule
 \end{tabular}
@@ -275,7 +367,7 @@ MLM 의 \(\ln(30522) \approx 10.33\) random baseline 과 같은 직관입니다.
 
 \ref{ch:20}·\ref{ch:22}장의 MLM 에서 봤던 \inlinecode{labels\ =\ -100} ignore\_index 트릭이 GPT CausalLM 사전학습에서도 등장하지만, \textbf{적용 자리가 정반대} 입니다.
 
-\begin{booktable}{24장 labels = -100 thread 환기 - MLM 의 15\% 만 vs CausalLM 의 거의 모든 자리 표}{tab:ch24-06}
+\begin{booktable}{24장 labels = -100 thread 환기 - MLM 의 15\% 만 vs CausalLM 의 거의 모든 자리 표}{tab:ch24-09}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}llll@{}}
 \toprule
@@ -283,8 +375,8 @@ MLM 의 \(\ln(30522) \approx 10.33\) random baseline 과 같은 직관입니다.
 \midrule
 
 MLM 사전학습 & \ref{ch:20}장 (영어), \ref{ch:22}장 (한국어) & 선택된 약 15\% 만 원본 token id, 나머지 = \inlinecode{-100} & \emph{가려진 자리만} \\
-\textbf{GPT CausalLM 사전학습} & \textbf{\ref{ch:24}장 (영어, 본 장), 26장 (한국어)} & \textbf{\inlinecode{input\_ids.clone()} - pad 만 \inlinecode{-100}} & \textbf{거의 \emph{전 자리}} \\
-SFT / Instruction Tuning & 28장 (한국어 KoGPT2 SFT) & \textbf{prompt 부분 = \inlinecode{-100}}, \emph{답변 토큰만} 원본 id & \emph{답변 부분만} \\
+\textbf{GPT CausalLM 사전학습} & \textbf{\ref{ch:24}장 (영어, 본 장), \ref{ch:26}장 (한국어)} & \textbf{\inlinecode{input\_ids.clone()} - pad 만 \inlinecode{-100}} & \textbf{거의 \emph{전 자리}} \\
+SFT / Instruction Tuning & \ref{ch:28}장 (한국어 KoGPT2 SFT) & \textbf{prompt 부분 = \inlinecode{-100}}, \emph{답변 토큰만} 원본 id & \emph{답변 부분만} \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -294,7 +386,7 @@ SFT / Instruction Tuning & 28장 (한국어 KoGPT2 SFT) & \textbf{prompt 부분 
 같은 \inlinecode{-100} 트릭, \emph{적용 자리만 정반대}. MLM 은 \emph{대부분을 가리고 일부만 학습}, GPT 사전학습은 \emph{거의 가리지 않음}, SFT 는 \emph{prompt 만 가림}. 한 step 에 학습되는 토큰 수만 봐도 \emph{GPT 사전학습은 MLM 대비 약 5-6배 효율} (15\% vs 거의 100\%).
 \end{quote}
 
-본 장에서는 \inlinecode{DataCollatorForLanguageModeling(mlm=False)} 이 자동으로 \inlinecode{labels\ =\ input\_ids.clone()} 을 만들어 줍니다. 뒤에 collator 출력 셀에서 직접 확인하겠습니다. 28장의 \emph{왜 모델이 instruction 을 따라가게 되는가} 는 \emph{한 줄 코드 \texttt{labels{[}prompt\_mask{]}\ =\ -100}} 로 정확히 설명되는데, 그 코드를 이해할 토대가 \emph{이 장의 collator 출력} 입니다.
+본 장에서는 \inlinecode{DataCollatorForLanguageModeling(mlm=False)} 이 자동으로 \inlinecode{labels\ =\ input\_ids.clone()} 을 만들어 줍니다 --- 뒤에 collator 출력 셀에서 직접 확인하겠습니다. \ref{ch:28}장의 \emph{왜 모델이 instruction 을 따라가게 되는가} 는 \emph{한 줄 코드 \texttt{labels{[}prompt\_mask{]}\ =\ -100}} 로 정확히 설명되는데, 그 코드를 이해할 토대가 \emph{이 장의 collator 출력} 입니다.
 
 
 
@@ -304,17 +396,17 @@ SFT / Instruction Tuning & 28장 (한국어 KoGPT2 SFT) & \textbf{prompt 부분 
 
 Phase 4 GPT 시대는 \emph{fine-tune} 한 단어가 \emph{여러 의미} 로 섞여 쓰입니다. 학술적으로는 \textbf{네 단계} 로 분리됩니다.
 
-\begin{booktable}{24장 GPT 시대의 학습은 네 단계 - 용어가 BERT 와 다릅니다 표}{tab:ch24-07}
+\begin{booktable}{24장 GPT 시대의 학습은 네 단계 - 용어가 BERT 와 다릅니다 표}{tab:ch24-10}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lllll@{}}
 \toprule
 단계 & 정확 용어 & 의미 & 학습 신호 & 본 커리큘럼 \\
 \midrule
 
-1 & \textbf{Pretraining} (사전학습) & 일반 코퍼스 위에 random init 본체부터 학습 & 모든 토큰 (\inlinecode{labels\ =\ input\_ids}) & \textbf{\ref{ch:24}장} (영어 scratch, TinyStories), \textbf{26장} (한국어 scratch) \\
+1 & \textbf{Pretraining} (사전학습) & 일반 코퍼스 위에 random init 본체부터 학습 & 모든 토큰 (\inlinecode{labels\ =\ input\_ids}) & \textbf{\ref{ch:24}장} (영어 scratch, TinyStories), \textbf{\ref{ch:26}장} (한국어 scratch) \\
 2 & \textbf{Continual pretraining} (계속 사전학습 / continual learning) & \emph{사전학습된 본체} 를 \emph{새 데이터} 로 \emph{같은 CausalLM task} 더 학습. \textbf{head 그대로, task 그대로, 데이터만 새로} & 모든 토큰 (pretraining 과 동일) & \textbf{\ref{ch:25}장} (\inlinecode{gpt2} + TinyStories) \\
-3 & \textbf{SFT} (Supervised Fine-Tuning / Instruction tuning) & instruction-response 쌍으로 \emph{행동 정렬}. \texttt{labels{[}prompt{]}\ =\ -100} 으로 답변 부분만 학습 & \textbf{답변 토큰만} & \textbf{28장} (KoGPT2 + KoAlpaca) \\
-4 & \textbf{Alignment} (DPO / RLHF / GRPO) & preference 또는 verifier reward 로 \emph{선호 정렬} & preference log-likelihood ratio / RL advantage & \textbf{30장} (DPO), \textbf{31장} (GRPO) \\
+3 & \textbf{SFT} (Supervised Fine-Tuning / Instruction tuning) & instruction-response 쌍으로 \emph{행동 정렬}. \texttt{labels{[}prompt{]}\ =\ -100} 으로 답변 부분만 학습 & \textbf{답변 토큰만} & \textbf{\ref{ch:28}장} (KoGPT2 + KoAlpaca) \\
+4 & \textbf{Alignment} (DPO / RLHF / GRPO) & preference 또는 verifier reward 로 \emph{선호 정렬} & preference log-likelihood ratio / RL advantage & \textbf{\ref{ch:30}장} (DPO), \textbf{\ref{ch:31}장} (GRPO) \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -334,24 +426,24 @@ Phase 4 GPT 시대는 \emph{fine-tune} 한 단어가 \emph{여러 의미} 로 �
 
 \textbf{다른 점은 \emph{데이터 형식} 과 \emph{어느 토큰에 학습 신호를 주는가}} --- \inlinecode{labels\ =\ -100} 자리만 변함.
 
-\begin{booktable}{24장 GPT 시대의 학습은 네 단계 - 용어가 BERT 와 다릅니다 표}{tab:ch24-08}
+\begin{booktable}{24장 GPT 시대의 학습은 네 단계 - 용어가 BERT 와 다릅니다 표}{tab:ch24-11}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
 단계 & 데이터 & \inlinecode{labels\ =\ -100} 자리 \\
 \midrule
 
-Pretraining (24·26장) & 일반 텍스트 & pad 만 \\
+Pretraining (\ref{ch:24}·\ref{ch:26}장) & 일반 텍스트 & pad 만 \\
 \textbf{Continual pretraining (\ref{ch:25}장)} & \textbf{새 도메인 텍스트} & \textbf{pad 만 (Pretraining 과 동일)} \\
-SFT (28장) & instruction + response & \textbf{prompt 부분} \\
-Alignment (30--31장) & preference 쌍 / verifier reward & (RL 내부) \\
+SFT (\ref{ch:28}장) & instruction + response & \textbf{prompt 부분} \\
+Alignment (\ref{ch:30}·\ref{ch:31}장) & preference 쌍 / verifier reward & (RL 내부) \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
 \end{booktable}
 
 \begin{quote}
-\textbf{BERT 의 “fine-tune” 은 \emph{task 적응} 한 가지였지만, GPT 의 “fine-tune” 은 \emph{continual pretraining / SFT / alignment} 셋이 섞인 통칭입니다}. 정확히 말하려면 단계별 용어를 구분해야 합니다. 본 장은 단계 1 (사전학습) 그 자체입니다. \ref{ch:25}장에서 단계 2 (continual pretraining) 가, 28장에서 단계 3 (SFT) 이, 30--31장에서 단계 4 (alignment) 가 본격적으로 등장합니다.
+\textbf{BERT 의 “fine-tune” 은 \emph{task 적응} 한 가지였지만, GPT 의 “fine-tune” 은 \emph{continual pretraining / SFT / alignment} 셋이 섞인 통칭}. 정확히 말하려면 단계별 용어를 구분합니다. 본 장은 단계 1 (사전학습) 그 자체. \ref{ch:25}장에서 단계 2 (continual pretraining) 가, \ref{ch:28}장에서 단계 3 (SFT --- 진짜 \emph{행동 정렬}) 이, \ref{ch:30}--\ref{ch:31}장에서 단계 4 (alignment) 가 본격 등장합니다.
 \end{quote}
 
 \begin{quote}
@@ -364,7 +456,7 @@ Alignment (30--31장) & preference 쌍 / verifier reward & (RL 내부) \\
 
 GPT-2 와 같은 종류 (byte-level BPE) 의 작은 vocab 을 직접 학습합니다. \ref{ch:19}장에서 봤던 WordPiece / WordLevel 토크나이저 학습 절차의 \emph{BPE 판}.
 
-\begin{booktable}{24장 토크나이저 노트 표}{tab:ch24-09}
+\begin{booktable}{24장 토크나이저 노트 표}{tab:ch24-12}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -373,7 +465,7 @@ GPT-2 와 같은 종류 (byte-level BPE) 의 작은 vocab 을 직접 학습합�
 
 WordLevel & 공백 + 빈도 - 가장 단순 & \ref{ch:19}장 (직접 학습) \\
 WordPiece & 빈도 기반 subword (BERT) & \ref{ch:07}--\ref{ch:23}장 (BERT 장들 - 가져옴), \ref{ch:19}장 (직접 학습) \\
-\textbf{BPE (byte-level)} & \textbf{빈도 높은 byte 쌍 반복 병합 (GPT-2)} & \textbf{\ref{ch:24}장 (본 장, 직접 학습), 25--27장 (GPT 장들)} \\
+\textbf{BPE (byte-level)} & \textbf{빈도 높은 byte 쌍 반복 병합 (GPT-2)} & \textbf{\ref{ch:24}장 (본 장, 직접 학습), \ref{ch:25}--\ref{ch:26}장 (GPT 장들)} \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -849,20 +941,19 @@ print(
 
 \noindent\textbf{출력 형태.}
 \begin{lstlisting}[style=bookoutput]
-tokenizer:        byte-level BPE trained on TinyStories
-vocab_size:       2,048
-special token:    <|endoftext|>
-tokens / input_ids: [...]
+total positions:   ...
+ignored (-100):    pad positions only
+train signal:      almost every token
 \end{lstlisting}
 \par\vspace{0.9em}
 
 
 
 \begin{quote}
-\textbf{\inlinecode{-100} thread 환기} - MLM 은 \emph{마스킹된 자리만} 학습, CausalLM 은 \emph{거의 모든 자리} 학습합니다. 같은 PyTorch \inlinecode{CrossEntropyLoss(ignore\_index=-100)} 트릭이 \emph{적용 자리만 정반대}입니다. 28장 (SFT) 에서는 \emph{prompt 자리만 -100} 으로 두어 같은 트릭을 세 번째 방식으로 사용합니다. 그 한 줄 코드가 \emph{모델이 instruction 을 따라가게 만드는 핵심} 입니다.
+\textbf{\inlinecode{-100} thread 환기} - MLM 은 \emph{마스킹된 자리만} 학습, CausalLM 은 \emph{거의 모든 자리} 학습. 같은 PyTorch \inlinecode{CrossEntropyLoss(ignore\_index=-100)} 트릭이 \emph{적용 자리만 정반대}. \ref{ch:28}장 (SFT) 에서는 \emph{prompt 자리만 -100} - 같은 트릭의 세 번째 적용. 그 한 줄 코드가 \emph{모델이 instruction 을 따라가게 만드는 핵심} 입니다.
 \end{quote}
 
-본 장의 collator 셋업이 \emph{그 토대}입니다. \inlinecode{labels\ =\ input\_ids.clone()} 의 직관을 손에 익혀 두면 28장의 \texttt{labels{[}:prompt\_len{]}\ =\ -100} 가 단번에 이해됩니다.
+본 장의 collator 셋업이 \emph{그 토대} - \inlinecode{labels\ =\ input\_ids.clone()} 의 직관을 손에 익혀 두면 \ref{ch:28}장의 \texttt{labels{[}:prompt\_len{]}\ =\ -100} 가 단번에 이해됩니다.
 
 
 
@@ -947,10 +1038,9 @@ print(
 
 \noindent\textbf{출력 형태.}
 \begin{lstlisting}[style=bookoutput]
-tokenizer:        byte-level BPE trained on TinyStories
-vocab_size:       2,048
-special token:    <|endoftext|>
-tokens / input_ids: [...]
+model:             GPT2LMHeadModel / AutoModelForCausalLM
+parameters:        ...
+lm_head:           Linear(H, vocab_size)
 \end{lstlisting}
 \par\vspace{0.9em}
 
@@ -1020,9 +1110,8 @@ for p in PROMPTS:
 
 \noindent\textbf{출력 형태.}
 \begin{lstlisting}[style=bookoutput]
-tokenizer:        byte-level BPE trained on TinyStories
-vocab_size:       2,048
-special token:    <|endoftext|>
+tokenizer:        ...
+vocab_size:       ...
 tokens / input_ids: [...]
 \end{lstlisting}
 \par\vspace{0.9em}
@@ -1160,9 +1249,9 @@ if torch.cuda.is_available():
 
 \noindent\textbf{출력 형태.}
 \begin{lstlisting}[style=bookoutput]
-PyTorch:        2.x.x
-CUDA available: True
-GPU:            Tesla T4
+device : cuda  (Tesla T4)  # or mps/cpu depending on runtime
+torch  : ...
+fp16   : True
 \end{lstlisting}
 \par\vspace{0.9em}
 
@@ -1215,12 +1304,6 @@ ax2.grid(True, alpha=0.3); ax2.legend()
 plt.tight_layout(); plt.show()
 \end{lstlisting}
 
-\begin{bookfigurelabel}[H]{작은 GPT의 TinyStories 학습 손실과 VRAM 추적}{fig:ch24-loss-vram-trace}
-\includegraphics[width=0.88\linewidth]{assets/figures/ch24_loss_vram_trace.png}
-\end{bookfigurelabel}
-
-\textbf{그림 읽기} --- 그림~\ref{fig:ch24-loss-vram-trace}의 왼쪽 패널은 scratch 모델이 \inlinecode{ln(2048)} 근처의 무작위 기준선에서 출발해 TinyStories의 next-token 분포를 빠르게 좁혀 가는 모습을 보여줍니다. 오른쪽 패널은 같은 학습 중 VRAM 사용량이 T4 기준으로 안정적인 범위에 머무는지 확인하는 용도입니다.
-
 
 
 \textbf{관전 포인트} - 학습 첫 step loss 가 약 7.6 (random baseline \inlinecode{ln(2048)}) 부근에서 시작해 \emph{수백 step 안에 약 4-5} 로 빠르게 떨어지고, 1500 step 끝에 \emph{약 2.5-3.0} 부근에서 안정화되면 정상. perplexity 로 환산하면 vocab 2,048 중 \emph{약 12-20 개 후보} 로 좁힌 상태 - 다음 토큰을 \emph{어느 정도 결정적} 으로 뽑는 수준.
@@ -1229,7 +1312,7 @@ plt.tight_layout(); plt.show()
 
 \section{\texorpdfstring{학습 \emph{후} generation + before/after 비교}{학습 후 generation + before/after 비교}}
 
-같은 \inlinecode{PROMPTS\ /\ GEN\_KWARGS} 로 학습 후 모델에서 다시 생성하고, 앞에서 저장한 학습 전 결과와 나란히 비교합니다. \textbf{이 장의 합격 기준}: 학습 후 텍스트가 \emph{전} 보다 명확히 \emph{영어 문장} 에 가까워졌는가 - \ref{ch:20}·\ref{ch:22}장의 \emph{사전·사후 {[}MASK{]} top-5} 비교의 \emph{generation 판}.
+같은 \inlinecode{PROMPTS\ /\ GEN\_KWARGS} 로 학습 후 모델에서 다시 생성하고, §5 의 학습 전 결과와 나란히 비교합니다. \textbf{이 장의 합격 기준}: 학습 후 텍스트가 \emph{전} 보다 명확히 \emph{영어 문장} 에 가까워졌는가 - \ref{ch:20}·\ref{ch:22}장의 \emph{사전·사후 {[}MASK{]} top-5} 비교의 \emph{generation 판}.
 
 
 
@@ -1273,9 +1356,8 @@ for p, before, after in zip(PROMPTS, before_outputs, after_outputs):
 
 \noindent\textbf{출력 형태.}
 \begin{lstlisting}[style=bookoutput]
-tokenizer:        byte-level BPE trained on TinyStories
-vocab_size:       2,048
-special token:    <|endoftext|>
+tokenizer:        ...
+vocab_size:       ...
 tokens / input_ids: [...]
 \end{lstlisting}
 \par\vspace{0.9em}
@@ -1411,7 +1493,7 @@ Running the cell in Colab prints the corresponding string or table.
 \end{quote}
 
 \begin{quote}
-\ref{ch:25}장이 이 격차를 \emph{데이터 축을 통제하고} 좁히는 장입니다. \inlinecode{gpt2} (124M) 의 사전학습 \emph{위에} 같은 TinyStories 30K 로 \textbf{continual pretraining}을 수행합니다. \emph{대규모 일반 사전학습 모델을 작은 도메인 데이터로 적응}시킬 때의 generation 품질이, 이 장의 from-scratch 작은 GPT 와 어떻게 다른지 직접 비교합니다.
+\ref{ch:25}장 가 이 격차를 \emph{데이터 축을 통제하고} 좁히는 장입니다 - \inlinecode{gpt2} (124M) 의 사전학습 \emph{위에} 같은 TinyStories 30K 로 \textbf{continual pretraining}. \emph{대규모 일반 사전학습 모델을 작은 도메인 데이터로 적응} 시킬 때의 generation 품질이, 우리 from-scratch 작은 GPT 와 어떻게 다른지 직접 비교.
 \end{quote}
 
 
@@ -1442,9 +1524,8 @@ for c in configs:
 
 \noindent\textbf{출력 형태.}
 \begin{lstlisting}[style=bookoutput]
-tokenizer:        byte-level BPE trained on TinyStories
-vocab_size:       2,048
-special token:    <|endoftext|>
+tokenizer:        ...
+vocab_size:       ...
 tokens / input_ids: [...]
 \end{lstlisting}
 \par\vspace{0.9em}
@@ -1456,7 +1537,7 @@ tokens / input_ids: [...]
 \begin{itemize}
 \tightlist
 \item
-  \inlinecode{temperature} ↑ \(\to\) logits 분포 \emph{평탄화} \(\to\) 다양성 ↑, 일관성 ↓
+  \inlinecode{temperature} 증가 \(\to\) logits 분포 \emph{평탄화} \(\to\) 다양성 증가, 일관성 감소
 \item
   \inlinecode{top\_k=20} \(\to\) 매 step 후보를 \emph{상위 20 개} 로만 한정 \(\to\) 안전하지만 반복적
 \item
@@ -1469,7 +1550,7 @@ tokens / input_ids: [...]
 
 \section{이 장에 등장한 라이브러리·함수}
 
-\begin{booktable}{24장 새로 등장한 라이브러리}{tab:ch24-10}
+\begin{booktable}{24장 새로 등장한 라이브러리}{tab:ch24-13}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1478,11 +1559,11 @@ tokens / input_ids: [...]
 
 \inlinecode{transformers.GPT2Config} & GPT-2 구조 hyperparam (n\_layer, n\_head, n\_embd, n\_positions, ...) & \ref{ch:25}장 - \inlinecode{gpt2} 사전학습 config 그대로 로드 \\
 \inlinecode{transformers.GPT2LMHeadModel} & decoder + LM head 내장, causal attention 자동 처리 & \ref{ch:25}장 - \inlinecode{AutoModelForCausalLM.from\_pretrained("gpt2")} \\
-\inlinecode{transformers.GPT2LMHeadModel(config)} (random init) & from scratch 사전학습 모델 생성 & 26장 - 한국어 TinyStories scratch \\
-\inlinecode{tokenizers.BPE\ +\ ByteLevel} & byte-level BPE 토크나이저 직접 학습 & 26장 - 한국어 BBPE \\
-\inlinecode{DataCollatorForLanguageModeling(mlm=False)} & CausalLM collator - \inlinecode{labels\ =\ input\_ids.clone()} 자동 & 25--27장 동일 / 28장 SFT 는 \emph{\inlinecode{-100} 자리만 다름} \\
-\inlinecode{group\_texts} 패턴 (HF run\_clm.py 표준) & 가변 길이 텍스트 \(\to\) 고정 length 토큰 블록 스트림 & 25--27장 동일 \\
-\inlinecode{model.generate(do\_sample=True,\ ...)} & sampling-based text generation (temperature / top\_k / top\_p) & 25--31장 전반에서 활용 \\
+\inlinecode{transformers.GPT2LMHeadModel(config)} (random init) & from scratch 사전학습 모델 생성 & \ref{ch:26}장 - 한국어 TinyStories scratch \\
+\inlinecode{tokenizers.BPE\ +\ ByteLevel} & byte-level BPE 토크나이저 직접 학습 & \ref{ch:26}장 - 한국어 BBPE \\
+\inlinecode{DataCollatorForLanguageModeling(mlm=False)} & CausalLM collator - \inlinecode{labels\ =\ input\_ids.clone()} 자동 & \ref{ch:25}--\ref{ch:26}장 동일 / \ref{ch:28}장 SFT 는 \emph{\inlinecode{-100} 자리만 다름} \\
+\inlinecode{group\_texts} 패턴 (HF run\_clm.py 표준) & 가변 길이 텍스트 \(\to\) 고정 length 토큰 블록 스트림 & \ref{ch:25}--\ref{ch:26}장 동일 \\
+\inlinecode{model.generate(do\_sample=True,\ ...)} & sampling-based text generation (temperature / top\_k / top\_p) & \ref{ch:25}--\ref{ch:30}장 전반에서 활용 \\
 \texttt{\textless{}\textbar{}endoftext\textbar{}\textgreater{}} 단일 special token & GPT-2 컨벤션 (bos = eos = pad 겸용) & \ref{ch:25}장 - 같은 컨벤션 \\
 \bottomrule
 \end{tabular}
@@ -1503,7 +1584,7 @@ tokens / input_ids: [...]
 \item
   학습 첫 step loss 가 \(\ln(2048) \approx 7.62\) 가 아니라 \emph{5.0} 이라면 무엇을 의심해야 하나요? \emph{15.0} 이라면?
 \item
-  28장 (SFT) 에서는 \texttt{labels{[}:prompt\_len{]}\ =\ -100} 한 줄로 \emph{prompt 부분만 학습 신호에서 제외} 합니다. 이 장의 collator 출력 (거의 모든 자리가 학습 신호) 과 비교해 \emph{왜 이 한 줄이 모델이 instruction 을 따라가게 만드는지} 설명해 보세요.
+  \ref{ch:28}장 (SFT) 에서는 \texttt{labels{[}:prompt\_len{]}\ =\ -100} 한 줄로 \emph{prompt 부분만 학습 신호에서 제외} 합니다. 이 장의 collator 출력 (거의 모든 자리가 학습 신호) 과 비교해 \emph{왜 이 한 줄이 모델이 instruction 을 따라가게 만드는지} 설명해 보세요.
 \end{enumerate}
 
 
@@ -1541,7 +1622,7 @@ DataCollatorForLanguageModeling(tokenizer, mlm=False)
 
 \textbf{TinyStories 는 \emph{합성된 simple 스토리} 라 \emph{generation 시연 가치} 가 우선} 인 데이터입니다. \emph{진정한 일반 도메인 사전학습} 의 의미에서는 Wikitext-103 보다 약하지만, 본 장의 목적은 \emph{작은 모델로 generation 이 어떻게 동작하는지를 직접 보는 것} - 일반 위키 (Wikitext-103) 로 같은 셋업을 돌리면 3M 모델이 \emph{문장 구조를 학습하기 전에 학습이 끝남}. TinyStories 의 단순한 어휘·문법 덕분에 \emph{작은 모델로도 grammatical 한 생성이 가능} 합니다.
 
-\ref{ch:25}장이 그 \emph{trade-off 의 반대편} 을 다룹니다. \emph{큰 모델 (gpt2 124M) + 대규모 일반 코퍼스 (WebText)} 의 사전학습된 본체를 TinyStories 로 \textbf{continual pretraining}합니다. \emph{작은 + 합성 도메인 from-scratch} vs \emph{큰 + 일반 도메인 사전학습 후 continual pretraining} 의 generation 품질 격차가 핵심 비교입니다.
+\ref{ch:25}장 가 그 \emph{trade-off 의 반대편} 을 다룹니다 - \emph{큰 모델 (gpt2 124M) + 대규모 일반 코퍼스 (WebText)} 의 사전학습된 본체를 TinyStories 로 \textbf{continual pretraining}. \emph{작은 + 합성 도메인 from-scratch} vs \emph{큰 + 일반 도메인 사전학습 후 continual pretraining} 의 generation 품질 격차가 핵심 비교.
 
 \end{faqBox}
 
@@ -1592,9 +1673,9 @@ model.lm_head.weight = model.transformer.wte.weight
 \begin{itemize}
 \tightlist
 \item
-  \textbf{파라미터 절약}: \texttt{vocab\_size\ \$\textbackslash{}times\$\ hidden\_size} 만큼 (본 장: 2,048 \(\times\) 256 = 524,288 = 약 0.5M params). 전체 3M 모델의 약 17\% - 작은 모델에선 비중이 큼.
+  \textbf{파라미터 절약}: \(\texttt{vocab\_size} \times \texttt{hidden\_size}\) 만큼입니다. 본 장에서는 \(2{,}048 \times 256 = 524{,}288\), 즉 약 0.5M params 입니다. 전체 3M 모델의 약 17\%라 작은 모델에서는 비중이 큽니다.
 \item
-  \textbf{학습 안정}: input 과 output 이 \emph{같은 임베딩 공간} 을 공유 \(\to\) 일관성 ↑.
+  \textbf{학습 안정}: input 과 output 이 \emph{같은 임베딩 공간} 을 공유 \(\to\) 일관성이 높아집니다.
 \end{itemize}
 
 GPT-2 의 기본값. 우리 모델도 자동으로 적용됩니다 (\inlinecode{config.tie\_word\_embeddings=True}).
@@ -1636,7 +1717,7 @@ model.generate(
 
 본 장의 collator 출력에서 봤듯 CausalLM 사전학습은 \emph{pad 토큰 자리만} \inlinecode{-100} (그것도 \inlinecode{group\_texts} 로 chunk 길이가 모두 같으면 pad 도 없음). 거의 안 쓰임.
 
-하지만 같은 트릭이 \textbf{28장 (SFT, Instruction Tuning)} 에서 \emph{결정적 한 줄} 로 부활합니다:
+하지만 같은 트릭이 \textbf{\ref{ch:28}장 (SFT, Instruction Tuning)} 에서 \emph{결정적 한 줄} 로 부활합니다:
 
 \Needspace{9\baselineskip}
 \begin{lstlisting}
@@ -1651,7 +1732,7 @@ labels[:prompt_len] = [-100] * prompt_len
 
 이 한 줄로 모델은 \emph{prompt 토큰을 외우지 않고 response 만 학습} - 같은 instruction 에 대한 \emph{다양한 response} 가 학습 가능하고, 추론 시에는 \emph{주어진 instruction 에 대해 response 를 생성} 하게 됩니다. \emph{모델이 instruction 을 따라간다} 는 게 이 한 줄의 효과.
 
-본 장의 collator 출력 (거의 모든 자리 = 학습 신호) 을 손에 익혀 두면 28장의 \texttt{labels{[}:prompt\_len{]}\ =\ -100} 가 단번에 이해됩니다.
+본 장의 collator 출력 (거의 모든 자리 = 학습 신호) 을 손에 익혀 두면 \ref{ch:28}장의 \texttt{labels{[}:prompt\_len{]}\ =\ -100} 가 단번에 이해됩니다.
 
 \end{faqBox}
 
@@ -1659,7 +1740,7 @@ labels[:prompt_len] = [-100] * prompt_len
 
 \ref{ch:25}장 = \emph{OpenAI 가 사전학습한 \inlinecode{gpt2} (124M params, WebText 약 40GB) 를 TinyStories 로} \textbf{continual pretraining} (같은 CausalLM task, 같은 LM head --- \emph{task adaptation 의미의 fine-tune 이 아님}). 본 장의 \emph{작은 from-scratch 모델} 과 \emph{완전 반대 출발점}:
 
-\begin{booktable}{24장 FAQ 표}{tab:ch24-11}
+\begin{booktable}{24장 FAQ 표}{tab:ch24-14}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{@{}lll@{}}
 \toprule
@@ -1677,7 +1758,7 @@ Generation 품질 & grammatical 한 동화 풍 영어 & \textbf{자연스러운 
 \end{adjustbox}
 \end{booktable}
 
-\textbf{핵심 메시지}: \emph{대규모 일반 사전학습된 본체} + \emph{작은 도메인 continual pretraining} 이 \emph{작은 from-scratch 모델} 보다 \emph{빠르게, 그리고 좋게} 도달합니다. \emph{왜 실무는 보통 from-scratch 가 아니라 사전학습 모델을 가져와 새 데이터로 계속 학습하거나 SFT 하는가} 의 답입니다. 단계 3 SFT 는 28장에서 본격적으로 다룹니다.
+\textbf{핵심 메시지}: \emph{대규모 일반 사전학습된 본체} + \emph{작은 도메인 continual pretraining} 이 \emph{작은 from-scratch 모델} 보다 \emph{빠르게, 그리고 좋게} 도달합니다. \emph{왜 실무는 보통 from-scratch 가 아니라 사전학습 모델을 가져와 새 데이터로 계속 학습하거나 SFT 하는가} 의 답. (단계 3 SFT 는 \ref{ch:28}장에서 본격.)
 \end{faqBox}
 
 
@@ -1699,7 +1780,7 @@ Generation 품질 & grammatical 한 동화 풍 영어 & \textbf{자연스러운 
 \item
   작은 데이터 + 큰 사전학습 모델 = \emph{왜 실무가 from-scratch 가 아니라 사전학습 모델 위에 계속 학습 패턴인가} 의 정량 답변
 \item
-\emph{진짜 task adaptation 의미의 fine-tune (instruction tuning)} 은 28장 SFT 에서 본격 등장
+  \emph{진짜 task adaptation 의미의 fine-tune (instruction tuning)} 은 \ref{ch:28}장 SFT 에서 본격 등장
 \end{itemize}
 
 \begin{quote}
