@@ -21,7 +21,8 @@ Phase 5 의 첫 챕터. Ch 24-31 의 *GPT (decoder, autoregressive, 왼→오 �
 - **`DiffusionCollator`** (직접 구현) — 매 배치 `t` 를 뽑아 그 비율로 `[MASK]` 치환. Ch 20 의 고정 15% collator 와 정면 대비
 - **`1/t` 재가중 denoising loss** (`compute_loss` 오버라이드) — 마스킹 비율 무관하게 척도 정렬, log-likelihood upper bound
 - **`BertForMaskedLM(config)` from scratch** — bidirectional encoder 가 diffusion 의 denoiser (Ch 20 과 같은 패턴, 목적만 다름)
-- **reverse process generation** (`diffusion_generate`) — 전부 `[MASK]` → low-confidence remasking 으로 반복 denoise. 채우는 순서가 *위치가 아니라 confidence*
+- **reverse process generation** (`diffusion_generate`) — 전부 `[MASK]` → low-confidence remasking 으로 반복 denoise. 채우는 순서가 *위치가 아니라 confidence*. 생성은 **sampling 기본** (greedy 는 최빈 토큰 `.` 붕괴)
+- **작은 from-scratch 의 한계 (솔직 노트)** — unconditional 생성은 규모를 요구합니다. 같은 작은 규모에서 *표준 MLM 도 복원이 약하고* `1/t` 유무도 차이 없음(알고리즘 아닌 규모 문제). 제대로 된 생성은 Ch 33 사전학습 모델(MDLM/DiffuGPT)에서
 - **denoise 궤적 시각화** — 마스크가 *병렬로* 단어로 채워지는 과정 직접 관찰 (AR 의 왼→오와 핵심 대비)
 - **조건부 생성 (infilling)** — prompt 고정 + 나머지 denoise. 양방향이라 중간 채우기도 가능 (AR 불가)
 - **denoise step 수 trade-off** — 1 (빠르고 거침) ↔ 32 (느리고 정교), 추론 시점 조절
@@ -60,7 +61,7 @@ device 자동 감지 (CUDA / MPS / CPU) - 로컬 Mac MPS 에서도 실행 가능
 | 24 | 작은 GPT2 (직접, scratch) | BPE (직접 학습) | TinyStories | autoregressive (왼→오) | CE (next-token) |
 | 31 | SFT base + GRPO | BBPE | verifiable-reward | autoregressive + RL | GRPO loss |
 | **32** | **작은 BERT-style (직접, scratch)** | **WordPiece (`bert-base-uncased`)** | **TinyStories** | **parallel denoise (가변 마스킹 + 반복)** | **masked-diffusion loss (`1/t` 재가중)** |
-| 33 (다음) | LLaDA-8B-Instruct (사전학습) | LLaDA tokenizer | 다국어 추론 시연 | parallel denoise (추론만) | — |
+| 33 (다음) | MDLM (170M) / DiffuGPT (124M) 사전학습 | (각 모델 토크나이저) | 영어 사전학습 추론 시연 | parallel denoise (추론만) | — |
 
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표) 를 참고하세요.
 
@@ -70,9 +71,9 @@ device 자동 감지 (CUDA / MPS / CPU) - 로컬 Mac MPS 에서도 실행 가능
 - **D3PM** — Austin et al. 2021, [arXiv:2107.03006](https://arxiv.org/abs/2107.03006). 이산 diffusion + absorbing(=mask) 상태 (이론 시초).
 - **MaskGIT** — Chang et al. 2022, [arXiv:2202.04200](https://arxiv.org/abs/2202.04200). confidence 기반 반복 병렬 디코딩 (생성 절차의 원조, 이미지).
 - **MDLM** — Sahoo et al. 2024, [arXiv:2406.07524](https://arxiv.org/abs/2406.07524). masked diffusion loss = 가중 MLM-CE (NELBO). `1/t` 재가중의 이론 근거.
-- **LLaDA** — Nie et al. 2025, [arXiv:2502.09992](https://arxiv.org/abs/2502.09992). 본 챕터가 직접 따른 forward·loss(Eq.3)·sampling. 구현 정규화(`t·L`)까지 일치. Ch 33 에서 이 8B 모델을 직접 사용.
+- **LLaDA** — Nie et al. 2025, [arXiv:2502.09992](https://arxiv.org/abs/2502.09992). 본 챕터가 직접 따른 forward·loss(Eq.3)·sampling. 구현 정규화(`t·L`)까지 일치. 8B 라 Ch 33 의 대형 맛보기(선택).
 
 > ⚠️ 이름이 비슷한 **Diffusion-LM** (Li et al. 2022, [arXiv:2205.14217](https://arxiv.org/abs/2205.14217)) 은 *연속 임베딩 공간* diffusion 으로 본 챕터의 이산 mask-diffusion 과 다른 계열입니다.
 
 ## 다음 챕터
-[33_llada](../33_llada/) — `GSAI-ML/LLaDA-8B-Instruct` (arXiv:2502.09992), 8B params 실전 mask-diffusion LLM 추론 시연. 본 챕터에서 직접 구현한 *가변 마스킹 + 반복 denoise* 의 대규모 버전을 사전학습 모델로 체감하고 autoregressive LLM 과 비교합니다. Ch 34 (Trida-7B) 에서 한국 산 diffusion 모델 + AR 직접 비교로 Phase 5 마무리.
+Ch 33 — 사전학습된 작은 diffusion LM 추론: **MDLM-owt (170M, `kuleshov-group/mdlm-owt`)** 메인 (본 챕터가 따른 MDLM 논문의 공식 체크포인트, `AutoModelForMaskedLM` 라 인터페이스 동일) + **DiffuGPT-small (124M, `diffusionfamily/diffugpt-s`)** 보너스 (GPT2 본체, Ch 24 와 AR vs diffusion 비교). LLaDA-8B 는 4bit 대형 맛보기(선택). 본 챕터 작은 from-scratch 모델과 *품질 격차* 를 체감. Ch 34 에서 한국어 diffusion + AR 직접 비교로 Phase 5 마무리.
