@@ -100,6 +100,56 @@ Ch 7-23 의 BERT 챕터들이 *encoder + masked token 예측 + task head 부착 
 
 > 본 챕터는 그 *출발점* — 작은 GPT 를 처음부터 학습해 *next-token 예측이 어떻게 generation 으로 이어지는지* 를 직접 봅니다. Ch 25 (대규모 사전학습 `gpt2` 를 TinyStories 로 **continual pretraining**) / Ch 28 (SFT) / Ch 30-31 (DPO / GRPO) 가 같은 본체 위에 차곡차곡 쌓여 갑니다.""")
 
+# ----- 2b. Phase 3 -> 4 다리 -----
+md(r"""## 🌉 Phase 3 → Phase 4 다리 — *왜 갑자기 decoder 인가, 그리고 생성형 AI 의 등장*
+
+Ch 23 (한국어 BERT 분류) 에서 Ch 24 (GPT) 로 넘어오면 *왜 갑자기 encoder 를 버리고 decoder 로 가지?* 라는 의문이 듭니다. 그 사이를 잇는 큰 그림을 한 화면에 정리합니다.
+
+### 1. Transformer 의 세 갈래 — encoder / decoder / encoder-decoder
+
+원래 Transformer (Vaswani et al. 2017, *Attention Is All You Need*) 는 *번역* 을 위한 **encoder-decoder** 구조였습니다. 이후 두 절반이 *각자* 떨어져 나와 독립 계열이 됩니다.
+
+| 갈래 | attention | 대표 모델 | 잘하는 task | 본 커리큘럼 |
+|---|---|---|---|---|
+| **Encoder-only** | 양방향 (bidirectional) | BERT, RoBERTa, DistilBERT, klue/bert-base | 분류·NER·추출형 QA (*이해*) | **Phase 1-3 (Ch 7-23)** |
+| **Decoder-only** | causal (좌→오 마스킹) | GPT-2/3/4, LLaMA, Mistral, KoGPT2 | generation·in-context learning·SFT/RLHF (*생성*) | **Phase 4 (Ch 24-31)** |
+| **Encoder-Decoder (seq2seq)** | encoder 양방향 + decoder causal + **cross-attention** | T5, BART, mBART, KoBART, KE-T5 | 번역·요약·생성형 QA (*변환*) | (본 커리큘럼은 미포함 — 맥락만) |
+
+> 본 커리큘럼은 *encoder-only (이해)* → *decoder-only (생성)* 의 두 축을 직접 구현하며 잇습니다. **seq2seq** 는 *입력 시퀀스를 출력 시퀀스로 변환* (번역·요약) 하는 제3의 길로, 두 절반을 다시 합치고 *cross-attention* 으로 연결합니다 — 본 커리큘럼에선 다루지 않지만 *지형의 한 축* 으로 기억해 두세요.
+
+### 2. 왜 BERT 는 generation 이 어려운가
+
+BERT 의 *양방향* attention 은 토큰 $i$ 가 *좌·우 전부* 를 봅니다. 그래서 *다음 토큰을 좌→오로 하나씩 뽑는* autoregressive 생성에는 부적합합니다 — 미래 토큰을 이미 보고 있으니 "다음을 예측" 이 성립하지 않습니다. BERT 가 일부만 `[MASK]` 로 가려 복원하는 (MLM) 것도 이 *양방향 cheating* 을 막기 위함이었습니다 (Ch 20).
+
+generation 을 하려면 둘 중 하나가 필요합니다:
+- **causal masking** — 미래를 가려 *좌→오 순차 생성* 을 가능케 함 → **decoder (GPT), 본 챕터부터**
+- **반복 denoise** — 양방향을 유지한 채 *마스킹 비율을 일반화* 해 병렬 생성 → **diffusion LM (Phase 5, Ch 32)**
+
+> 즉 BERT 의 양방향성은 *이해* 엔 강점, *순차 생성* 엔 약점입니다. 이 한 가지 차이가 Phase 4 (decoder) 와 Phase 5 (diffusion) 두 갈래를 가릅니다.
+
+### 3. attention 의 진화
+
+| 단계 | attention 방식 | 모델 |
+|---|---|---|
+| 양방향 self | 모든 위치가 서로를 봄 | BERT (encoder) |
+| **causal masked self** | 과거(좌)만 봄 → 미래 누출 차단 | **GPT (decoder), 본 챕터** |
+| cross-attention | decoder 가 encoder 출력을 참조 | seq2seq (T5/BART) |
+
+### 4. 생성형 AI 등장 타임라인 (큰 흐름)
+
+| 연도 | 사건 | 의미 |
+|---|---|---|
+| 2017 | Transformer (*Attention Is All You Need*) | encoder-decoder, attention 의 출발 |
+| 2018 | BERT (encoder) / GPT-1 (decoder) | *이해* 와 *생성* 두 갈래 분기 |
+| 2019 | GPT-2 | 큰 decoder 의 generation 품질 — 본 챕터의 reference 모델 |
+| 2020 | GPT-3 | **in-context learning** (예시만 줘도 task 수행, fine-tune 없이) |
+| 2022 | InstructGPT / ChatGPT | **SFT + RLHF** 로 *지시를 따르는* 정렬 (Ch 28·30·31 의 주제) |
+| 2023+ | GPT-4 / LLaMA / Mistral / KoGPT 등 | decoder-only LLM 의 시대 |
+
+> 본 커리큘럼 Phase 4 (Ch 24-31) 가 이 타임라인을 *압축 재현* 합니다 — *작은 GPT 사전학습 (본 챕터)* → *continual pretraining (Ch 25)* → *SFT (Ch 28)* → *alignment (Ch 30-31)*. 2017-2022 의 흐름을 손으로 한 번 따라가 보는 셈입니다.
+
+> 📚 **참고** — *T4 30분 룰 너머* 로 GPT/LLM scratch 학습을 더 키워 보고 싶다면 [FareedKhan-dev/train-llm-from-scratch](https://github.com/FareedKhan-dev/train-llm-from-scratch) 가 좋은 출발점입니다. Transformer 를 PyTorch 로 직접 구현하고 *13M → 2B params* 까지 consumer GPU 로 학습하는 과정 + **GPU별 실용 모델 크기 표** (예: T4 16GB ≈ 1.5-2B, RTX 4090 24GB ≈ 4B, A100 40GB ≈ 6-8B) 가 인상적입니다 — 본 챕터의 약 3M 모델이 *어디까지 커질 수 있는지* 의 감을 줍니다.""")
+
 # ----- 3. 변경점 -----
 md(r"""## 🔄 변경점 (Diff from Ch 23)
 
