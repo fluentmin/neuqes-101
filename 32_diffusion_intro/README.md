@@ -64,5 +64,15 @@ device 자동 감지 (CUDA / MPS / CPU) - 로컬 Mac MPS 에서도 실행 가능
 
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표) 를 참고하세요.
 
+## 알고리즘의 논문 계보
+본 챕터에서 직접 구현한 세 요소(가변 마스킹 forward / `1/t` 재가중 loss / low-confidence remasking 생성)는 아래 논문들을 교육용으로 단순화한 것이며, 원문과 일치함을 확인했습니다.
+
+- **D3PM** — Austin et al. 2021, [arXiv:2107.03006](https://arxiv.org/abs/2107.03006). 이산 diffusion + absorbing(=mask) 상태 (이론 시초).
+- **MaskGIT** — Chang et al. 2022, [arXiv:2202.04200](https://arxiv.org/abs/2202.04200). confidence 기반 반복 병렬 디코딩 (생성 절차의 원조, 이미지).
+- **MDLM** — Sahoo et al. 2024, [arXiv:2406.07524](https://arxiv.org/abs/2406.07524). masked diffusion loss = 가중 MLM-CE (NELBO). `1/t` 재가중의 이론 근거.
+- **LLaDA** — Nie et al. 2025, [arXiv:2502.09992](https://arxiv.org/abs/2502.09992). 본 챕터가 직접 따른 forward·loss(Eq.3)·sampling. 구현 정규화(`t·L`)까지 일치. Ch 33 에서 이 8B 모델을 직접 사용.
+
+> ⚠️ 이름이 비슷한 **Diffusion-LM** (Li et al. 2022, [arXiv:2205.14217](https://arxiv.org/abs/2205.14217)) 은 *연속 임베딩 공간* diffusion 으로 본 챕터의 이산 mask-diffusion 과 다른 계열입니다.
+
 ## 다음 챕터
 [33_llada](../33_llada/) — `GSAI-ML/LLaDA-8B-Instruct` (arXiv:2502.09992), 8B params 실전 mask-diffusion LLM 추론 시연. 본 챕터에서 직접 구현한 *가변 마스킹 + 반복 denoise* 의 대규모 버전을 사전학습 모델로 체감하고 autoregressive LLM 과 비교합니다. Ch 34 (Trida-7B) 에서 한국 산 diffusion 모델 + AR 직접 비교로 Phase 5 마무리.

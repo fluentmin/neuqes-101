@@ -709,6 +709,30 @@ md(r"""## ⚖️ Autoregressive (Ch 24) vs Diffusion (본 챕터) 비교
 
 > **왜 diffusion 이 주목받는가**: ① *병렬 생성* 으로 잠재적 속도 이점 (autoregressive 는 토큰 수만큼 순차), ② *양방향 문맥* 으로 infilling·편집에 강점, ③ step 수로 *속도-품질* 을 추론 시점에 조절. 아직 autoregressive 만큼 성숙하진 않지만 *대안 패러다임* 으로 빠르게 발전 중입니다. Ch 33 (LLaDA-8B) 에서 *실전 대형 diffusion LM* 을, Ch 34 (Trida-7B) 에서 *한국 산 모델 + AR 직접 비교* 를 다룹니다.""")
 
+# ----- 19b. 논문 계보 -----
+md(r"""## 📚 이 챕터 알고리즘의 논문 계보
+
+본 챕터에서 *직접 구현* 한 세 요소는 아래 논문들의 방법을 *교육용으로 단순화* 해 옮긴 것입니다. 어느 요소가 어느 논문의 무엇에 대응하는지 정리합니다.
+
+| 구현 요소 (본 챕터) | 대응 논문·수식 | 일치 |
+|---|---|---|
+| 가변 마스킹 forward (`t ~ U(0,1)`, 토큰별 독립 마스킹) | **LLaDA** Eq. 8 / **D3PM** absorbing-state(=mask) kernel | 동일 |
+| `1/t` 재가중 denoising loss (가린 자리 CE 합을 `t·L` 로 정규화) | **LLaDA** Eq. 3 = $-\mathbb{E}[\frac{1}{t}\sum_i \mathbb{1}[x_t^{(i)}{=}\texttt{M}]\log p_\theta]$ / **MDLM** weighted MLM-CE (NELBO) | 동일 |
+| low-confidence remasking 생성 (전부 `[MASK]` 시작 → confidence 낮은 자리만 유지) | **LLaDA** sampling (low-confidence remasking) / **MaskGIT** confidence 병렬 디코딩 | 동일 |
+
+> 참고로 LLaDA 논문의 loss 는 본문 수식엔 `1/L` 이 없지만 *구현(Algorithm 1)에서 `t·L` 로 정규화* 합니다. 본 챕터 코드의 `per_tok.sum()/L` 후 `/t` 평균이 정확히 `sum/(t·L)` 으로 *구현 레벨까지 일치* 합니다. 이 loss 는 *negative log-likelihood 의 upper bound* (LLaDA Eq. 4).
+
+### 읽는 순서 추천 (계보)
+
+1. **D3PM** — Austin et al. 2021, [arXiv:2107.03006](https://arxiv.org/abs/2107.03006). 이산 diffusion + *absorbing(=mask) 상태*. 이론 시초.
+2. **MaskGIT** — Chang et al. 2022, [arXiv:2202.04200](https://arxiv.org/abs/2202.04200). *confidence 기반 반복 병렬 디코딩* — 본 챕터 생성 절차의 원조 (원래 이미지 분야).
+3. **MDLM** — Sahoo et al. 2024, [arXiv:2406.07524](https://arxiv.org/abs/2406.07524). masked diffusion loss = *"고전 MLM loss 들의 가중 혼합"* (NELBO). 본 챕터 `1/t` 재가중의 이론 근거.
+4. **LLaDA** — Nie et al. 2025, [arXiv:2502.09992](https://arxiv.org/abs/2502.09992). 위를 *LLM 스케일* 로. **본 챕터가 직접 따른** forward·loss·sampling. Ch 33 에서 이 모델(8B)을 직접 씁니다.
+
+> ⚠️ **혼동 주의** — **Diffusion-LM** (Li et al. 2022, [arXiv:2205.14217](https://arxiv.org/abs/2205.14217)) 은 이름은 비슷하지만 *연속 임베딩 공간* 에서 Gaussian noise 를 더하는 diffusion 이라 본 챕터의 *이산 mask-diffusion* 과 **다른 계열** 입니다. Ch 33 (LLaDA)·34 (Trida) 는 본 챕터와 같은 이산 mask-diffusion.
+
+> 본 챕터는 *단순화판* 입니다 — 실제 LLaDA 는 semi-autoregressive remasking 등 변형, 대규모 사전학습, 정교한 스케줄을 더합니다. 하지만 *핵심 메커니즘 (가변 마스킹 + `1/t` loss + confidence 병렬 denoise)* 은 동일하므로, 본 챕터를 손으로 구현해 보면 위 논문들의 알고리즘 절을 그대로 읽어낼 수 있습니다.""")
+
 # ----- 20. 등장한 라이브러리 -----
 md(r"""## 📦 이번 챕터에 등장한 라이브러리·개념
 
@@ -897,6 +921,16 @@ device 자동 감지 (CUDA / MPS / CPU) - 로컬 Mac MPS 에서도 실행 가능
 | 33 (다음) | LLaDA-8B-Instruct (사전학습) | LLaDA tokenizer | 다국어 추론 시연 | parallel denoise (추론만) | — |
 
 전체 챕터 표는 [루트 README](../README.md#챕터별-변화추적표) 를 참고하세요.
+
+## 알고리즘의 논문 계보
+본 챕터에서 직접 구현한 세 요소(가변 마스킹 forward / `1/t` 재가중 loss / low-confidence remasking 생성)는 아래 논문들을 교육용으로 단순화한 것이며, 원문과 일치함을 확인했습니다.
+
+- **D3PM** — Austin et al. 2021, [arXiv:2107.03006](https://arxiv.org/abs/2107.03006). 이산 diffusion + absorbing(=mask) 상태 (이론 시초).
+- **MaskGIT** — Chang et al. 2022, [arXiv:2202.04200](https://arxiv.org/abs/2202.04200). confidence 기반 반복 병렬 디코딩 (생성 절차의 원조, 이미지).
+- **MDLM** — Sahoo et al. 2024, [arXiv:2406.07524](https://arxiv.org/abs/2406.07524). masked diffusion loss = 가중 MLM-CE (NELBO). `1/t` 재가중의 이론 근거.
+- **LLaDA** — Nie et al. 2025, [arXiv:2502.09992](https://arxiv.org/abs/2502.09992). 본 챕터가 직접 따른 forward·loss(Eq.3)·sampling. 구현 정규화(`t·L`)까지 일치. Ch 33 에서 이 8B 모델을 직접 사용.
+
+> ⚠️ 이름이 비슷한 **Diffusion-LM** (Li et al. 2022, [arXiv:2205.14217](https://arxiv.org/abs/2205.14217)) 은 *연속 임베딩 공간* diffusion 으로 본 챕터의 이산 mask-diffusion 과 다른 계열입니다.
 
 ## 다음 챕터
 [33_llada](../33_llada/) — `GSAI-ML/LLaDA-8B-Instruct` (arXiv:2502.09992), 8B params 실전 mask-diffusion LLM 추론 시연. 본 챕터에서 직접 구현한 *가변 마스킹 + 반복 denoise* 의 대규모 버전을 사전학습 모델로 체감하고 autoregressive LLM 과 비교합니다. Ch 34 (Trida-7B) 에서 한국 산 diffusion 모델 + AR 직접 비교로 Phase 5 마무리.
