@@ -1,3 +1,3 @@
-# 목차
+# neuqes-101 — Hugging Face 입문 커리큘럼
 
-* [시작하기](pages/getting-started.md)
+* [Chapter 1. 텍스트 벡터화 (TF-IDF)](pages/01-tfidf.md)
