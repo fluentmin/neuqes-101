@@ -17,33 +17,43 @@ description: 챕터 노트북(.ipynb)/tex을 WikiDocs용 장→절 마크다운�
 
 ## 변환 절차
 
-### 1. 챕터 메타 확인
-`book/tools/notebook_to_tex.py`의 `CHAPTERS` 리스트가 모든 챕터의 `num/slug/title`의 단일 출처다.
-변환할 챕터의 번호·슬러그·한글 제목을 거기서 가져온다.
+챕터 지정·제목 해석은 변환기가 자동으로 한다(별도 `--num/--slug/--title` 불필요).
+- 챕터 인자: 번호(`7`/`07`) 또는 폴더명(`07_bert_pipeline`), 여러 개 가능. 전체는 `--all`.
+- 제목: `book/tools/notebook_to_tex.py`의 `CHAPTERS` → 노트북 첫 H1("Chapter N." 제거) → 슬러그 순.
+
+### 1. 변환할 챕터 정하기
+- 사용자가 챕터를 지정했으면 그대로 쓴다.
+- **지정 안 했으면 전체(`--all`)를 돌리기 전에 반드시 사용자에게 확인**받는다.
+  (32챕터 + 향후 추가까지 동적으로 변환되므로 의도치 않은 대량 실행을 막는다.)
 
 ### 2. 실행 결과(출력)의 원천 결정 — 가장 중요
-노트북은 보통 출력이 비어 있다(Colab용 clean). 다음 우선순위로 **실제** 결과를 확보한다.
+노트북은 보통 출력이 비어 있다(Colab용 clean). 변환기가 다음 우선순위로 **실제** 결과를 찾는다.
 
-1. **`--executed-notebook PATH`**: Colab/GPU에서 끝까지 돌린 뒤 저장한 outputs 포함 `.ipynb`.
-   GPU 챕터(7–31)의 진짜 결과는 이 경로로만 얻는다. (사용자가 Colab 검증 시 실행본 저장 → 커밋)
-2. **`--execute`**: 이 자리에서 `nbclient`로 직접 실행. CPU 챕터(1–6, 일부 8/19)에 적합.
-   GPU/대용량 학습 챕터에는 쓰지 않는다(T4 없음, 30분 초과).
-3. 둘 다 없으면: 노트북에 이미 있는 outputs만 사용. 없으면 코드만 출력하고 셀마다
-   `<!-- 실행 결과 없음 -->` 주석을 남겨 누락을 **드러낸다**. 절대 그럴듯한 가짜 출력으로 채우지 않는다.
+1. **`--executed-notebook PATH`** (단일 챕터): 출력 포함 실행본 명시.
+2. **`executed/<폴더>.ipynb`**: 있으면 자동으로 출력 원천으로 사용. **GPU 챕터(7–31)의 진짜
+   결과는 이 경로뿐**이다 — Colab T4에서 끝까지 돌린 뒤 "파일 > .ipynb 다운로드"(출력 포함)해
+   `executed/<폴더>.ipynb`로 커밋한다. (executed/README.md 참조)
+3. **`--execute`**: `nbclient`로 직접 실행. CPU 챕터(1–6, 일부 8/19)에만. `--save-executed`를
+   더하면 결과를 `executed/<폴더>.ipynb`로 저장해 재사용·재현이 가능하다.
+   GPU/대용량 학습 챕터엔 쓰지 않는다(T4 없음, 30분 초과).
+4. 아무것도 없으면: 코드만 출력하고 셀마다 `<!-- 실행 결과 없음 -->` 주석을 남겨 누락을
+   **드러낸다**. 절대 그럴듯한 가짜 출력으로 채우지 않는다.
 
-CPU 챕터는 `book/requirements`에 준하는 venv가 필요하다(예: `pip install nbclient nbformat
-ipykernel scikit-learn pandas matplotlib seaborn datasets`).
+CPU 실행용 venv 예: `pip install nbclient nbformat ipykernel scikit-learn pandas matplotlib seaborn datasets`.
 
 ### 3. 변환 실행
 ```bash
-python3 .claude/skills/notebook-to-wikidocs/scripts/build_wikidocs.py <chapter_folder> \
-    --num <N> --slug <slug> --title "<제목>" \
-    --pages-dir pages --assets assets --toc TOC.md \
-    [--execute | --executed-notebook <path.ipynb>]
+# 일부 챕터 (CPU: 실행 + 실행본 저장)
+python3 .claude/skills/notebook-to-wikidocs/scripts/build_wikidocs.py 1 --execute --save-executed
+# GPU 챕터 (executed/ 실행본을 자동 사용 — 미리 커밋돼 있어야 함)
+python3 .claude/skills/notebook-to-wikidocs/scripts/build_wikidocs.py 7 24
+# 전체 (사용자 확인 후)
+python3 .claude/skills/notebook-to-wikidocs/scripts/build_wikidocs.py --all
 ```
 - 출력: `pages/NN-slug.md`(개요) + `pages/NN-slug-{practice,anatomy,variation,wrapup}.md`(절).
-- 그림: 노트북 실행 PNG를 `assets/NN-slug-outK.png`로 저장하고 `![](../assets/...)`로 참조.
-- `TOC.md`: 해당 장 블록만 교체/추가하고 다른 장은 보존한다.
+- 그림: 실행 PNG를 `assets/NN-slug-outK.png`로 저장하고 `![](../assets/...)`로 참조.
+- `TOC.md`: 해당 장 블록만 교체/추가하고 다른 장은 번호 순서를 지켜 보존한다.
+- 챕터별 실패는 격리되어 배치 전체를 멈추지 않는다. 끝에 빈 출력/실패 챕터를 요약한다.
 
 ### 4. 품질 검토 (스킬이 자체 확인)
 - [ ] 코드 셀 대부분에 `**실행 결과**` 블록이 붙었는가? `<!-- 실행 결과 없음 -->`이 남았다면

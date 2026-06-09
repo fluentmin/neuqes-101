@@ -5,24 +5,33 @@
 **코드 실행 결과(표·로그·그림)를 함께 싣는다**는 점입니다. 노트북은 보통 출력이
 비어 있으므로(Colab용 clean 상태), 다음 우선순위로 "실제 결과"를 확보합니다.
 
-출력 원천 우선순위:
-  1) --executed-notebook PATH : 미리 실행해 outputs를 담은 노트북을 출력 원천으로 사용
-     (Colab/GPU에서 끝까지 돌린 뒤 저장한 .ipynb. GPU 챕터의 진짜 결과 확보용)
-  2) --execute               : 이 자리에서 nbclient로 직접 실행(주로 CPU 챕터 1–6/8/19)
-  3) (둘 다 없음)            : 노트북에 이미 들어있는 outputs만 사용. 없으면 코드만 출력하고
-                               셀별로 "<!-- 실행 결과 없음 -->" 주석을 남겨 누락을 드러냄
-                               (가짜 출력을 지어내지 않음 — 이것이 "파싱만" 금지 요구의 핵심).
+출력 원천 우선순위 (챕터별 자동):
+  1) --executed-notebook PATH    : (단일 챕터) 미리 실행해 outputs를 담은 노트북
+  2) executed/<폴더>.ipynb 존재   : 자동으로 출력 원천으로 사용
+                                    (Colab/GPU에서 끝까지 돌린 뒤 저장·커밋한 실행본)
+  3) --execute                   : 이 자리에서 nbclient로 직접 실행(주로 CPU 챕터).
+                                    --save-executed 면 결과를 executed/<폴더>.ipynb 로 저장.
+  4) (없음)                      : 노트북에 든 outputs만 사용. 없으면 코드만 출력하고
+                                    "<!-- 실행 결과 없음 -->" 주석을 남겨 누락을 드러냄
+                                    (가짜 출력을 지어내지 않음 — "파싱만" 금지 요구의 핵심).
 
-출력 렌더링은 book/tools/notebook_to_tex.py의 검증된 로직을 마크다운에 맞게 포팅:
-  - stream / text/plain  → 펜스 코드블록(ANSI 제거, pip 노이즈 필터, 길이 truncation)
-  - text/html <table>    → 마크다운 표
-  - image/png            → assets/에 저장 후 ![](...) 참조 (실제 실행 그림)
-  - error                → 트레이스백 펜스 블록
+실행본 보관 규약: GPU 챕터의 진짜 결과는 Colab T4에서 끝까지 돌린 뒤
+"파일 > .ipynb 다운로드"(출력 포함)한 노트북을 `executed/<폴더>.ipynb` 로 커밋해 둔다.
+챕터 폴더에는 clean 노트북만 남긴다(Colab 버튼 대상). 자세한 건 executed/README.md.
+
+챕터 지정 (동적):
+  - 위치 인자로 챕터를 받음: 폴더명(`07_bert_pipeline`), 번호(`7`/`07`) 모두 허용. 여러 개 가능.
+  - 아무 챕터도 안 주고 `--all`도 없으면 에러 — 호출자가 의도(전체/일부)를 명시하게 함.
+  - `--all` 이면 레포 루트의 `NN_slug/NN_slug.ipynb` 를 전부 자동 발견해 변환.
+  - 챕터 메타(제목): book/tools/notebook_to_tex.py 의 CHAPTERS 레지스트리 → 노트북 첫 H1
+    ("Chapter N." 접두 제거) → 슬러그 순으로 해석. 레지스트리에 없는 새 챕터도 동작.
 
 사용:
-    python3 build_wikidocs.py 01_tfidf \
-        --num 1 --slug tfidf --title "텍스트 벡터화 (TF-IDF)" \
-        --pages-dir pages --assets assets --toc TOC.md --execute
+  # 전체 (호출자가 사용자 확인 후)
+  python3 build_wikidocs.py --all --execute
+  # 일부
+  python3 build_wikidocs.py 1 7 15 --execute
+  python3 build_wikidocs.py 07_bert_pipeline --executed-notebook 07_bert_pipeline/07_bert_pipeline.executed.ipynb
 """
 
 from __future__ import annotations
@@ -31,6 +40,8 @@ import argparse
 import base64
 import json
 import re
+import sys
+import traceback
 from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
@@ -42,8 +53,9 @@ COLAB_BADGE_RE = re.compile(r"^\s*\[!\[.*?Colab.*?\]\(.*?\)\]\(.*?\)\s*$", re.IG
 HEADER_RE = re.compile(r"^(#{1,6})\s+(.*)$")
 EMOJI_RE = re.compile(r"^[\s←-⇿⌀-➿⬀-⯿️\U0001F000-\U0001FAFF]+")
 ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+CHAPTER_FOLDER_RE = re.compile(r"^(\d{2})_(.+)$")
+H1_CHAPTER_PREFIX_RE = re.compile(r"^\s*Chapter\s+\d+\s*[.．]\s*")
 
-# pip/tqdm 등 학습과 무관한 노이즈 라인 제거 (tex 도구와 동일 기준)
 SKIP_PATTERNS = (
     "TqdmWarning:",
     "IProgress not found",
@@ -57,7 +69,6 @@ SKIP_PATTERNS = (
 MAX_OUTPUT_LINES = 40
 MAX_OUTPUT_CHARS = 2000
 
-# 절 그룹 분류: (헤더 키워드, 그룹키) — 위에서부터 first-match.
 SECTION_RULES: list[tuple[str, str]] = [
     ("삽질", "wrapup"),
     ("라이브러리", "wrapup"),
@@ -78,6 +89,8 @@ SUBPAGES = [
     ("wrapup", "wrapup", "정리와 FAQ"),
 ]
 
+DEFAULT_BOOK_TITLE = "neuqes-101 — Hugging Face 입문 커리큘럼"
+
 
 # --------------------------------------------------------------------------- #
 # 텍스트 유틸
@@ -88,6 +101,14 @@ def _cell_text(cell: dict) -> str:
 
 
 def _strip_emoji(text: str) -> str:
+    return EMOJI_RE.sub("", text).strip()
+
+
+def _clean_heading_text(text: str) -> str:
+    """헤더 텍스트 정리: 선두 'N.'/'N)' 순번 제거 → 선두 이모지 제거.
+    절 제목 중복("07-1. 1. 🚀 실습")과 이모지 잔존을 막는다. (예: '1. 🚀 실습: …' → '실습: …')
+    """
+    text = re.sub(r"^\s*\d+[.)]\s*", "", text.strip())
     return EMOJI_RE.sub("", text).strip()
 
 
@@ -124,23 +145,20 @@ def _strip_header_emoji(md: str) -> str:
     for line in md.splitlines():
         m = HEADER_RE.match(line)
         if m:
-            out.append(f"{m.group(1)} {_strip_emoji(m.group(2))}")
+            out.append(f"{m.group(1)} {_clean_heading_text(m.group(2))}")
         else:
             out.append(line)
     return "\n".join(out)
 
 
 def _clean_text_output(text: str) -> str:
-    """ANSI 제거 → 캐리지리턴 진행바 마지막 상태만 → 노이즈 라인 제거 → 길이 제한."""
     text = ANSI_RE.sub("", text)
     lines = [seg.split("\r")[-1] for seg in text.split("\n")]
     lines = [
-        ln
-        for ln in lines
+        ln for ln in lines
         if not any(p in ln for p in SKIP_PATTERNS)
         and not ln.strip().startswith("from .autonotebook import tqdm")
     ]
-    # 앞뒤 빈 줄 정리
     while lines and not lines[0].strip():
         lines.pop(0)
     while lines and not lines[-1].strip():
@@ -153,6 +171,14 @@ def _clean_text_output(text: str) -> str:
     if len(text) > MAX_OUTPUT_CHARS:
         text = text[: MAX_OUTPUT_CHARS - 4].rstrip() + "\n..."
     return text
+
+
+def latex_title_to_plain(title: str) -> str:
+    """레지스트리 제목의 LaTeX 이스케이프 해제: '\\&' → '&', '\\_' → '_' 등."""
+    return (
+        title.replace("\\&", "&").replace("\\_", "_")
+        .replace("\\%", "%").replace("\\#", "#").replace("\\$", "$")
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -224,14 +250,14 @@ def _html_tables_to_markdown(html: str) -> list[str]:
         if not headers:
             headers = [""] * width
         headers = (headers + [""] * width)[:width]
-        rows = [(r + [""] * width)[:width] for r in rows[:30]]
+        shown = [(r + [""] * width)[:width] for r in rows[:30]]
         lines = [
             "| " + " | ".join(_md_escape_cell(c) for c in headers) + " |",
             "| " + " | ".join(["---"] * width) + " |",
         ]
-        for r in rows:
+        for r in shown:
             lines.append("| " + " | ".join(_md_escape_cell(c) for c in r) + " |")
-        if len(table["rows"]) > 30:
+        if len(rows) > 30:
             lines.append("| " + " | ".join(["..."] * width) + " |")
         out.append("\n".join(lines))
     return out
@@ -250,7 +276,6 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
                 chunks.append("```\n" + text + "\n```")
         elif otype in ("execute_result", "display_data"):
             data = out.get("data", {})
-            # 1) 이미지 우선 (실제 matplotlib 출력)
             if "image/png" in data:
                 counter[0] += 1
                 img_name = f"{stem}-out{counter[0]}.png"
@@ -261,7 +286,6 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
                     (assets_dir / img_name).write_bytes(base64.b64decode(raw))
                 chunks.append(f"![output](../assets/{img_name})")
                 continue
-            # 2) HTML 표 → 마크다운 표
             html = data.get("text/html")
             if isinstance(html, list):
                 html = "".join(html)
@@ -270,7 +294,6 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
                 if tables:
                     chunks.extend(tables)
                     continue
-            # 3) text/plain
             text = data.get("text/plain")
             if text:
                 text = _clean_text_output("".join(text) if isinstance(text, list) else str(text))
@@ -306,10 +329,17 @@ def execute_notebook(path: Path, timeout: int = 1800) -> dict:
 
 
 def _has_any_outputs(nb: dict) -> bool:
-    return any(
-        c.get("cell_type") == "code" and c.get("outputs")
-        for c in nb.get("cells", [])
-    )
+    return any(c.get("cell_type") == "code" and c.get("outputs") for c in nb.get("cells", []))
+
+
+def chapter_h1_title(nb: dict) -> str:
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "markdown":
+            continue
+        m = _first_header(_cell_text(cell))
+        if m and m[0] == 1:
+            return H1_CHAPTER_PREFIX_RE.sub("", m[1]).strip()
+    return ""
 
 
 # --------------------------------------------------------------------------- #
@@ -347,7 +377,7 @@ def convert(nb: dict, num: int, slug: str, title: str,
             if hdr and hdr[0] == 2:
                 current = _classify(hdr[1])
                 if current in ("practice", "anatomy", "variation"):
-                    sub_titles[current] = _strip_emoji(hdr[1])
+                    sub_titles[current] = _clean_heading_text(hdr[1])
             groups[current].append(_strip_header_emoji(md))
         elif ctype == "code":
             code = _cell_text(cell).rstrip("\n")
@@ -359,7 +389,6 @@ def convert(nb: dict, num: int, slug: str, title: str,
             if outs:
                 stats["code_with_output"] += 1
             else:
-                # 가짜 출력을 지어내지 않음. 누락을 드러내는 주석만 남김.
                 outs = "<!-- 실행 결과 없음: --execute 또는 --executed-notebook 로 결과를 채우세요 -->"
             piece = block + "\n\n" + outs
             if current == "overview":
@@ -371,7 +400,6 @@ def convert(nb: dict, num: int, slug: str, title: str,
     pages_dir.mkdir(parents=True, exist_ok=True)
     toc_entries: list[tuple[str, str]] = []
 
-    # --- 개요 페이지 ---
     ov: list[str] = []
     ov.extend(overview_intro)
     ov.extend(groups["overview"])
@@ -384,7 +412,6 @@ def convert(nb: dict, num: int, slug: str, title: str,
     (pages_dir / f"{stem}.md").write_text("\n\n".join(ov).strip() + "\n", encoding="utf-8")
     toc_entries.append((f"{num:02d}. {title}", f"pages/{stem}.md"))
 
-    # --- 절 페이지 ---
     for idx, (g, sl, dt) in enumerate(present_subs, 1):
         parts: list[str] = []
         body_blocks = list(groups[g])
@@ -401,9 +428,12 @@ def convert(nb: dict, num: int, slug: str, title: str,
     return toc_entries, stats
 
 
-def upsert_toc(toc_path: Path, book_title: str, entries: list[tuple[str, str]]) -> None:
+# --------------------------------------------------------------------------- #
+# TOC
+# --------------------------------------------------------------------------- #
+def upsert_toc(toc_path: Path, book_title: str, num: int, entries: list[tuple[str, str]]) -> None:
     """TOC.md에서 이 장(NN. / NN-N.) 블록만 교체하거나 추가. 다른 장은 보존."""
-    num = entries[0][0].split(".")[0]  # "01"
+    nn = f"{num:02d}"
     new_lines = []
     for title, path in entries:
         indent = "" if re.match(r"^\d+\.\s", title) else "  "
@@ -414,8 +444,7 @@ def upsert_toc(toc_path: Path, book_title: str, entries: list[tuple[str, str]]) 
         return
 
     lines = toc_path.read_text(encoding="utf-8").splitlines()
-    # 이 장에 속한 기존 라인 범위 찾기: "* [NN." 또는 "* [NN-" 로 시작
-    chapter_re = re.compile(rf"^\s*\*\s*\[{num}[.\-]")
+    chapter_re = re.compile(rf"^\s*\*\s*\[{nn}[.\-]")
     start = end = None
     for i, ln in enumerate(lines):
         if chapter_re.match(ln):
@@ -423,63 +452,179 @@ def upsert_toc(toc_path: Path, book_title: str, entries: list[tuple[str, str]]) 
                 start = i
             end = i
     if start is None:
-        # 없으면 끝에 추가
-        out = lines + ([""] if lines and lines[-1].strip() else []) + new_lines
+        # 번호 오름차순 유지: 다음으로 큰 장 앞에 삽입, 없으면 끝에 추가
+        insert_at = len(lines)
+        any_chapter = re.compile(r"^\s*\*\s*\[(\d{2})[.\-]")
+        for i, ln in enumerate(lines):
+            m = any_chapter.match(ln)
+            if m and int(m.group(1)) > num:
+                insert_at = i
+                break
+        out = lines[:insert_at] + new_lines + lines[insert_at:]
     else:
         out = lines[:start] + new_lines + lines[end + 1:]
     toc_path.write_text("\n".join(out).rstrip("\n") + "\n", encoding="utf-8")
 
 
+# --------------------------------------------------------------------------- #
+# 챕터 발견 / 선택 / 메타
+# --------------------------------------------------------------------------- #
+def discover_chapters() -> dict[int, tuple[str, str, Path]]:
+    """{num: (folder, slug, nb_path)} — 레포 루트의 NN_slug/NN_slug.ipynb 자동 발견."""
+    found: dict[int, tuple[str, str, Path]] = {}
+    for d in sorted(ROOT.iterdir()):
+        if not d.is_dir():
+            continue
+        m = CHAPTER_FOLDER_RE.match(d.name)
+        if not m:
+            continue
+        nb = d / f"{d.name}.ipynb"
+        if nb.exists():
+            found[int(m.group(1))] = (d.name, m.group(2), nb)
+    return found
+
+
+def load_registry_titles() -> dict[int, str]:
+    """book/tools/notebook_to_tex.py 의 CHAPTERS 에서 {num: plain_title}."""
+    try:
+        sys.path.insert(0, str(ROOT / "book" / "tools"))
+        import notebook_to_tex as t  # noqa: E402
+        return {c.number: latex_title_to_plain(c.title) for c in t.CHAPTERS}
+    except Exception:
+        return {}
+
+
+def resolve_title(num: int, slug: str, nb: dict, registry: dict[int, str]) -> str:
+    if num in registry and registry[num].strip():
+        return registry[num]
+    h1 = chapter_h1_title(nb)
+    if h1:
+        return h1
+    return slug.replace("_", " ")
+
+
+def parse_chapter_args(tokens: list[str], available: dict[int, tuple]) -> list[int]:
+    """'7' / '07' / '07_bert_pipeline' → 정렬된 챕터 번호 리스트."""
+    nums: list[int] = []
+    for tok in tokens:
+        m = CHAPTER_FOLDER_RE.match(tok)
+        if m:
+            n = int(m.group(1))
+        elif tok.isdigit():
+            n = int(tok)
+        else:
+            raise SystemExit(f"챕터 인자를 해석할 수 없습니다: {tok!r} (예: 7, 07, 07_bert_pipeline)")
+        if n not in available:
+            raise SystemExit(f"챕터 {n:02d} 를 찾을 수 없습니다 (NN_slug/NN_slug.ipynb 없음)")
+        if n not in nums:
+            nums.append(n)
+    return sorted(nums)
+
+
+def pick_source_notebook(folder: str, slug: str, nb_path: Path,
+                         executed_dir: Path, args) -> tuple[dict, str]:
+    """출력 원천 우선순위에 따라 (노트북 dict, 원천설명) 반환.
+
+    --execute 로 새로 실행했고 --save-executed 면 executed/<폴더>.ipynb 로 저장한다.
+    """
+    if args.executed_notebook:
+        p = Path(args.executed_notebook)
+        p = p if p.is_absolute() else ROOT / p
+        return json.loads(p.read_text(encoding="utf-8")), f"executed-notebook({p.name})"
+    archived = executed_dir / f"{folder}.ipynb"
+    if archived.exists():
+        return json.loads(archived.read_text(encoding="utf-8")), f"executed/{archived.name}"
+    if args.execute:
+        nb = execute_notebook(nb_path, timeout=args.timeout)
+        if args.save_executed:
+            import nbformat
+            executed_dir.mkdir(parents=True, exist_ok=True)
+            nbformat.write(nb, str(executed_dir / f"{folder}.ipynb"))
+        return nb, "live --execute" + (" (executed/ 저장됨)" if args.save_executed else "")
+    return json.loads(nb_path.read_text(encoding="utf-8")), "clean(출력없음 가능)"
+
+
+# --------------------------------------------------------------------------- #
+# main
+# --------------------------------------------------------------------------- #
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("chapter", help="챕터 폴더명 (예: 01_tfidf)")
-    ap.add_argument("--num", type=int, required=True)
-    ap.add_argument("--slug", required=True)
-    ap.add_argument("--title", required=True)
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("chapters", nargs="*",
+                    help="변환할 챕터(폴더명/번호). 비우고 --all 로 전체 지정.")
+    ap.add_argument("--all", action="store_true", help="발견된 모든 챕터를 변환")
     ap.add_argument("--pages-dir", default="pages")
     ap.add_argument("--assets", default="assets")
     ap.add_argument("--toc", default="TOC.md")
-    ap.add_argument("--book-title", default="neuqes-101 — Hugging Face 입문 커리큘럼")
+    ap.add_argument("--book-title", default=DEFAULT_BOOK_TITLE)
     ap.add_argument("--execute", action="store_true",
-                    help="nbclient로 노트북을 실행해 실제 출력을 채움 (CPU 챕터용)")
+                    help="nbclient로 실행해 실제 출력을 채움 (CPU 챕터용; GPU 챕터엔 비권장)")
     ap.add_argument("--executed-notebook", default=None,
-                    help="출력이 담긴 실행본 .ipynb 경로 (Colab/GPU 결과 원천)")
+                    help="(단일 챕터) 출력이 담긴 실행본 .ipynb 경로")
+    ap.add_argument("--executed-dir", default="executed",
+                    help="실행본 보관 폴더 (executed/<폴더>.ipynb 를 출력 원천으로 자동 사용)")
+    ap.add_argument("--save-executed", action="store_true",
+                    help="--execute 결과를 executed/<폴더>.ipynb 로 저장")
     ap.add_argument("--timeout", type=int, default=1800)
     args = ap.parse_args()
+
+    available = discover_chapters()
+    if not available:
+        raise SystemExit("변환할 챕터를 찾지 못했습니다 (NN_slug/NN_slug.ipynb 없음)")
+
+    if args.chapters:
+        selected = parse_chapter_args(args.chapters, available)
+    elif args.all:
+        selected = sorted(available)
+    else:
+        raise SystemExit(
+            "변환할 챕터를 지정하거나 --all 을 주세요.\n"
+            f"  발견된 챕터: {', '.join(f'{n:02d}' for n in sorted(available))}"
+        )
+
+    if args.executed_notebook and len(selected) != 1:
+        raise SystemExit("--executed-notebook 은 챕터 1개만 지정했을 때 씁니다.")
 
     def _abs(p: str) -> Path:
         pp = Path(p)
         return pp if pp.is_absolute() else ROOT / pp
 
-    folder = ROOT / args.chapter
-    nb_path = folder / f"{args.chapter}.ipynb"
-    if not nb_path.exists():
-        raise SystemExit(f"노트북을 찾을 수 없습니다: {nb_path}")
-
-    # 출력 원천 결정
-    if args.executed_notebook:
-        nb = json.loads(_abs(args.executed_notebook).read_text(encoding="utf-8"))
-        source = f"executed-notebook ({args.executed_notebook})"
-    elif args.execute:
-        nb = execute_notebook(nb_path, timeout=args.timeout)
-        source = "live --execute"
-    else:
-        nb = json.loads(nb_path.read_text(encoding="utf-8"))
-        source = "clean notebook (출력 없음 가능)"
-
     pages_dir = _abs(args.pages_dir)
     assets_dir = _abs(args.assets) if args.assets else None
-    entries, stats = convert(nb, args.num, args.slug, args.title, pages_dir, assets_dir)
-    upsert_toc(_abs(args.toc), args.book_title, entries)
+    toc_path = _abs(args.toc)
+    executed_dir = _abs(args.executed_dir)
+    registry = load_registry_titles()
 
-    print(f"출력 원천: {source}")
-    print(f"코드 셀 {stats['code_cells']}개 중 출력 있는 셀 {stats['code_with_output']}개, "
-          f"이미지 {stats['images']}개")
-    if not args.executed_notebook and not args.execute and not _has_any_outputs(nb):
-        print("⚠️  실행 결과가 비어 있습니다. --execute(CPU) 또는 --executed-notebook(GPU)으로 다시 생성하세요.")
-    print(f"생성: {len(entries)} 페이지")
-    for t, p in entries:
-        print(f"  - {t}  →  {p}")
+    print(f"변환 대상 {len(selected)}개 챕터: {', '.join(f'{n:02d}' for n in selected)}\n")
+    ok, failed, empty = [], [], []
+    for num in selected:
+        folder, slug, nb_path = available[num]
+        try:
+            nb, source = pick_source_notebook(folder, slug, nb_path, executed_dir, args)
+            title = resolve_title(num, slug, nb, registry)
+            entries, stats = convert(nb, num, slug, title, pages_dir, assets_dir)
+            upsert_toc(toc_path, args.book_title, num, entries)
+            no_out = stats["code_cells"] - stats["code_with_output"]
+            flag = ""
+            if not _has_any_outputs(nb):
+                empty.append(num)
+                flag = "  ⚠️ 실행 결과 비어 있음"
+            print(f"[{num:02d}] {title}")
+            print(f"     원천={source}  코드셀 {stats['code_cells']}개 "
+                  f"(출력 {stats['code_with_output']} / 없음 {no_out}) 이미지 {stats['images']}{flag}")
+            ok.append(num)
+        except Exception as e:  # 챕터별 실패 격리
+            failed.append((num, e))
+            print(f"[{num:02d}] 실패: {e}")
+            traceback.print_exc(limit=2)
+
+    print(f"\n완료: 성공 {len(ok)} / 실패 {len(failed)}")
+    if empty:
+        print(f"⚠️ 실행 결과가 빈 챕터: {', '.join(f'{n:02d}' for n in empty)} "
+              f"→ --execute(CPU) 또는 NN_slug/NN_slug.executed.ipynb(GPU) 로 다시 생성하세요.")
+    if failed:
+        print("실패 챕터: " + ", ".join(f"{n:02d}" for n, _ in failed))
+        sys.exit(1)
 
 
 if __name__ == "__main__":
