@@ -25,8 +25,9 @@ dataset = load_dataset("Yelp/yelp_review_full")
 print(dataset)
 ```
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-DatasetDict({
+**▶ 실행 결과**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">DatasetDict({
     train: Dataset({
         features: ['label', 'text'],
         num_rows: 650000
@@ -46,8 +47,9 @@ print(f"Sample count: {len(df)}")
 df.head(3)
 ```
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-Sample count: 5000
+**▶ 실행 결과**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Sample count: 5000
    label                                               text
 0      4  I stalk this truck.  I've been to industrial p...
 1      2  who really knows if this is good pho or not, i...
@@ -67,8 +69,7 @@ print(counts)
 
 ![output](../assets/01-tfidf-out1.png)
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-label
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">label
 0    1017
 1    1027
 2     960
@@ -81,8 +82,9 @@ df["len_words"] = df["text"].str.split().str.len()
 df[["len_words"]].describe()
 ```
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-         len_words
+**▶ 실행 결과**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">         len_words
 count  5000.000000
 mean    133.811400
 std     119.787704

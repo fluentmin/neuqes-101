@@ -325,16 +325,14 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
     if not items:
         return ""
 
-    # 연속 text는 하나의 <pre>로 합치고, image는 별도 라벨 + 마크다운 이미지로(순서 보존).
-    blocks: list[str] = []
+    # 라벨은 셀당 1번만 맨 위에. 연속 text는 하나의 <pre>로 합치고 image는 그대로(순서 보존).
+    blocks: list[str] = [f"**{OUTPUT_LABEL}**"]
     buf: list[str] = []
 
     def flush_text():
         if buf:
             body = _html_escape("\n".join(buf))
-            blocks.append(
-                f'<pre style="{OUTPUT_PRE_STYLE}"><b>{OUTPUT_LABEL}</b>\n{body}</pre>'
-            )
+            blocks.append(f'<pre style="{OUTPUT_PRE_STYLE}">{body}</pre>')
             buf.clear()
 
     for kind, val in items:
@@ -342,7 +340,7 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
             buf.append(val)
         else:
             flush_text()
-            blocks.append(f"**{OUTPUT_LABEL}**\n\n![output](../assets/{val})")
+            blocks.append(f"![output](../assets/{val})")
     flush_text()
     return "\n\n".join(blocks)
 
