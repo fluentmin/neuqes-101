@@ -234,11 +234,9 @@ class _PandasTableParser(HTMLParser):
             self.current_cell.append(data)
 
 
-def _md_escape_cell(text: str) -> str:
-    return text.replace("|", "\\|").replace("\n", " ")
-
-
-def _html_tables_to_markdown(html: str) -> list[str]:
+def _html_tables_to_text(html: str) -> list[str]:
+    """HTML 표 → 공백 정렬된 모노스페이스 텍스트(코드펜스에 넣어 블록인용 안전).
+    text/plain이 없을 때의 폴백."""
     parser = _PandasTableParser()
     parser.feed(html)
     out: list[str] = []
@@ -247,18 +245,14 @@ def _html_tables_to_markdown(html: str) -> list[str]:
         if not rows:
             continue
         width = max([len(headers)] + [len(r) for r in rows])
-        if not headers:
-            headers = [""] * width
-        headers = (headers + [""] * width)[:width]
+        headers = (headers + [""] * width)[:width] if headers else [""] * width
         shown = [(r + [""] * width)[:width] for r in rows[:30]]
-        lines = [
-            "| " + " | ".join(_md_escape_cell(c) for c in headers) + " |",
-            "| " + " | ".join(["---"] * width) + " |",
-        ]
-        for r in shown:
-            lines.append("| " + " | ".join(_md_escape_cell(c) for c in r) + " |")
+        grid = [headers] + shown
+        colw = [max(len(str(row[c])) for row in grid) for c in range(width)]
+        def fmt(row): return "  ".join(str(row[c]).ljust(colw[c]) for c in range(width)).rstrip()
+        lines = [fmt(headers)] + [fmt(r) for r in shown]
         if len(rows) > 30:
-            lines.append("| " + " | ".join(["..."] * width) + " |")
+            lines.append("...")
         out.append("\n".join(lines))
     return out
 
@@ -266,7 +260,18 @@ def _html_tables_to_markdown(html: str) -> list[str]:
 # --------------------------------------------------------------------------- #
 # 셀 출력 렌더링
 # --------------------------------------------------------------------------- #
+def _blockquote(text: str) -> str:
+    """모든 줄 앞에 '> '를 붙여 블록인용으로 감싼다(빈 줄은 '>')."""
+    return "\n".join(("> " + ln) if ln.strip() else ">" for ln in text.split("\n"))
+
+
 def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: list[int]) -> str:
+    """실행 결과를 코드와 구분되는 **블록인용 카드**로 렌더링.
+
+    WikiDocs에서 코드 블록과 출력이 같은 회색 박스로 보여 헷갈리는 문제를 해결하기 위해,
+    출력 전체를 '> '로 감싼다(왼쪽 세로바 카드). 블록인용 안에 마크다운 표를 넣으면
+    렌더링이 깨질 수 있어, 표 형태 출력도 text/plain(콘솔 표현)을 코드펜스로 통일한다.
+    """
     chunks: list[str] = []
     for out in cell.get("outputs", []):
         otype = out.get("output_type")
@@ -286,19 +291,21 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
                     (assets_dir / img_name).write_bytes(base64.b64decode(raw))
                 chunks.append(f"![output](../assets/{img_name})")
                 continue
-            html = data.get("text/html")
-            if isinstance(html, list):
-                html = "".join(html)
-            if isinstance(html, str) and "<table" in html:
-                tables = _html_tables_to_markdown(html)
-                if tables:
-                    chunks.extend(tables)
-                    continue
+            # 블록인용 중첩 안전: 표도 text/plain(콘솔 표현)을 코드펜스로.
             text = data.get("text/plain")
             if text:
                 text = _clean_text_output("".join(text) if isinstance(text, list) else str(text))
                 if text.strip():
                     chunks.append("```\n" + text + "\n```")
+                continue
+            # text/plain이 없을 때만 HTML 표 → 텍스트 표(코드펜스)로 폴백.
+            html = data.get("text/html")
+            if isinstance(html, list):
+                html = "".join(html)
+            if isinstance(html, str) and "<table" in html:
+                texts = _html_tables_to_text(html)
+                for t in texts:
+                    chunks.append("```\n" + t + "\n```")
         elif otype == "error":
             tb = out.get("traceback", [])
             if tb:
@@ -309,7 +316,8 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
                 chunks.append("```\n" + text + "\n```")
     if not chunks:
         return ""
-    return "**실행 결과**\n\n" + "\n\n".join(chunks)
+    body = "**▶ 실행 결과**\n\n" + "\n\n".join(chunks)
+    return _blockquote(body)
 
 
 # --------------------------------------------------------------------------- #

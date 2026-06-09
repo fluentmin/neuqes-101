@@ -25,20 +25,20 @@ dataset = load_dataset("Yelp/yelp_review_full")
 print(dataset)
 ```
 
-**실행 결과**
-
-```
-DatasetDict({
-    train: Dataset({
-        features: ['label', 'text'],
-        num_rows: 650000
-    })
-    test: Dataset({
-        features: ['label', 'text'],
-        num_rows: 50000
-    })
-})
-```
+> **▶ 실행 결과**
+>
+> ```
+> DatasetDict({
+>     train: Dataset({
+>         features: ['label', 'text'],
+>         num_rows: 650000
+>     })
+>     test: Dataset({
+>         features: ['label', 'text'],
+>         num_rows: 50000
+>     })
+> })
+> ```
 
 ```python
 SAMPLE_SIZE = 5000
@@ -49,17 +49,18 @@ print(f"Sample count: {len(df)}")
 df.head(3)
 ```
 
-**실행 결과**
-
-```
-Sample count: 5000
-```
-
-|  | label | text |
-| --- | --- | --- |
-| 0 | 4 | I stalk this truck. I've been to industrial p... |
-| 1 | 2 | who really knows if this is good pho or not, i... |
-| 2 | 4 | I LOVE Bloom Salon... all of their stylist are... |
+> **▶ 실행 결과**
+>
+> ```
+> Sample count: 5000
+> ```
+>
+> ```
+>    label                                               text
+> 0      4  I stalk this truck.  I've been to industrial p...
+> 1      2  who really knows if this is good pho or not, i...
+> 2      4  I LOVE Bloom Salon... all of their stylist are...
+> ```
 
 ```python
 counts = df["label"].value_counts().sort_index()
@@ -71,35 +72,35 @@ plt.show()
 print(counts)
 ```
 
-**실행 결과**
-
-![output](../assets/01-tfidf-out1.png)
-
-```
-label
-0    1017
-1    1027
-2     960
-3    1021
-4     975
-Name: count, dtype: int64
-```
+> **▶ 실행 결과**
+>
+> ![output](../assets/01-tfidf-out1.png)
+>
+> ```
+> label
+> 0    1017
+> 1    1027
+> 2     960
+> 3    1021
+> 4     975
+> Name: count, dtype: int64
+> ```
 
 ```python
 df["len_words"] = df["text"].str.split().str.len()
 df[["len_words"]].describe()
 ```
 
-**실행 결과**
-
-```
-         len_words
-count  5000.000000
-mean    133.811400
-std     119.787704
-min       1.000000
-25%      53.000000
-50%     100.000000
-75%     177.000000
-max     977.000000
-```
+> **▶ 실행 결과**
+>
+> ```
+>          len_words
+> count  5000.000000
+> mean    133.811400
+> std     119.787704
+> min       1.000000
+> 25%      53.000000
+> 50%     100.000000
+> 75%     177.000000
+> max     977.000000
+> ```
