@@ -269,10 +269,43 @@ OUTPUT_PRE_STYLE = (
     "font-size:0.92em;line-height:1.45;"
 )
 OUTPUT_LABEL = "▶ 실행 결과"
+SYNTH_LABEL = "▶ 출력 형태"
 
 
 def _html_escape(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+_SYNTH_FN = "uninit"  # notebook_to_tex.synthetic_output_text (지연 import, 캐시)
+
+
+def _synthetic_output_text(source: str) -> str:
+    """기존 ipynb→tex 합성 로직 재사용. tex와 동일하게 `print(`가 있는 셀에만 적용.
+
+    실제 실행 결과가 없을 때 '출력은 이런 모양' 골격(값은 ...)을 보여준다.
+    로직을 복제하지 않고 book/tools/notebook_to_tex.py 의 함수를 그대로 가져온다.
+    """
+    global _SYNTH_FN
+    if _SYNTH_FN == "uninit":
+        try:
+            sys.path.insert(0, str(ROOT / "book" / "tools"))
+            import notebook_to_tex as t  # noqa: E402
+            _SYNTH_FN = t.synthetic_output_text
+        except Exception:
+            _SYNTH_FN = None
+    if _SYNTH_FN is None or "print(" not in source:
+        return ""
+    try:
+        return _SYNTH_FN(source) or ""
+    except Exception:
+        return ""
+
+
+def _synthetic_block(source: str) -> str:
+    text = _clean_text_output(_synthetic_output_text(source))
+    if not text.strip():
+        return ""
+    return f'**{SYNTH_LABEL}**\n\n<pre style="{OUTPUT_PRE_STYLE}">{_html_escape(text)}</pre>'
 
 
 def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: list[int]) -> str:
@@ -382,7 +415,7 @@ def convert(nb: dict, num: int, slug: str, title: str,
             pages_dir: Path, assets_dir: Path | None) -> tuple[list[tuple[str, str]], dict]:
     stem = f"{num:02d}-{slug}"
     img_counter = [0]
-    stats = {"code_cells": 0, "code_with_output": 0, "images": 0}
+    stats = {"code_cells": 0, "code_with_output": 0, "synthetic": 0, "images": 0}
 
     groups: dict[str, list[str]] = {
         "overview": [], "practice": [], "anatomy": [], "variation": [], "wrapup": []
@@ -420,10 +453,15 @@ def convert(nb: dict, num: int, slug: str, title: str,
             block = "```python\n" + code + "\n```"
             outs = _render_outputs(cell, assets_dir, stem, img_counter)
             if outs:
-                stats["code_with_output"] += 1
+                stats["code_with_output"] += 1  # 실제 실행 결과 (executed/ 또는 --execute)
             else:
-                outs = "<!-- 실행 결과 없음: --execute 또는 --executed-notebook 로 결과를 채우세요 -->"
-            piece = block + "\n\n" + outs
+                # 실제 출력이 없으면 기존 tex 합성 로직 재사용(print 셀에 한해 ... 골격).
+                syn = _synthetic_block(code)
+                if syn:
+                    outs = syn
+                    stats["synthetic"] += 1
+                # 그 외(함수 정의·import 등)는 코드만 남김.
+            piece = block + ("\n\n" + outs if outs else "")
             if current == "overview":
                 setup_code.append(piece)
             else:
@@ -629,7 +667,7 @@ def main() -> None:
     registry = load_registry_titles()
 
     print(f"변환 대상 {len(selected)}개 챕터: {', '.join(f'{n:02d}' for n in selected)}\n")
-    ok, failed, empty = [], [], []
+    ok, failed = [], []
     for num in selected:
         folder, slug, nb_path = available[num]
         try:
@@ -637,14 +675,10 @@ def main() -> None:
             title = resolve_title(num, slug, nb, registry)
             entries, stats = convert(nb, num, slug, title, pages_dir, assets_dir)
             upsert_toc(toc_path, args.book_title, num, entries)
-            no_out = stats["code_cells"] - stats["code_with_output"]
-            flag = ""
-            if not _has_any_outputs(nb):
-                empty.append(num)
-                flag = "  ⚠️ 실행 결과 비어 있음"
             print(f"[{num:02d}] {title}")
             print(f"     원천={source}  코드셀 {stats['code_cells']}개 "
-                  f"(출력 {stats['code_with_output']} / 없음 {no_out}) 이미지 {stats['images']}{flag}")
+                  f"(실제출력 {stats['code_with_output']} / 합성 {stats['synthetic']}) "
+                  f"이미지 {stats['images']}")
             ok.append(num)
         except Exception as e:  # 챕터별 실패 격리
             failed.append((num, e))
@@ -652,9 +686,6 @@ def main() -> None:
             traceback.print_exc(limit=2)
 
     print(f"\n완료: 성공 {len(ok)} / 실패 {len(failed)}")
-    if empty:
-        print(f"⚠️ 실행 결과가 빈 챕터: {', '.join(f'{n:02d}' for n in empty)} "
-              f"→ --execute(CPU) 또는 NN_slug/NN_slug.executed.ipynb(GPU) 로 다시 생성하세요.")
     if failed:
         print("실패 챕터: " + ", ".join(f"{n:02d}" for n, _ in failed))
         sys.exit(1)

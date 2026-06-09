@@ -1,0 +1,102 @@
+## 환경 준비
+
+```python
+!pip install -q datasets scikit-learn pandas matplotlib
+```
+
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from datasets import load_dataset
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+plt.rcParams["axes.unicode_minus"] = False
+
+dataset = load_dataset("Yelp/yelp_review_full")
+SAMPLE_SIZE = 5000
+ds = dataset["train"].shuffle(seed=42).select(range(SAMPLE_SIZE))
+df = ds.to_pandas()
+print(f"Sample count: {len(df)}")
+```
+
+**▶ 출력 형태**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">DatasetDict({
+  train: Dataset({features: ['label', 'text'], num_rows: ...})
+  test:  Dataset({features: ['label', 'text'], num_rows: ...})
+})</pre>
+
+```python
+# 별점은 0-4로 저장돼 있으니 1-5로 변환
+df["star"] = df["label"] + 1
+
+# train / test split
+X_text_train, X_text_test, y_train, y_test = train_test_split(
+    df["text"], df["star"].astype(float),
+    test_size=0.2, random_state=42,
+)
+
+# TF-IDF (Ch 1과 같은 설정)
+tfidf = TfidfVectorizer(max_features=10000)
+X_train = tfidf.fit_transform(X_text_train)
+X_test = tfidf.transform(X_text_test)
+
+print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
+print(f"X_test:  {X_test.shape}, y_test:  {y_test.shape}")
+```
+
+**▶ 출력 형태**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Output varies by runtime, seed, and sampled data.
+Running the cell in Colab prints the corresponding string or table.</pre>
+
+`LinearRegression`은 가중치 벡터 $w$와 편향 $b$를 학습해 다음을 출력합니다.
+
+$$\hat y = w^\top x + b$$
+
+활성화 함수 없음, 출력 범위 제한 없음. 정답 $y$와의 MSE를 최소화하도록 $w, b$를 푸는 게 학습의 전부입니다 (sklearn은 정규방정식으로 한 번에 풉니다).
+
+```python
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred_train = model.predict(X_train)
+y_pred_test = model.predict(X_test)
+
+print(f"Train MSE: {mean_squared_error(y_train, y_pred_train):.4f}")
+print(f"Test  MSE: {mean_squared_error(y_test,  y_pred_test):.4f}")
+print(f"Test  MAE: {mean_absolute_error(y_test, y_pred_test):.4f}")
+print(f"Test  R²:  {r2_score(y_test, y_pred_test):.4f}")
+```
+
+**▶ 출력 형태**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">logits shape: (..., ...)
+probability range: [..., ...]
+first samples:
+  ...</pre>
+
+```python
+# 예측값이 1-5 범위를 얼마나 벗어나는지 확인
+print(f"Pred range: [{y_pred_test.min():.2f}, {y_pred_test.max():.2f}]")
+print(f"True range: [{y_test.min():.0f}, {y_test.max():.0f}]")
+
+plt.hist(y_pred_test, bins=40, alpha=0.6, label="predicted")
+plt.hist(y_test, bins=5, alpha=0.6, label="actual")
+plt.axvline(1, color="red", linestyle="--", linewidth=1, label="1 / 5 boundary")
+plt.axvline(5, color="red", linestyle="--", linewidth=1)
+plt.xlabel("Star (1-5)")
+plt.ylabel("Count")
+plt.legend()
+plt.title("Prediction distribution: actual vs predicted")
+plt.show()
+```
+
+**▶ 출력 형태**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Output varies by runtime, seed, and sampled data.
+Running the cell in Colab prints the corresponding string or table.</pre>

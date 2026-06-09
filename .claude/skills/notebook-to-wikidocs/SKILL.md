@@ -26,20 +26,20 @@ description: 챕터 노트북(.ipynb)/tex을 WikiDocs용 장→절 마크다운�
 - **지정 안 했으면 전체(`--all`)를 돌리기 전에 반드시 사용자에게 확인**받는다.
   (32챕터 + 향후 추가까지 동적으로 변환되므로 의도치 않은 대량 실행을 막는다.)
 
-### 2. 실행 결과(출력)의 원천 결정 — 가장 중요
-노트북은 보통 출력이 비어 있다(Colab용 clean). 변환기가 다음 우선순위로 **실제** 결과를 찾는다.
+### 2. 출력의 원천 — 실제 결과가 있으면 쓰고, 없으면 합성 골격
+노트북은 보통 출력이 비어 있다(Colab용 clean). **실제 실행은 비용이 커서 필수가 아니다.**
+변환기가 셀마다 다음 우선순위로 출력을 채운다.
 
-1. **`--executed-notebook PATH`** (단일 챕터): 출력 포함 실행본 명시.
-2. **`executed/<폴더>.ipynb`**: 있으면 자동으로 출력 원천으로 사용. **GPU 챕터(7–31)의 진짜
-   결과는 이 경로뿐**이다 — Colab T4에서 끝까지 돌린 뒤 "파일 > .ipynb 다운로드"(출력 포함)해
-   `executed/<폴더>.ipynb`로 커밋한다. (executed/README.md 참조)
-3. **`--execute`**: `nbclient`로 직접 실행. CPU 챕터(1–6, 일부 8/19)에만. `--save-executed`를
-   더하면 결과를 `executed/<폴더>.ipynb`로 저장해 재사용·재현이 가능하다.
-   GPU/대용량 학습 챕터엔 쓰지 않는다(T4 없음, 30분 초과).
-4. 아무것도 없으면: 코드만 출력하고 셀마다 `<!-- 실행 결과 없음 -->` 주석을 남겨 누락을
-   **드러낸다**. 절대 그럴듯한 가짜 출력으로 채우지 않는다.
+1. **`--executed-notebook PATH`** (단일 챕터): 출력 포함 실행본 명시 → 실제 결과(`▶ 실행 결과`).
+2. **`executed/<폴더>.ipynb`**: 있으면 자동 사용 → 실제 결과. (Colab에서 돌린 실행본을 둘 때만)
+3. **`--execute`**: `nbclient`로 직접 실행(CPU 챕터에만). `--save-executed`면 `executed/`에 저장.
+4. **합성(기본 폴백)**: 위가 없으면 `book/tools/notebook_to_tex.py`의 `synthetic_output_text()`를
+   **그대로 재사용**해 `print(`가 있는 셀에 "출력은 이런 모양" 골격(값은 `...`)을 채운다
+   → `▶ 출력 형태` 라벨. 함수 정의·import 등은 코드만.
 
-CPU 실행용 venv 예: `pip install nbclient nbformat ipykernel scikit-learn pandas matplotlib seaborn datasets`.
+즉 **기본값은 합성**이고, 실행본/`--execute`가 있을 때만 실제 결과로 승급한다. 실제 결과와
+합성은 라벨로 구분한다(`▶ 실행 결과` vs `▶ 출력 형태`). 합성 로직은 tex와 단일 출처를 공유한다
+(재구현 금지 — import해서 사용).
 
 ### 3. 변환 실행
 ```bash
