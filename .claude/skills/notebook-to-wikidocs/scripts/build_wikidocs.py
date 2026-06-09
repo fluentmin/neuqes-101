@@ -260,25 +260,35 @@ def _html_tables_to_text(html: str) -> list[str]:
 # --------------------------------------------------------------------------- #
 # 셀 출력 렌더링
 # --------------------------------------------------------------------------- #
-def _blockquote(text: str) -> str:
-    """모든 줄 앞에 '> '를 붙여 블록인용으로 감싼다(빈 줄은 '>')."""
-    return "\n".join(("> " + ln) if ln.strip() else ">" for ln in text.split("\n"))
+# 실행 결과 박스 스타일 — 회색 코드블록과 구분되도록 왼쪽 색깔 바 + 옅은 배경.
+# WikiDocs는 HTML+style 을 지원하고 highlight.js로 코드만 색칠하므로, 출력은 <pre>로 둔다.
+# (블록인용 안 코드펜스는 WikiDocs에서 ``` 가 노출되어 사용 불가.)
+OUTPUT_PRE_STYLE = (
+    "background:#eef3fb;border-left:4px solid #5B8DEF;"
+    "padding:0.7em 1em;border-radius:4px;overflow-x:auto;"
+    "font-size:0.92em;line-height:1.45;"
+)
+OUTPUT_LABEL = "▶ 실행 결과"
+
+
+def _html_escape(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: list[int]) -> str:
-    """실행 결과를 코드와 구분되는 **블록인용 카드**로 렌더링.
+    """실행 결과를 코드와 구분되는 **색깔 박스**(HTML <pre>)로 렌더링.
 
-    WikiDocs에서 코드 블록과 출력이 같은 회색 박스로 보여 헷갈리는 문제를 해결하기 위해,
-    출력 전체를 '> '로 감싼다(왼쪽 세로바 카드). 블록인용 안에 마크다운 표를 넣으면
-    렌더링이 깨질 수 있어, 표 형태 출력도 text/plain(콘솔 표현)을 코드펜스로 통일한다.
+    WikiDocs에서 출력 펜스가 코드 펜스와 같은 회색 박스로 보여 헷갈리던 문제를 해결한다.
+    <pre>는 공백·줄바꿈을 그대로 보존(표 정렬 OK)하고 highlight.js 색칠 대상이 아니라
+    코드블록과 확실히 구분된다. 이미지는 <pre>에 못 넣으므로 라벨 + 마크다운 이미지로.
     """
-    chunks: list[str] = []
+    items: list[tuple[str, str]] = []  # ("text", str) | ("image", name)
     for out in cell.get("outputs", []):
         otype = out.get("output_type")
         if otype == "stream":
             text = _clean_text_output("".join(out.get("text", [])))
             if text.strip():
-                chunks.append("```\n" + text + "\n```")
+                items.append(("text", text))
         elif otype in ("execute_result", "display_data"):
             data = out.get("data", {})
             if "image/png" in data:
@@ -289,23 +299,20 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
                     raw = data["image/png"]
                     raw = raw if isinstance(raw, str) else "".join(raw)
                     (assets_dir / img_name).write_bytes(base64.b64decode(raw))
-                chunks.append(f"![output](../assets/{img_name})")
+                items.append(("image", img_name))
                 continue
-            # 블록인용 중첩 안전: 표도 text/plain(콘솔 표현)을 코드펜스로.
             text = data.get("text/plain")
             if text:
                 text = _clean_text_output("".join(text) if isinstance(text, list) else str(text))
                 if text.strip():
-                    chunks.append("```\n" + text + "\n```")
+                    items.append(("text", text))
                 continue
-            # text/plain이 없을 때만 HTML 표 → 텍스트 표(코드펜스)로 폴백.
             html = data.get("text/html")
             if isinstance(html, list):
                 html = "".join(html)
             if isinstance(html, str) and "<table" in html:
-                texts = _html_tables_to_text(html)
-                for t in texts:
-                    chunks.append("```\n" + t + "\n```")
+                for t in _html_tables_to_text(html):
+                    items.append(("text", t))
         elif otype == "error":
             tb = out.get("traceback", [])
             if tb:
@@ -313,11 +320,31 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
             else:
                 text = f"{out.get('ename', 'Error')}: {out.get('evalue', '')}"
             if text.strip():
-                chunks.append("```\n" + text + "\n```")
-    if not chunks:
+                items.append(("text", text))
+
+    if not items:
         return ""
-    body = "**▶ 실행 결과**\n\n" + "\n\n".join(chunks)
-    return _blockquote(body)
+
+    # 연속 text는 하나의 <pre>로 합치고, image는 별도 라벨 + 마크다운 이미지로(순서 보존).
+    blocks: list[str] = []
+    buf: list[str] = []
+
+    def flush_text():
+        if buf:
+            body = _html_escape("\n".join(buf))
+            blocks.append(
+                f'<pre style="{OUTPUT_PRE_STYLE}"><b>{OUTPUT_LABEL}</b>\n{body}</pre>'
+            )
+            buf.clear()
+
+    for kind, val in items:
+        if kind == "text":
+            buf.append(val)
+        else:
+            flush_text()
+            blocks.append(f"**{OUTPUT_LABEL}**\n\n![output](../assets/{val})")
+    flush_text()
+    return "\n\n".join(blocks)
 
 
 # --------------------------------------------------------------------------- #
