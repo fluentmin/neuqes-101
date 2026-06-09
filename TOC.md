@@ -10,3 +10,7 @@
   * [02-2. 해부: "출력은 그냥 숫자다"](pages/02-sklearn_regression-anatomy.md)
   * [02-3. 변형: 별점을 [0, 1]로 정규화](pages/02-sklearn_regression-variation.md)
   * [02-4. 정리와 FAQ](pages/02-sklearn_regression-wrapup.md)
+* [24. 작은 GPT 사전학습 (TinyStories Causal LM)](pages/24-gpt_tinystories.md)
+  * [24-1. 실습](pages/24-gpt_tinystories-practice.md)
+  * [24-2. 변형 - sampling hyperparam 비교](pages/24-gpt_tinystories-variation.md)
+  * [24-3. 정리와 FAQ](pages/24-gpt_tinystories-wrapup.md)
