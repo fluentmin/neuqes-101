@@ -15,8 +15,9 @@ X_tfidf = tfidf.fit_transform(df["text"])
 print(f"shape: {X_tfidf.shape}")
 ```
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-shape: (5000, 10000)</pre>
+**▶ 실행 결과**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">shape: (5000, 10000)</pre>
 
 ```python
 doc_id = 0
@@ -36,8 +37,9 @@ for i in top:
     print(f"{vocab_tf[i]:>15}  {cv_row[i]:>6}  {tfidf_row[i]:>8.4f}")
 ```
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-Review preview (200 chars):
+**▶ 실행 결과**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Review preview (200 chars):
 I stalk this truck.  I've been to industrial parks where I pretend to be a tech worker standing in line, strip mall parking lots, and of course the farmer's market.  The bowls are so so absolutely div...
 
            word   count     tfidf

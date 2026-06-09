@@ -15,8 +15,9 @@ sparsity = 1 - X_count.nnz / (X_count.shape[0] * X_count.shape[1])
 print(f"sparsity: {sparsity:.2%}  (fraction of empty cells)")
 ```
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-shape: (5000, 10000)  (n_docs, vocab_size)
+**▶ 실행 결과**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">shape: (5000, 10000)  (n_docs, vocab_size)
 non-zero entries: 405,789
 total cells: 50,000,000
 sparsity: 99.19%  (fraction of empty cells)</pre>
@@ -28,8 +29,9 @@ print(f"Input sentence: {sample!r}")
 print(f"Tokenized: {analyzer(sample)}")
 ```
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-Input sentence: 'I love using Hugging Face!'
+**▶ 실행 결과**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Input sentence: 'I love using Hugging Face!'
 Tokenized: ['love', 'using', 'hugging', 'face']</pre>
 
 **관찰 포인트**
@@ -51,8 +53,9 @@ for i in top:
     print(f"  {vocab[i]:>15}  {word_counts[i]:>6,}")
 ```
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;"><b>▶ 실행 결과</b>
-Vocab size: 10,000
+**▶ 실행 결과**
+
+<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Vocab size: 10,000
 First 20: ['00', '000', '00am', '00pm', '05', '08', '09', '10', '100', '1000', '100th', '101', '10am', '10min', '10pm', '11', '110', '112', '11am', '11pm']
 
 Top 10 most frequent words
