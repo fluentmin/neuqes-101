@@ -289,8 +289,44 @@ ch01 anatomy의 출력 박스 3개를 `<pre style>` → **`::: {.output}` + 내�
 - 기본 대상 `pages/*.md`. **실측: ch01 ✅ 통과 / ch02·ch24 는 구버전(`<pre style>`)이라 위반 다수**
   → 그 챕터들도 새 변환기로 재생성 필요(후속).
 
-## 8. 진행 로그
+## 8. 고민 8 — Colab 실행 결과 관리 (2026-06-11 신규)
 
+> 계기: 출력 정책은 "합성 기본 + executed/ 승급"으로 정리됐지만(고민 2), **executed/를
+> 실제로 채우는 절차가 전부 수동**(챕터마다 Colab 열기→끝까지 실행→`.ipynb` 다운로드→
+> executed/에 저장→커밋)이다. GPU 챕터(07~32, 약 26개)를 손으로 돌리는 건 비현실적.
+> 판매 EPUB은 실제 결과 권장(고민 7-2ⓐ)이라 **Colab 실행을 체계적으로 돌리고 결과를
+> 관리하는 워크플로**가 필요하다. → 출력 원천 소비(build_wikidocs.py)는 이미 있고, **생산 측(실행·수집)이 비어 있음.**
+
+### 8-1. 설계 방향 — 러너 노트북 `executed/run_on_colab.ipynb`
+Colab T4에서 여는 단일 러너 노트북 (레포에 체크인, README의 Colab 버튼처럼 1클릭):
+1. 포크를 `git clone`(또는 pull).
+2. 챕터 선택(단일 / 배치 / 전체).
+3. 각 챕터 clean ipynb 를 `nbclient`(또는 `papermill`)로 **끝까지 실행, 출력 캡처**.
+4. `executed/<폴더>.ipynb` 로 저장. (변환기가 자동 소비 — 우선순위 ②)
+5. 결과를 레포로 반환(↓ 8-3 결정 필요).
+
+### 8-2. 멱등·재개 (필수)
+- Colab 무료 세션은 GPU 시간/연속 사용 한계(아이들 끊김, 최대 ~12h) → **한 세션에 26개 일괄은 위험**.
+- 러너는 **재개 가능**해야: 이미 `executed/<폴더>.ipynb`가 있고 clean 노트북 해시가 그대로면 **건너뜀**.
+- clean 노트북이 실행 후 바뀌면 executed 가 **stale** → 러너가 소스 해시를 executed 메타데이터에
+  심어두고 비교, 갱신 대상만 재실행. 어느 챕터가 최신/낡음인지 **manifest(표)** 로 출력.
+- yoongu 결정(스레드): **실행 환경은 Colab 기준으로 고정**(M시리즈 맥북 가능하나 "검증한 환경" 우선).
+  T4 30분 가정은 **완화 가능**(GPU 챕터는 더 걸려도 됨) — 단 세션 한계 때문에 배치/재개가 필수.
+
+### 8-3. [결정됨 #8] 실행본 반환 = Colab 직접 push (2026-06-11, 사용자 선택 A)
+- **A. Colab에서 직접 git push (채택)** — 러너가 PAT(getpass 입력, 저장 안 함)로 `executed/`만 커밋·푸시.
+  포크(fluentmin/neuqes-101)라 blast radius 작음. 26챕터 자동화에 최적. push URL `https://<token>@github.com/...`.
+- (기각) B. zip 다운로드 → 로컬 커밋 — 토큰 불필요하나 세션마다 수동 한 단계.
+- 구현: 러너 노트북 `executed/run_on_colab.ipynb` (생성기 `scripts/make_colab_runner.py`).
+  소스 해시를 executed 메타데이터(`executed_from.source_sha256`)에 심어 멱등/재개. 대상 `all|gpu|stale|리스트`.
+
+### 8-4. 결정론 / 신뢰성 메모
+- tex 결괏값은 "가짜가 많다"(yoongu)→ **신뢰 금지, executed/ 만 canonical**(고민 2와 같은 뿌리).
+- 가능한 곳은 seed 고정. 실행 로그(시간/실패 챕터)를 manifest 에 남겨 재현·디버그.
+
+## 9. 진행 로그
+
+- 2026-06-11 고민 8(Colab 실행 결과 관리) 추가 — executed/ 생산 측 워크플로 설계(러너 노트북+멱등 재개). 반환 방식 결정 대기(§8-3).
 - 2026-06-11 198723 전수 감사 → 변환기 방어(_sanitize_md_cell) + 사후 린터 check_wikidocs_md.py 추가(§7-9). ch01 통과.
 - 2026-06-11 WikiDocs 웹 실측: fenced div(:::) 웹에서 깨짐 → 기본 출력 스타일 code 로 확정(§7-8). ch01 재생성.
 - 2026-06-11 pandoc으로 ch01 EPUB/PDF 실측(§7-5) → fenced div 출력박스 시제품 검증(§7-6) → 공식 198723 반영(§7-7).
