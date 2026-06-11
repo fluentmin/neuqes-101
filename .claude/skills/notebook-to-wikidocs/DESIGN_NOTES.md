@@ -247,8 +247,31 @@ ch01 anatomy의 출력 박스 3개를 `<pre style>` → **`::: {.output}` + 내�
   **WikiDocs 네이티브 PDF_EXCLUDE/INCLUDE로 web↔ebook 차이를 흡수**하는 설계가 가능(예: 웹은 `<pre style>` 박스를
   PDF_EXCLUDE로 감싸고, PDF용 fenced div를 PDF_INCLUDE로 — 7-6의 웹 렌더 미검증 리스크를 우회).
 
+### 7-8. WikiDocs 웹 실측 → 기본값 `code` 확정 (2026-06-11)
+
+§7-6의 미해결 리스크("웹이 `:::`를 렌더하는지")를 **실제 업로드 후 확인**(wikidocs.net/365451, Playwright).
+**결과: 웹은 fenced div 를 렌더하지 못함.** `::: {.output}` 와 `:::` 가 **글자 그대로 노출**되고
+`div.output` 은 0개(스크린샷 `playwright_screenshot/wikidocs-web-fenced-div-broken.png`). 단 **안쪽
+```` ```text ```` 코드펜스는 웹에서 정상 렌더**(출력 내용 박스 자체는 나옴) → `:::` 래퍼만 문제.
+
+세 타깃 정리 (실측 종합):
+
+| 표현 | WikiDocs 웹 | PDF(pandoc) | EPUB(pandoc) |
+|---|---|---|---|
+| `html-box` (`<pre style>`) | ✅ 색 박스 | ❌ 내용 드롭 | ❌ XML 깨짐 |
+| `fenced-div` (`:::`) | ❌ `:::` 노출 | ✅ tcolorbox | ✅ div+CSS |
+| **`code` (```` ```text ````)** | ✅ 코드박스 | ✅ 코드블록 | ✅ 코드블록 |
+
+→ **세 타깃을 모두 만족하는 건 `code` 뿐. 변환기 기본값을 `code` 로 변경**(2026-06-11).
+색깔 박스는 포기하되, `▶ 실행 결과` 라벨 + (코드=python 하이라이트 / 출력=plain)로 구분.
+`fenced-div`(전자책 전용 빌드 시 색 박스)·`html-box`(웹 전용)는 옵션으로 남김.
+
+> 미련: 웹+전자책 동시에 색을 지키려면 198723의 `PDF_EXCLUDE/INCLUDE` 이중 출력이 유일 후보지만,
+> EPUB 이 그 태그를 존중하는지 미검증(서버 업로드 필요)이라 보류. 필요해지면 그때 검증.
+
 ## 8. 진행 로그
 
+- 2026-06-11 WikiDocs 웹 실측: fenced div(:::) 웹에서 깨짐 → 기본 출력 스타일 code 로 확정(§7-8). ch01 재생성.
 - 2026-06-11 pandoc으로 ch01 EPUB/PDF 실측(§7-5) → fenced div 출력박스 시제품 검증(§7-6) → 공식 198723 반영(§7-7).
 - 2026-06-11 WikiDocs 전자책 포맷 조사(웹 403 → Playwright). EPUB/PDF 다운스트림 제약을 고민 7로 누적.
 - 2026-06-09 브랜치 `feat/notebook-to-wikidocs-skill` 생성. 스킬 스캐폴딩 + 변환기 작성.

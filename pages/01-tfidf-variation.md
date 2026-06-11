@@ -17,11 +17,9 @@ print(f"shape: {X_tfidf.shape}")
 
 **▶ 실행 결과**
 
-::: {.output}
 ```text
 shape: (5000, 10000)
 ```
-:::
 
 ```python
 doc_id = 0
@@ -43,7 +41,6 @@ for i in top:
 
 **▶ 실행 결과**
 
-::: {.output}
 ```text
 Review preview (200 chars):
 I stalk this truck.  I've been to industrial parks where I pretend to be a tech worker standing in line, strip mall parking lots, and of course the farmer's market.  The bowls are so so absolutely div...
@@ -61,7 +58,6 @@ I stalk this truck.  I've been to industrial parks where I pretend to be a tech 
           bowls       1    0.1988
           gotta       1    0.1898
 ```
-:::
 
 **관찰**: 단순 횟수 기준 top 10에는 `the`, `and` 같은 흔한 단어가 위로 올라옵니다. TF-IDF 정렬에서는 그 문서를 특징짓는 명사·형용사가 상위로 올라오는 경향을 볼 수 있습니다.
 

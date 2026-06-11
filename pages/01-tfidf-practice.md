@@ -23,7 +23,6 @@ print(dataset)
 
 **▶ 실행 결과**
 
-::: {.output}
 ```text
 DatasetDict({
     train: Dataset({
@@ -36,7 +35,6 @@ DatasetDict({
     })
 })
 ```
-:::
 
 ```python
 SAMPLE_SIZE = 5000
@@ -49,7 +47,6 @@ df.head(3)
 
 **▶ 실행 결과**
 
-::: {.output}
 ```text
 Sample count: 5000
    label                                               text
@@ -57,7 +54,6 @@ Sample count: 5000
 1      2  who really knows if this is good pho or not, i...
 2      4  I LOVE Bloom Salon... all of their stylist are...
 ```
-:::
 
 ```python
 counts = df["label"].value_counts().sort_index()
@@ -73,7 +69,6 @@ print(counts)
 
 ![output](../assets/01-tfidf-out1.png)
 
-::: {.output}
 ```text
 label
 0    1017
@@ -83,7 +78,6 @@ label
 4     975
 Name: count, dtype: int64
 ```
-:::
 
 ```python
 df["len_words"] = df["text"].str.split().str.len()
@@ -92,7 +86,6 @@ df[["len_words"]].describe()
 
 **▶ 실행 결과**
 
-::: {.output}
 ```text
          len_words
 count  5000.000000
@@ -104,4 +97,3 @@ min       1.000000
 75%     177.000000
 max     977.000000
 ```
-:::

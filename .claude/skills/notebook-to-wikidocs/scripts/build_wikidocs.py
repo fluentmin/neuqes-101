@@ -271,15 +271,16 @@ OUTPUT_PRE_STYLE = (
 OUTPUT_LABEL = "▶ 실행 결과"
 SYNTH_LABEL = "▶ 출력 형태"
 
-# 출력 박스 표현 방식 (변환 타깃별). build_wikidocs.py 의 EPUB/PDF 실측(DESIGN_NOTES §7-5~7-7) 결과:
-#   fenced-div : "::: {.output}" + 코드펜스. 순수 마크다운이라 EPUB/PDF(pandoc)에서 안전하고,
-#                WikiDocs PDF 파이프라인의 --filter pandoc-latex-environment 가 .output 을 색깔 박스로 칠한다.
-#                EPUB 에선 div.output CSS(왼쪽 색깔 바 + 옅은 배경)로 코드와 구분 + 긴 줄 reflow. → 기본값.
-#   html-box   : "<pre style>" 색깔 박스. WikiDocs '웹'에서 잘 보이나 전자책(pandoc)에선 통째로 드롭/깨짐
+# 출력 박스 표현 방식 (변환 타깃별). 실측(DESIGN_NOTES §7-5~7-8) 결과 세 타깃(웹/PDF/EPUB)을
+# 모두 만족하는 건 code 뿐이라 기본값으로 둔다:
+#   code       : 평범한 코드펜스(```text) + "▶ 실행 결과" 라벨. 웹·PDF·EPUB 모두 정상 동작.
+#                색깔 박스는 없지만 라벨 + (코드는 python 하이라이트 / 출력은 plain)로 구분. → 기본값.
+#   fenced-div : "::: {.output}" + 코드펜스. EPUB/PDF(pandoc)에선 색깔 박스로 살아나나,
+#                WikiDocs '웹' 마크다운은 fenced div 를 몰라 ::: 가 글자로 노출됨(2026-06-11 실측 확인).
+#   html-box   : "<pre style>" 색깔 박스. WikiDocs '웹'에선 잘 보이나 전자책(pandoc)에선 드롭/깨짐
 #                (공식 문서 198723: "HTML 코드는 전자책 변환 시 정상 표시되지 않습니다").
-#   code       : 평범한 코드펜스. 웹·전자책 모두 안전하나 색 구분 없이 라벨로만 코드와 구분.
-OUTPUT_STYLES = ("fenced-div", "html-box", "code")
-DEFAULT_OUTPUT_STYLE = "fenced-div"
+OUTPUT_STYLES = ("code", "fenced-div", "html-box")
+DEFAULT_OUTPUT_STYLE = "code"
 
 
 def _html_escape(text: str) -> str:
@@ -657,7 +658,8 @@ def main() -> None:
     ap.add_argument("--toc", default="TOC.md")
     ap.add_argument("--book-title", default=DEFAULT_BOOK_TITLE)
     ap.add_argument("--output-style", choices=OUTPUT_STYLES, default=DEFAULT_OUTPUT_STYLE,
-                    help="실행 결과 박스 표현: fenced-div(기본, EPUB/PDF 안전) | html-box(웹 전용) | code(무색 안전)")
+                    help="실행 결과 박스 표현: code(기본, 웹·PDF·EPUB 모두 안전) | "
+                         "fenced-div(전자책 색 박스, 웹에선 ::: 노출) | html-box(웹 전용 색 박스, 전자책 깨짐)")
     ap.add_argument("--execute", action="store_true",
                     help="nbclient로 실행해 실제 출력을 채움 (CPU 챕터용; GPU 챕터엔 비권장)")
     ap.add_argument("--executed-notebook", default=None,
