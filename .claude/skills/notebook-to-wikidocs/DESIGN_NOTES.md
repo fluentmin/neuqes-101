@@ -297,13 +297,16 @@ ch01 anatomy의 출력 박스 3개를 `<pre style>` → **`::: {.output}` + 내�
 > 판매 EPUB은 실제 결과 권장(고민 7-2ⓐ)이라 **Colab 실행을 체계적으로 돌리고 결과를
 > 관리하는 워크플로**가 필요하다. → 출력 원천 소비(build_wikidocs.py)는 이미 있고, **생산 측(실행·수집)이 비어 있음.**
 
-### 8-1. 설계 방향 — 러너 노트북 `executed/run_on_colab.ipynb`
-Colab T4에서 여는 단일 러너 노트북 (레포에 체크인, README의 Colab 버튼처럼 1클릭):
+### 8-1. 러너 노트북 `executed/run_on_colab.ipynb` (구현 완료, 실측 동작)
+Colab T4에서 여는 단일 러너 노트북 (레포에 체크인, GitHub→Colab 링크로 1클릭):
 1. 포크를 `git clone`(또는 pull).
-2. 챕터 선택(단일 / 배치 / 전체).
-3. 각 챕터 clean ipynb 를 `nbclient`(또는 `papermill`)로 **끝까지 실행, 출력 캡처**.
-4. `executed/<폴더>.ipynb` 로 저장. (변환기가 자동 소비 — 우선순위 ②)
-5. 결과를 레포로 반환(↓ 8-3 결정 필요).
+2. 챕터 선택: `TARGET = "stale"(기본) | "all" | "gpu"(07+) | 리스트([1,7,24])`.
+3. 각 챕터 clean ipynb 를 `nbclient`로 **끝까지 실행, 출력 캡처**(셀당 `PER_CELL_TIMEOUT` 기본 1h).
+4. `executed/<폴더>.ipynb` 로 저장 + `executed_from{source_sha256,executed_at,runtime,status}` 도장. (변환기가 자동 소비 — 우선순위 ②)
+5. `executed/` 만 staging → 커밋 → **포크 master 로 직접 push**(§8-3 A).
+
+> **setup 셀 교훈(버그→수정):** `'...{REPO}.git {WORK}'.format(REPO=REPO)` 가 문자열 안 `{WORK}`까지
+> 치환하려다 `KeyError: 'WORK'`. → IPython `system()` 명령은 **f-string**으로 작성(부분 `.format` 금지). 생성기 반영 완료.
 
 ### 8-2. 멱등·재개 (필수)
 - Colab 무료 세션은 GPU 시간/연속 사용 한계(아이들 끊김, 최대 ~12h) → **한 세션에 26개 일괄은 위험**.
@@ -324,9 +327,20 @@ Colab T4에서 여는 단일 러너 노트북 (레포에 체크인, README의 Co
 - tex 결괏값은 "가짜가 많다"(yoongu)→ **신뢰 금지, executed/ 만 canonical**(고민 2와 같은 뿌리).
 - 가능한 곳은 seed 고정. 실행 로그(시간/실패 챕터)를 manifest 에 남겨 재현·디버그.
 
+### 8-5. 실행 현황 + 전수 점검 (2026-06-11, 러너 첫 가동)
+사용자가 러너를 Colab T4에서 돌려 **01~15 챕터를 실행·push**(GPU 챕터 07~15 포함). 로컬 pull 후 전수 점검:
+- **15개 전부 `status=ok`, 에러 트레이스백 0건, 모든 코드 셀 실행 완료**(조기 중단 없음).
+- 출력 없는 셀은 챕터당 1~2개(import/정의 전용) — 정상. `stderr`(warn)은 학습 진행바·HF 경고로 무해.
+- GPU 챕터(07~15) stderr 스캔: CUDA/fp16 언급 있고 **OOM·CPU 폴백·RuntimeError 적신호 0** → T4에서 정상 학습 확인.
+- ch01 도 러너로 재실행되어 `executed_from` 도장이 박힘 → 이제 멱등 관리에 통일(이전엔 로컬 `--save-executed` 산).
+- 점검 스니펫: `executed_from.status` + output_type=='error' 카운트 + 셀 실행카운트 == 코드셀 수.
+- **남은 실행분: 16~32**(한국어/사전학습/SFT/DPO/GRPO/diffusion). `TARGET="stale"` 로 이어서 채우면 됨.
+- 다음: executed/ 가 채워진 **01~15 페이지를 실제 결과(`▶ 실행 결과`)로 재생성** + 린터 통과 + TOC 갱신(고민 7-9 후속).
+
 ## 9. 진행 로그
 
-- 2026-06-11 고민 8(Colab 실행 결과 관리) 추가 — executed/ 생산 측 워크플로 설계(러너 노트북+멱등 재개). 반환 방식 결정 대기(§8-3).
+- 2026-06-11 러너 첫 가동 — Colab 에서 01~15 실행·push, 로컬 전수 점검 전부 ok/에러0/GPU정상(§8-5). setup 셀 KeyError(.format→f-string) 수정.
+- 2026-06-11 고민 8(Colab 실행 결과 관리) 추가 — 러너 노트북 `executed/run_on_colab.ipynb` + 생성기 구현, 결정 #8=A(Colab 직접 push).
 - 2026-06-11 198723 전수 감사 → 변환기 방어(_sanitize_md_cell) + 사후 린터 check_wikidocs_md.py 추가(§7-9). ch01 통과.
 - 2026-06-11 WikiDocs 웹 실측: fenced div(:::) 웹에서 깨짐 → 기본 출력 스타일 code 로 확정(§7-8). ch01 재생성.
 - 2026-06-11 pandoc으로 ch01 EPUB/PDF 실측(§7-5) → fenced div 출력박스 시제품 검증(§7-6) → 공식 198723 반영(§7-7).
