@@ -44,6 +44,33 @@ MD_INTRO = """\
 런타임 유형이 **T4 GPU** 인지 먼저 확인하세요(`런타임 > 런타임 유형 변경`).
 """
 
+MD_TOKEN = """\
+## 🔑 GitHub 토큰(PAT) 발급 방법
+
+아래 **설정 셀**을 실행하면 `GitHub PAT ...:` 입력창이 뜹니다. 결과(`executed/`)를 포크에
+push 하려면 토큰이 필요해요. **레포 하나에만 권한을 주는 Fine-grained PAT** 를 권장합니다.
+
+> getpass 입력창이라 **붙여넣어도 화면에 안 보이는 게 정상**입니다. 토큰은 저장·출력되지 않습니다.
+
+**발급 순서 (Fine-grained, 권장)**
+
+1. 바로가기 → **https://github.com/settings/personal-access-tokens/new**
+   (메뉴: GitHub 우상단 프로필 → *Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token*)
+2. **Token name**: 아무거나 (예: `neuqes-executed-runner`)
+3. **Expiration**: 7일 또는 30일 (짧게)
+4. **Resource owner**: 본인 계정(`fluentmin`)
+5. **Repository access** → **Only select repositories** → **`neuqes-101`** 선택
+6. **Permissions** → **Repository permissions** → **Contents** 를 **Read and write** 로
+   (이걸 켜면 `Metadata: Read-only` 가 자동 포함됩니다 — 그대로 두세요)
+7. 맨 아래 **Generate token** → 나오는 `github_pat_...` 문자열 **복사**
+8. 설정 셀의 입력창에 **붙여넣고 Enter**
+
+> 토큰은 페이지를 떠나면 다시 못 보니 그 자리에서 복사하세요. 만료/분실 시 새로 발급하면 됩니다.
+
+**대안 (Classic PAT)** — 더 간단하지만 계정 전체 레포에 권한이 생깁니다:
+**https://github.com/settings/tokens** → *Generate new token (classic)* → scope **`repo`** 체크 → 생성.
+"""
+
 CODE_SETUP = """\
 # 1) 의존성 설치 + 포크 클론
 import os
@@ -224,6 +251,7 @@ def build() -> dict:
         "cells": [
             _md(MD_INTRO),
             _code(CODE_SETUP),
+            _md(MD_TOKEN),
             _code(CODE_CONFIG),
             _code(CODE_HELPERS),
             _code(CODE_SELECT),
