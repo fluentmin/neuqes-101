@@ -271,9 +271,36 @@ OUTPUT_PRE_STYLE = (
 OUTPUT_LABEL = "▶ 실행 결과"
 SYNTH_LABEL = "▶ 출력 형태"
 
+# 출력 박스 표현 방식 (변환 타깃별). build_wikidocs.py 의 EPUB/PDF 실측(DESIGN_NOTES §7-5~7-7) 결과:
+#   fenced-div : "::: {.output}" + 코드펜스. 순수 마크다운이라 EPUB/PDF(pandoc)에서 안전하고,
+#                WikiDocs PDF 파이프라인의 --filter pandoc-latex-environment 가 .output 을 색깔 박스로 칠한다.
+#                EPUB 에선 div.output CSS(왼쪽 색깔 바 + 옅은 배경)로 코드와 구분 + 긴 줄 reflow. → 기본값.
+#   html-box   : "<pre style>" 색깔 박스. WikiDocs '웹'에서 잘 보이나 전자책(pandoc)에선 통째로 드롭/깨짐
+#                (공식 문서 198723: "HTML 코드는 전자책 변환 시 정상 표시되지 않습니다").
+#   code       : 평범한 코드펜스. 웹·전자책 모두 안전하나 색 구분 없이 라벨로만 코드와 구분.
+OUTPUT_STYLES = ("fenced-div", "html-box", "code")
+DEFAULT_OUTPUT_STYLE = "fenced-div"
+
 
 def _html_escape(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _output_box(text: str, style: str) -> str:
+    """출력 텍스트 한 덩어리를 선택된 스타일의 박스로 감싼다.
+
+    fenced-div / code 는 내부 코드펜스가 출력의 공백·`<`·`>` 를 이스케이프 없이 보존한다
+    (표 정렬 OK). 출력에 ``` 가 들어 있으면 더 긴 펜스로 회피한다.
+    """
+    if style == "html-box":
+        return f'<pre style="{OUTPUT_PRE_STYLE}">{_html_escape(text)}</pre>'
+    fence = "```"
+    while fence in text:
+        fence += "`"
+    if style == "code":
+        return f"{fence}text\n{text}\n{fence}"
+    # fenced-div (기본)
+    return f"::: {{.output}}\n{fence}text\n{text}\n{fence}\n:::"
 
 
 _SYNTH_FN = "uninit"  # notebook_to_tex.synthetic_output_text (지연 import, 캐시)
@@ -301,14 +328,15 @@ def _synthetic_output_text(source: str) -> str:
         return ""
 
 
-def _synthetic_block(source: str) -> str:
+def _synthetic_block(source: str, style: str = DEFAULT_OUTPUT_STYLE) -> str:
     text = _clean_text_output(_synthetic_output_text(source))
     if not text.strip():
         return ""
-    return f'**{SYNTH_LABEL}**\n\n<pre style="{OUTPUT_PRE_STYLE}">{_html_escape(text)}</pre>'
+    return f"**{SYNTH_LABEL}**\n\n" + _output_box(text, style)
 
 
-def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: list[int]) -> str:
+def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: list[int],
+                    style: str = DEFAULT_OUTPUT_STYLE) -> str:
     """실행 결과를 코드와 구분되는 **색깔 박스**(HTML <pre>)로 렌더링.
 
     WikiDocs에서 출력 펜스가 코드 펜스와 같은 회색 박스로 보여 헷갈리던 문제를 해결한다.
@@ -364,8 +392,7 @@ def _render_outputs(cell: dict, assets_dir: Path | None, stem: str, counter: lis
 
     def flush_text():
         if buf:
-            body = _html_escape("\n".join(buf))
-            blocks.append(f'<pre style="{OUTPUT_PRE_STYLE}">{body}</pre>')
+            blocks.append(_output_box("\n".join(buf), style))
             buf.clear()
 
     for kind, val in items:
@@ -412,7 +439,8 @@ def chapter_h1_title(nb: dict) -> str:
 # 변환
 # --------------------------------------------------------------------------- #
 def convert(nb: dict, num: int, slug: str, title: str,
-            pages_dir: Path, assets_dir: Path | None) -> tuple[list[tuple[str, str]], dict]:
+            pages_dir: Path, assets_dir: Path | None,
+            style: str = DEFAULT_OUTPUT_STYLE) -> tuple[list[tuple[str, str]], dict]:
     stem = f"{num:02d}-{slug}"
     img_counter = [0]
     stats = {"code_cells": 0, "code_with_output": 0, "synthetic": 0, "images": 0}
@@ -451,12 +479,12 @@ def convert(nb: dict, num: int, slug: str, title: str,
                 continue
             stats["code_cells"] += 1
             block = "```python\n" + code + "\n```"
-            outs = _render_outputs(cell, assets_dir, stem, img_counter)
+            outs = _render_outputs(cell, assets_dir, stem, img_counter, style)
             if outs:
                 stats["code_with_output"] += 1  # 실제 실행 결과 (executed/ 또는 --execute)
             else:
                 # 실제 출력이 없으면 기존 tex 합성 로직 재사용(print 셀에 한해 ... 골격).
-                syn = _synthetic_block(code)
+                syn = _synthetic_block(code, style)
                 if syn:
                     outs = syn
                     stats["synthetic"] += 1
@@ -628,6 +656,8 @@ def main() -> None:
     ap.add_argument("--assets", default="assets")
     ap.add_argument("--toc", default="TOC.md")
     ap.add_argument("--book-title", default=DEFAULT_BOOK_TITLE)
+    ap.add_argument("--output-style", choices=OUTPUT_STYLES, default=DEFAULT_OUTPUT_STYLE,
+                    help="실행 결과 박스 표현: fenced-div(기본, EPUB/PDF 안전) | html-box(웹 전용) | code(무색 안전)")
     ap.add_argument("--execute", action="store_true",
                     help="nbclient로 실행해 실제 출력을 채움 (CPU 챕터용; GPU 챕터엔 비권장)")
     ap.add_argument("--executed-notebook", default=None,
@@ -673,7 +703,8 @@ def main() -> None:
         try:
             nb, source = pick_source_notebook(folder, slug, nb_path, executed_dir, args)
             title = resolve_title(num, slug, nb, registry)
-            entries, stats = convert(nb, num, slug, title, pages_dir, assets_dir)
+            entries, stats = convert(nb, num, slug, title, pages_dir, assets_dir,
+                                     args.output_style)
             upsert_toc(toc_path, args.book_title, num, entries)
             print(f"[{num:02d}] {title}")
             print(f"     원천={source}  코드셀 {stats['code_cells']}개 "

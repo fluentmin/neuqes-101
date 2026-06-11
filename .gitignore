@@ -225,3 +225,7 @@ __marimo__/
 
 .venv_wikidocs/
 .playwright-mcp/
+playwright_screenshot/
+
+# 로컬 전용 메모/문서 (repo에 올리지 않음)
+docs/

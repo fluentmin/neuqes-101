@@ -17,10 +17,14 @@ print(f"sparsity: {sparsity:.2%}  (fraction of empty cells)")
 
 **▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">shape: (5000, 10000)  (n_docs, vocab_size)
+::: {.output}
+```text
+shape: (5000, 10000)  (n_docs, vocab_size)
 non-zero entries: 405,789
 total cells: 50,000,000
-sparsity: 99.19%  (fraction of empty cells)</pre>
+sparsity: 99.19%  (fraction of empty cells)
+```
+:::
 
 ```python
 sample = "I love using Hugging Face!"
@@ -31,8 +35,12 @@ print(f"Tokenized: {analyzer(sample)}")
 
 **▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Input sentence: 'I love using Hugging Face!'
-Tokenized: ['love', 'using', 'hugging', 'face']</pre>
+::: {.output}
+```text
+Input sentence: 'I love using Hugging Face!'
+Tokenized: ['love', 'using', 'hugging', 'face']
+```
+:::
 
 **관찰 포인트**
 
@@ -55,7 +63,9 @@ for i in top:
 
 **▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Vocab size: 10,000
+::: {.output}
+```text
+Vocab size: 10,000
 First 20: ['00', '000', '00am', '00pm', '05', '08', '09', '10', '100', '1000', '100th', '101', '10am', '10min', '10pm', '11', '110', '112', '11am', '11pm']
 
 Top 10 most frequent words
@@ -68,4 +78,6 @@ Top 10 most frequent words
               for   7,839
                is   7,760
                in   7,593
-             that   6,756</pre>
+             that   6,756
+```
+:::

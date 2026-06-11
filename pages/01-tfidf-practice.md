@@ -4,8 +4,6 @@
 !pip install -q datasets scikit-learn pandas matplotlib
 ```
 
-<!-- 실행 결과 없음: --execute 또는 --executed-notebook 로 결과를 채우세요 -->
-
 ```python
 import numpy as np
 import pandas as pd
@@ -16,8 +14,6 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 plt.rcParams["axes.unicode_minus"] = False
 ```
 
-<!-- 실행 결과 없음: --execute 또는 --executed-notebook 로 결과를 채우세요 -->
-
 `yelp_review_full`은 Yelp 식당 리뷰 65만 건에 1-5점 별점이 달린 데이터셋입니다 (라벨은 0-4로 저장됨). 학습 흐름을 가볍게 유지하기 위해 **5,000건만 무작위 샘플링** 합니다.
 
 ```python
@@ -27,7 +23,9 @@ print(dataset)
 
 **▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">DatasetDict({
+::: {.output}
+```text
+DatasetDict({
     train: Dataset({
         features: ['label', 'text'],
         num_rows: 650000
@@ -36,7 +34,9 @@ print(dataset)
         features: ['label', 'text'],
         num_rows: 50000
     })
-})</pre>
+})
+```
+:::
 
 ```python
 SAMPLE_SIZE = 5000
@@ -49,11 +49,15 @@ df.head(3)
 
 **▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Sample count: 5000
+::: {.output}
+```text
+Sample count: 5000
    label                                               text
 0      4  I stalk this truck.  I've been to industrial p...
 1      2  who really knows if this is good pho or not, i...
-2      4  I LOVE Bloom Salon... all of their stylist are...</pre>
+2      4  I LOVE Bloom Salon... all of their stylist are...
+```
+:::
 
 ```python
 counts = df["label"].value_counts().sort_index()
@@ -69,13 +73,17 @@ print(counts)
 
 ![output](../assets/01-tfidf-out1.png)
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">label
+::: {.output}
+```text
+label
 0    1017
 1    1027
 2     960
 3    1021
 4     975
-Name: count, dtype: int64</pre>
+Name: count, dtype: int64
+```
+:::
 
 ```python
 df["len_words"] = df["text"].str.split().str.len()
@@ -84,7 +92,9 @@ df[["len_words"]].describe()
 
 **▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">         len_words
+::: {.output}
+```text
+         len_words
 count  5000.000000
 mean    133.811400
 std     119.787704
@@ -92,4 +102,6 @@ min       1.000000
 25%      53.000000
 50%     100.000000
 75%     177.000000
-max     977.000000</pre>
+max     977.000000
+```
+:::
