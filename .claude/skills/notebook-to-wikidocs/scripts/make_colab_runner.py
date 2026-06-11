@@ -46,18 +46,18 @@ MD_INTRO = """\
 
 CODE_SETUP = """\
 # 1) 의존성 설치 + 포크 클론
-import os, subprocess
+import os
 
 REPO   = "fluentmin/neuqes-101"   # 포크 (executed/ 를 여기 master 로 푸시)
 BRANCH = "master"
+WORK   = "/content/neuqes-101"
 
-get_ipython().system('pip -q install nbclient nbformat >/dev/null')
+get_ipython().system('pip -q install nbclient nbformat')
 
-WORK = "/content/neuqes-101"
 if not os.path.isdir(WORK):
-    get_ipython().system('git clone -q https://github.com/{REPO}.git {WORK}'.format(REPO=REPO))
+    get_ipython().system(f'git clone -q https://github.com/{REPO}.git {WORK}')
 get_ipython().run_line_magic('cd', WORK)
-get_ipython().system('git checkout -q {BRANCH} && git pull -q'.format(BRANCH=BRANCH))
+get_ipython().system(f'git checkout -q {BRANCH} && git pull -q')
 
 print("GPU 확인:")
 get_ipython().system('nvidia-smi --query-gpu=name,memory.total --format=csv,noheader || echo "⚠️ GPU 없음 → 런타임 유형을 T4 로 변경하세요"')
