@@ -151,6 +151,52 @@ def _strip_header_emoji(md: str) -> str:
     return "\n".join(out)
 
 
+# 전자책 작성 규칙(wikidocs.net/198723) 방어용 패턴
+HR_LINE_RE = re.compile(r"^\s*(-{3,}|\*{3,}|_{3,})\s*$")
+H1_LINE_RE = re.compile(r"^#\s+(.*)$")
+RAW_HTML_RE = re.compile(r"</?[a-zA-Z][a-zA-Z0-9]*(?:\s[^<>]*)?/?>")
+EXT_IMG_RE = re.compile(r"!\[[^\]]*\]\((https?://[^)\s]+)")
+INLINE_CODE_RE = re.compile(r"`[^`]*`")
+FOOTNOTE_RE = re.compile(r"\[\^([^\]]+)\]")
+
+
+def _sanitize_md_cell(md: str, stem: str, stats: dict) -> str:
+    """마크다운 셀을 전자책 규칙(198723)에 맞게 방어 정리한다. 코드펜스 안은 손대지 않음.
+
+    - [11] 코드펜스 밖 수평선(---/***/___) 제거 (앞이 빈 줄일 때만 — setext 헤딩 오인 방지).
+    - [1]  2번째 이후 H1(#) → H2(##) 강등 (본문 H1 금지; 첫 제목 H1은 convert 가 따로 제거).
+    - [10] 각주 이름에 챕터 stem 접두 → 전자책이 전 페이지를 한 문서로 통합할 때 충돌 방지.
+    - [6]/[3] raw HTML·외부 이미지는 자동 수정이 어려워 stats 에 경고만 모은다(인라인 코드는 제외).
+    """
+    out: list[str] = []
+    fence = False
+    for ln in md.split("\n"):
+        if ln.lstrip().startswith("```"):
+            fence = not fence
+            out.append(ln)
+            continue
+        if fence:
+            out.append(ln)
+            continue
+        if HR_LINE_RE.match(ln) and (not out or out[-1].strip() == ""):
+            stats["hr_removed"] += 1
+            continue
+        m = H1_LINE_RE.match(ln)
+        if m:
+            stats["h1_demoted"] += 1
+            ln = "## " + m.group(1)
+        if "[^" in ln:
+            new = FOOTNOTE_RE.sub(lambda x: f"[^{stem}-{x.group(1)}]", ln)
+            if new != ln:
+                stats["footnotes"] += 1
+                ln = new
+        scan = INLINE_CODE_RE.sub("", ln)
+        stats["html_warn"].extend(RAW_HTML_RE.findall(scan))
+        stats["extimg_warn"].extend(EXT_IMG_RE.findall(scan))
+        out.append(ln)
+    return "\n".join(out)
+
+
 def _clean_text_output(text: str) -> str:
     text = ANSI_RE.sub("", text)
     lines = [seg.split("\r")[-1] for seg in text.split("\n")]
@@ -444,7 +490,9 @@ def convert(nb: dict, num: int, slug: str, title: str,
             style: str = DEFAULT_OUTPUT_STYLE) -> tuple[list[tuple[str, str]], dict]:
     stem = f"{num:02d}-{slug}"
     img_counter = [0]
-    stats = {"code_cells": 0, "code_with_output": 0, "synthetic": 0, "images": 0}
+    stats = {"code_cells": 0, "code_with_output": 0, "synthetic": 0, "images": 0,
+             "hr_removed": 0, "h1_demoted": 0, "footnotes": 0,
+             "html_warn": [], "extimg_warn": []}
 
     groups: dict[str, list[str]] = {
         "overview": [], "practice": [], "anatomy": [], "variation": [], "wrapup": []
@@ -467,13 +515,13 @@ def convert(nb: dict, num: int, slug: str, title: str,
                 seen_h1 = True
                 body = "\n".join(md.splitlines()[1:]).strip("\n")
                 if body.strip():
-                    overview_intro.append(body)
+                    overview_intro.append(_sanitize_md_cell(body, stem, stats))
                 continue
             if hdr and hdr[0] == 2:
                 current = _classify(hdr[1])
                 if current in ("practice", "anatomy", "variation"):
                     sub_titles[current] = _clean_heading_text(hdr[1])
-            groups[current].append(_strip_header_emoji(md))
+            groups[current].append(_strip_header_emoji(_sanitize_md_cell(md, stem, stats)))
         elif ctype == "code":
             code = _cell_text(cell).rstrip("\n")
             if not code.strip():
@@ -505,7 +553,7 @@ def convert(nb: dict, num: int, slug: str, title: str,
     ov.extend(groups["overview"])
     present_subs = [(g, sl, sub_titles.get(g, dt)) for g, sl, dt in SUBPAGES
                     if groups[g] or (g == "practice" and setup_code)]
-    roadmap = ["## 이 장의 구성"]
+    roadmap = ["## 이 장의 구성", ""]  # 헤딩 아래 빈 줄 — 전자책 PDF 변환 오류 방지(198723)
     for idx, (g, sl, t) in enumerate(present_subs, 1):
         roadmap.append(f"- [{num:02d}-{idx}. {t}]({stem}-{sl}.md)")
     ov.append("\n".join(roadmap))
@@ -712,6 +760,21 @@ def main() -> None:
             print(f"     원천={source}  코드셀 {stats['code_cells']}개 "
                   f"(실제출력 {stats['code_with_output']} / 합성 {stats['synthetic']}) "
                   f"이미지 {stats['images']}")
+            fixes = []
+            if stats["hr_removed"]:
+                fixes.append(f"수평선 {stats['hr_removed']} 제거")
+            if stats["h1_demoted"]:
+                fixes.append(f"H1→H2 {stats['h1_demoted']}")
+            if stats["footnotes"]:
+                fixes.append(f"각주 {stats['footnotes']} 유니크화")
+            if fixes:
+                print("     방어(198723):", " / ".join(fixes))
+            if stats["html_warn"]:
+                print(f"     ⚠ 마크다운 셀 raw HTML {len(stats['html_warn'])}건(전자책에서 깨질 수 있음): "
+                      f"{stats['html_warn'][:4]}")
+            if stats["extimg_warn"]:
+                print(f"     ⚠ 외부 이미지 {len(stats['extimg_warn'])}건(PDF 누락 위험, 위키독스 업로드 필요): "
+                      f"{stats['extimg_warn'][:3]}")
             ok.append(num)
         except Exception as e:  # 챕터별 실패 격리
             failed.append((num, e))
