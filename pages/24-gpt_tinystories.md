@@ -4,7 +4,6 @@
 
 **예상 소요 시간**: 약 25-30분 (데이터 로드 약 2분 + BPE 토크나이저 학습 약 3분 + 학습 전 generation 약 30초 + 모델 학습 약 18분 + 학습 후 generation + reference 비교 약 2분)
 
----
 
 ## 학습 흐름
 
@@ -17,7 +16,6 @@
 7. 🛠️ **변형**: `temperature / top_k / top_p` sampling 비교
 8. 📦 **등장 라이브러리** / 🎯 **체크포인트** / ❓ **FAQ** (답변 포함)
 
----
 
 > 📒 **사전 학습 자료**: Ch 20-23 (작은 BERT scratch MLM + 분류 fine-tune). Ch 24 는 *같은 from-scratch 사전학습* 흐름인데, 본체가 *encoder (BERT) → decoder (GPT)*, 학습 목표가 *MLM → CausalLM*, 산출물이 *fine-tune 체크포인트 → generation 모델* 로 바뀝니다.
 
@@ -34,7 +32,6 @@
 
 전체 챕터 표는 [루트 README](https://github.com/yoon-gu/neuqes-101#챕터별-변화추적표) 를 참고하세요.
 
----
 
 ## Phase 전환 — Encoder (BERT) → Decoder (GPT) 패러다임
 
@@ -317,6 +314,7 @@ T4 에서 약 1분 추가. 데이터·파라미터 격차가 generation 품질�
 > Ch 25 가 이 격차를 *데이터 축을 통제하고* 좁히는 챕터입니다 - `gpt2` (124M) 의 사전학습 *위에* 같은 TinyStories 30K 로 **continual pretraining**. *대규모 일반 사전학습 모델을 작은 도메인 데이터로 적응* 시킬 때의 generation 품질이, 우리 from-scratch 작은 GPT 와 어떻게 다른지 직접 비교.
 
 ## 이 장의 구성
+
 - [24-1. 실습](24-gpt_tinystories-practice.md)
 - [24-2. 변형 - sampling hyperparam 비교](24-gpt_tinystories-variation.md)
 - [24-3. 정리와 FAQ](24-gpt_tinystories-wrapup.md)

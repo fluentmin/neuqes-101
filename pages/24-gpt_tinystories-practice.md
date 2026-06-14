@@ -45,11 +45,14 @@ USE_FP16 = (device.type == "cuda")
 print(f"use fp16   : {USE_FP16}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">PyTorch:        2.x.x
-CUDA available: True
-GPU:            Tesla T4</pre>
+```text
+device     : cuda  (Tesla T4)
+VRAM total : 14.56 GiB
+torch      : 2.11.0+cu128
+use fp16   : True
+```
 
 ```python
 from datasets import load_dataset
@@ -65,12 +68,25 @@ print("\n=== sample story ===")
 print(raw_train[0]["text"][:400])
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">DatasetDict({
-  train: Dataset({features: ['label', 'text'], num_rows: ...})
-  test:  Dataset({features: ['label', 'text'], num_rows: ...})
-})</pre>
+```text
+train: Dataset({
+    features: ['text'],
+    num_rows: 30000
+})
+val  : Dataset({
+    features: ['text'],
+    num_rows: 500
+})
+
+=== sample story ===
+One day, a little girl named Lily found a needle in her room. She knew it was difficult to play with it because it was sharp. Lily wanted to …(뒤 71자 생략)
+
+Lily went to her mom and said, "Mom, I found this needle. Can you share it with me and sew my shirt?" Her mom smiled and said, "Yes, Lily, w …(뒤 43자 생략)
+
+To
+```
 
 ```python
 from tokenizers import Tokenizer
@@ -116,14 +132,19 @@ print(f"vocab_size : {tokenizer.vocab_size}")
 print(f"eos_token  : {tokenizer.eos_token}  id={tokenizer.eos_token_id}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">vocab_size      : 8000
-pad_token_id    : 0
-cls_token_id    : 2
-input_ids shape : torch.Size([1, 32])
-input_ids       : [2, ..., 3, 0, 0, ...]
-decoded         : [CLS] the food was unforgettable ... [SEP] [PAD] ...</pre>
+```text
+BPE training done: 10.2s, vocab=2048
+
+=== encode/decode demo ===
+input      : Once upon a time, a little rabbit went to the forest.
+ids        : [428, 440, 259, 394, 12, 259, 395, 1114, 464, 266, 263, 1081, 14]
+tokens     : ['Once', 'Ġupon', 'Ġa', 'Ġtime', ',', 'Ġa', 'Ġlittle', 'Ġrabbit', 'Ġwent', 'Ġto', 'Ġthe', 'Ġforest', '.']
+decode     : Once upon a time, a little rabbit went to the forest.
+vocab_size : 2048
+eos_token  : <|endoftext|>  id=0
+```
 
 ```python
 BLOCK_SIZE = 128
@@ -167,14 +188,16 @@ print("\nfirst chunk decode (first 200 chars):")
 print(tokenizer.decode(lm_train[0]["input_ids"])[:200])
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">lm_train: Dataset({features: ['input_ids', 'token_type_ids', 'attention_mask', 'labels'], num_rows: ...})
-lm_eval:  Dataset({features: ['input_ids', 'token_type_ids', 'attention_mask', 'labels'], num_rows: ...})
-block_size:           128
-train blocks: ...  (approx. ... tokens)
-eval blocks:  ...   (approx. ... tokens)
-sample block 0 first 20 tok: ['the', '...', '...']</pre>
+```text
+train chunks: 57,973  (block_size=128)
+val   chunks: 867
+approx. train tokens: 7.42 M
+
+first chunk decode (first 200 chars):
+One day, a little girl named Lily found a needle in her room. She knew it was difficult to play with it because it was sharp. Lily wanted to …(뒤 60자 생략)
+```
 
 ```python
 from transformers import DataCollatorForLanguageModeling
@@ -205,11 +228,24 @@ identical = (input_ids == labels).sum().item()
 print(f"\n(input_ids == labels) positions: {identical}/{total}  - clone as-is")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">total positions:   ...
-ignored (-100):    pad positions only
-train signal:      almost every token</pre>
+```text
+input_ids shape: (2, 128)
+labels shape   : (2, 128)
+
+=== 'labels = -100' thread - CausalLM vs MLM comparison ===
+total positions      : 256
+  ignored (-100)     :     1  ( 0.39%)
+  train signal       :   255  (99.61%)
+
+[MLM (Ch 20/22)]     approx. 85% = -100, 15% = train signal
+[CausalLM (this ch)]  0.39% = -100, 99.61% = train signal  <- almost every position
+
+=> a single step's token-learning efficiency: GPT pretrain is approx. 5-6x higher than MLM
+
+(input_ids == labels) positions: 255/256  - clone as-is
+```
 
 ```python
 from transformers import GPT2Config, GPT2LMHeadModel
@@ -237,11 +273,17 @@ print(f"  - body : {type(model.transformer).__name__}  (Decoder, causal attentio
 print(f"  - head : {type(model.lm_head).__name__}(in={model.lm_head.in_features}, out={model.lm_head.out_features})")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">model:             GPT2LMHeadModel / AutoModelForCausalLM
-parameters:        ...
-lm_head:           Linear(H, vocab_size)</pre>
+```text
+#params           : 3.72 M
+weight tying      : True  (lm_head <-> wte shared)
+fp32 weight size  : 14.18 MiB
+
+model: GPT2LMHeadModel
+  - body : GPT2Model  (Decoder, causal attention)
+  - head : Linear(in=256, out=2048)
+```
 
 ```python
 PROMPTS = [
@@ -279,11 +321,19 @@ for p in PROMPTS:
     print(text)
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">tokenizer:        ...
-vocab_size:       ...
-tokens / input_ids: [...]</pre>
+```text
+======================================================================
+UNTRAINED model - generation from random initial weights
+======================================================================
+[prompt] Once upon a time,
+Once upon a time,ushinkush min is wondered5 cruallyked bed farmer smo wonder smo dropped crush child�� grabbed home5ail wonder� bed j( slow …(뒤 96자 생략)
+[prompt] The little girl
+The little girlakak everyush Sarahgged:un't different different# gl keepner Graied likedJackampsel turnedDo decided beautiful} Gra has Benny …(뒤 120자 생략)
+[prompt] A big dog
+A big dog cle music hisftere learnedpe fam pullve bat batinin paper paper teacherkes cr wear soup yes curi tw7 colors wall runlf This Sam bb …(뒤 113자 생략)
+```
 
 ```python
 from transformers import (DataCollatorForLanguageModeling, Trainer,
@@ -356,11 +406,18 @@ if torch.cuda.is_available():
     print(f"final peak    : {torch.cuda.max_memory_allocated()/1024**2:.0f} MiB")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">device : cuda  (Tesla T4)  # or mps/cpu depending on runtime
-torch  : ...
-fp16   : True</pre>
+```text
+[transformers] `loss_type=None` was set in the config but it is unrecognized. Using the default loss: `ForCausalLMLoss`.
+<IPython.core.display.HTML object>
+=== training summary ===
+elapsed       : 0.88 min
+global_step   : 1500
+train_loss    : 3.8319
+random baseline (ln vocab): 7.6246
+final peak    : 60 MiB
+```
 
 ```python
 # loss curve + VRAM trace
@@ -397,6 +454,10 @@ ax2.grid(True, alpha=0.3); ax2.legend()
 plt.tight_layout(); plt.show()
 ```
 
+**▶ 실행 결과**
+
+![output](../assets/24-gpt_tinystories-out1.png)
+
 ```python
 torch.manual_seed(SEED)
 model.eval()
@@ -411,9 +472,25 @@ for p in PROMPTS:
     print(text)
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">TrainOutput(global_step=..., training_loss=..., metrics={...})</pre>
+```text
+======================================================================
+TRAINED model - generation after Trainer.train()
+======================================================================
+[prompt] Once upon a time,
+Once upon a time, there was a girl named Lily. She loved to play with her friends. She loved to play outside to play with her friends when t …(뒤 32자 생략)
+
+One day, Lily saw a small house, a boy named Timmy. He was so happy because he saw a big
+[prompt] The little girl
+The little girl had been a wonderful time. It was so happy to see the park. She thanked the garden, and the girl. She thanked the little gir …(뒤 129자 생략)
+[prompt] A big dog
+A big dog, but they could go in the park. They ran away and the truck. The bird was sad. It had a bit fun.
+
+"But we can't get my mouth. I can play with you."
+
+"It's okay, it is not very curious. He is not
+```
 
 ```python
 # before / after 나란히 - 사전학습이 본체에 새긴 next-token 분포의 직접적 증거
@@ -427,11 +504,34 @@ for p, before, after in zip(PROMPTS, before_outputs, after_outputs):
     print(f"AFTER   : {after[len(p):].strip()[:280]}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">tokenizer:        ...
-vocab_size:       ...
-tokens / input_ids: [...]</pre>
+```text
+==============================================================================
+BEFORE (random init) vs AFTER (trained on TinyStories 30K)
+==============================================================================
+
+PROMPT  : Once upon a time,
+------------------------------------------------------------------------------
+BEFORE  : ushinkush min is wondered5 cruallyked bed farmer smo wonder smo dropped crush child�� grabbed home5ail wonder� bed j( slowy clapp …(뒤 89자 생략)
+AFTER   : there was a girl named Lily. She loved to play with her friends. She loved to play outside to play with her friends when they put …(뒤 24자 생략)
+
+One day, Lily saw a small house, a boy named Timmy. He was so happy because he saw a big
+
+PROMPT  : The little girl
+------------------------------------------------------------------------------
+BEFORE  : akak everyush Sarahgged:un't different different# gl keepner Graied likedJackampsel turnedDo decided beautiful} Gra has Benny find …(뒤 115자 생략)
+AFTER   : had been a wonderful time. It was so happy to see the park. She thanked the garden, and the girl. She thanked the little girl to k …(뒤 123자 생략)
+
+PROMPT  : A big dog
+------------------------------------------------------------------------------
+BEFORE  : cle music hisftere learnedpe fam pullve bat batinin paper paper teacherkes cr wear soup yes curi tw7 colors wall runlf This Sam bb …(뒤 113자 생략)
+AFTER   : , but they could go in the park. They ran away and the truck. The bird was sad. It had a bit fun.
+
+"But we can't get my mouth. I can play with you."
+
+"It's okay, it is not very curious. He is not
+```
 
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -460,11 +560,31 @@ if torch.cuda.is_available():
     torch.cuda.empty_cache()
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">PyTorch:        2.x.x
-CUDA available: True
-GPU:            Tesla T4</pre>
+```text
+loading reference gpt2 (124M, OpenAI WebText pretraining)...
+  vocab_size : 50,257
+  #params    : 124.4 M
+
+======================================================================
+REFERENCE gpt2 (124M, WebText) - generation on same prompts
+======================================================================
+[prompt] Once upon a time,
+Once upon a time, if you don't know what your country's government is doing, you can find out.
+
+In the last few months, I've traveled to dozens of countries around the world, and I've seen the results of that.
+
+My new book — the Making of a Better World Order:
+[prompt] The little girl
+The little girl has been at her desk all day...for two hours. She's got a pen and paper and a pen and paper, not a pen and paper and pencil. …(뒤 112자 생략)
+[prompt] A big dog
+A big dog is a dog that loves to eat, but is also a dog that's afraid to do anything that might hurt others.
+
+In the long run, we find that people who have an allergy to animals are less likely to have allergies to dogs.
+
+But these people are less likely to have
+```
 
 ```python
 # 3-way 비교 - BEFORE (random) / OURS (3M, TinyStories) / REF (gpt2 124M, WebText)
@@ -479,7 +599,38 @@ for p, before, after, ref in zip(PROMPTS, before_outputs, after_outputs, ref_out
     print(f"REF    : {ref[len(p):].strip()[:240]}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Output varies by runtime, seed, and sampled data.
-Running the cell in Colab prints the corresponding string or table.</pre>
+```text
+==============================================================================
+3-way comparison: BEFORE (random) / OURS (3M, TinyStories 30K) / REF (gpt2 124M, WebText)
+==============================================================================
+
+PROMPT : Once upon a time,
+------------------------------------------------------------------------------
+BEFORE : ushinkush min is wondered5 cruallyked bed farmer smo wonder smo dropped crush child�� grabbed home5ail wonder� bed j( slowy clappe …(뒤 88자 생략)
+OURS   : there was a girl named Lily. She loved to play with her friends. She loved to play outside to play with her friends when they put o …(뒤 23자 생략)
+
+One day, Lily saw a small house, a boy named Timmy. He was so happy because he saw a
+REF    : if you don't know what your country's government is doing, you can find out.
+
+In the last few months, I've traveled to dozens of countries around the world, and I've seen the results of that.
+
+My new book — the Making of a Better World Orde
+
+PROMPT : The little girl
+------------------------------------------------------------------------------
+BEFORE : akak everyush Sarahgged:un't different different# gl keepner Graied likedJackampsel turnedDo decided beautiful} Gra has Benny find …(뒤 109자 생략)
+OURS   : had been a wonderful time. It was so happy to see the park. She thanked the garden, and the girl. She thanked the little girl to ke …(뒤 109자 생략)
+REF    : has been at her desk all day...for two hours. She's got a pen and paper and a pen and paper, not a pen and paper and pencil. And sh …(뒤 105자 생략)
+
+PROMPT : A big dog
+------------------------------------------------------------------------------
+BEFORE : cle music hisftere learnedpe fam pullve bat batinin paper paper teacherkes cr wear soup yes curi tw7 colors wall runlf This Sam bby …(뒤 109자 생략)
+OURS   : , but they could go in the park. They ran away and the truck. The bird was sad. It had a bit fun.
+
+"But we can't get my mouth. I can play with you."
+
+"It's okay, it is not
+...
+```

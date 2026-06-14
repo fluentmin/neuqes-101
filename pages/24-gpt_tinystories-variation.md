@@ -17,11 +17,31 @@ for c in configs:
     print()
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">tokenizer:        ...
-vocab_size:       ...
-tokens / input_ids: [...]</pre>
+```text
+======================================================================
+[T=0.3, top_k=20  (conservative)]
+Once upon a time, a little rabbit named Lily. She loved to play with her toys and play with her toys. One day, Lily's mom saw a big tree wit …(뒤 113자 생략)
+
+Lily was sad
+
+======================================================================
+[T=0.8, top_k=50  (balanced)]
+Once upon a time, a little rabbit who liked to play in the park. One day, his friends found a big smile on the park. And it was very happy t …(뒤 35자 생략)
+
+One day, Timmy saw a small house, Timmy's mom a shiny tree in a big tree. Timmy was so
+
+======================================================================
+[T=1.0, top_p=0.9 (nucleus)]
+Once upon a time, a little rabbit who liked to read water to play the squirrel. One day, Joe's mommy saw a window, who was green bunny, but they felt sad. 
+
+She did not know what. She liked to do with some other adventure. She would a lot of fun at her problege. She
+
+======================================================================
+[T=1.2, top_k=100 (diverse)]
+Once upon a time, a little rabbit who liked to read water to play the toys. One day, Joe's mommy saw fool, who was gone to explore it. They …(뒤 136자 생략)
+```
 
 **관전 포인트**
 
