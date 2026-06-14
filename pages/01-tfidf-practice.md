@@ -55,6 +55,10 @@ Sample count: 5000
 2      4  I LOVE Bloom Salon... all of their stylist are...
 ```
 
+**결과 해석**
+
+65만 건 중 5,000건만 무작위 샘플링한 결과입니다. `label`이 0-4 정수로 저장돼 있어 실제 별점은 +1 한 1-5점에 해당하고, `text`에는 원문 리뷰가 그대로 담겨 있습니다.
+
 ```python
 counts = df["label"].value_counts().sort_index()
 labels = [f"{i+1} star" for i in counts.index]
@@ -79,6 +83,10 @@ label
 Name: count, dtype: int64
 ```
 
+**결과 해석**
+
+다섯 별점이 각각 약 1,000건씩으로 고르게 분포합니다. 무작위 샘플링이라 원본의 균형 잡힌 별점 구성이 그대로 유지된 것으로, 특정 별점에 편향되지 않은 데이터입니다.
+
 ```python
 df["len_words"] = df["text"].str.split().str.len()
 df[["len_words"]].describe()
@@ -97,3 +105,7 @@ min       1.000000
 75%     177.000000
 max     977.000000
 ```
+
+**결과 해석**
+
+리뷰 한 건의 평균 길이는 약 134단어이고 중앙값은 100단어로, 짧은 한 단어짜리부터 977단어까지 편차가 큽니다. 이렇게 길이가 제각각인 텍스트를 곧 고정 길이 벡터로 바꾸게 됩니다.

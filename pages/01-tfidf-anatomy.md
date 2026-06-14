@@ -24,6 +24,10 @@ total cells: 50,000,000
 sparsity: 99.19%  (fraction of empty cells)
 ```
 
+**결과 해석**
+
+5,000개 문서가 각각 길이 10,000의 벡터로 바뀌어 전체 5천만 칸이 되지만, 실제로 값이 있는 칸은 약 40만 개뿐이라 99% 이상이 0입니다. 한 리뷰에는 전체 어휘 중 극히 일부 단어만 등장하기 때문이며, 그래서 희소(sparse) 행렬로 저장해야 메모리가 절약됩니다.
+
 ```python
 sample = "I love using Hugging Face!"
 analyzer = cv.build_analyzer()
@@ -37,6 +41,10 @@ print(f"Tokenized: {analyzer(sample)}")
 Input sentence: 'I love using Hugging Face!'
 Tokenized: ['love', 'using', 'hugging', 'face']
 ```
+
+**결과 해석**
+
+`"I"`와 `"!"`가 사라지고 나머지는 모두 소문자로 바뀌었습니다. 기본 토크나이저가 영숫자 2자 이상만 잡고 단일 문자·구두점은 버리기 때문이며, 학습 어휘에 없는 단어는 OOV로 무시될 뿐 BERT의 `[UNK]`처럼 보존되지 않습니다.
 
 **관찰 포인트**
 
@@ -75,3 +83,7 @@ Top 10 most frequent words
                in   7,593
              that   6,756
 ```
+
+**결과 해석**
+
+가장 자주 등장한 단어가 `the`, `and`, `to`처럼 의미를 거의 담지 않는 불용어 위주입니다. 단순 횟수만으로는 이런 흔한 단어가 상위를 독점해 문서 사이의 차이를 드러내지 못한다는 점이 드러나며, 이것이 다음 절 TF-IDF의 출발 동기입니다.

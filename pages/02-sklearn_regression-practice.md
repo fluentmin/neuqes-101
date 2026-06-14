@@ -83,6 +83,10 @@ Test  MAE: 0.9952
 Test  R²:  0.2139
 ```
 
+**결과 해석**
+
+Train MSE가 0에 가까운데 Test MSE는 1.56으로 크게 벌어진 건, feature가 10,000개라 모델이 훈련 데이터를 거의 외워버린(과적합) 결과입니다. Test MAE가 약 1점이라는 건 평균적으로 별점을 1점 정도 빗나간다는 뜻으로, 단순 선형 회귀의 표현력 한계를 보여줍니다.
+
 ```python
 # 예측값이 1-5 범위를 얼마나 벗어나는지 확인
 print(f"Pred range: [{y_pred_test.min():.2f}, {y_pred_test.max():.2f}]")
@@ -105,5 +109,9 @@ plt.show()
 Pred range: [-1.55, 7.15]
 True range: [1, 5]
 ```
+
+**결과 해석**
+
+정답은 1-5 안에 있는데 예측은 -1.55부터 7.15까지 범위를 벗어납니다. 활성화 함수 없이 $w^\top x + b$를 그대로 뱉기 때문에 음수도 5 초과도 나오는, 회귀 출력의 자연스러운 모습입니다.
 
 ![output](../assets/02-sklearn_regression-out1.png)

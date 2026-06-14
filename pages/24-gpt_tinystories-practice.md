@@ -88,6 +88,10 @@ Lily went to her mom and said, "Mom, I found this needle. Can you share it with 
 To
 ```
 
+**결과 해석**
+
+train 30,000 / val 500 편이 정상 로드되었고, 샘플 스토리가 *4세 어린이가 이해할 단어* 로 된 짧고 단순한 영어 동화임을 확인할 수 있습니다. 이 단순한 어휘·문법 덕분에 약 3M 짜리 작은 모델로도 grammatical 한 생성이 가능합니다.
+
 ```python
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
@@ -146,6 +150,10 @@ vocab_size : 2048
 eos_token  : <|endoftext|>  id=0
 ```
 
+**결과 해석**
+
+`Once upon a time` 처럼 TinyStories 에 자주 등장하는 표현은 `Once`, `Ġupon`, `Ġtime` 처럼 *단어 통째* 의 적은 토큰으로 압축되고, encode → decode 가 원문을 정확히 복원합니다 (`Ġ` 는 byte-level BPE 가 앞 공백을 표시하는 기호). 특수 토큰을 `<|endoftext|>` 하나로 최소화하는 GPT-2 컨벤션도 그대로 확인됩니다.
+
 ```python
 BLOCK_SIZE = 128
 
@@ -199,6 +207,10 @@ first chunk decode (first 200 chars):
 One day, a little girl named Lily found a needle in her room. She knew it was difficult to play with it because it was sharp. Lily wanted to …(뒤 60자 생략)
 ```
 
+**결과 해석**
+
+가변 길이 30,000 편이 모든 토큰을 이어붙인 뒤 `block_size=128` 단위로 잘려 약 57,973 개 chunk (약 7.42M 토큰) 가 되었습니다. 첫 chunk 가 정상적인 동화 문장으로 디코드되어 `group_texts` 전처리가 의도대로 동작했음을 보여줍니다.
+
 ```python
 from transformers import DataCollatorForLanguageModeling
 
@@ -247,6 +259,10 @@ total positions      : 256
 (input_ids == labels) positions: 255/256  - clone as-is
 ```
 
+**결과 해석**
+
+`mlm=False` collator 가 `labels = input_ids.clone()` 을 만들어 256 자리 중 단 1 개 (0.39%) 만 `-100` 이고 99.61% 가 학습 신호입니다 — MLM 이 약 85% 를 `-100` 으로 가렸던 것과 정반대로, 같은 `-100` 트릭이 *적용 자리만 뒤집힌* 셈입니다. 한 step 당 학습되는 토큰 수가 MLM 대비 약 5-6배 많아 GPT 사전학습이 그만큼 토큰 효율이 높습니다.
+
 ```python
 from transformers import GPT2Config, GPT2LMHeadModel
 
@@ -284,6 +300,10 @@ model: GPT2LMHeadModel
   - body : GPT2Model  (Decoder, causal attention)
   - head : Linear(in=256, out=2048)
 ```
+
+**결과 해석**
+
+약 3.72M params 의 작은 GPT 가 `from_pretrained` 없이 random init 으로 생성되었고, 본체는 causal attention 을 내장한 `GPT2Model` (Decoder), head 는 `Linear(256, 2048)` LM head 입니다. `tie_word_embeddings=True` 로 LM head 와 input embedding 이 같은 weight 를 공유해 파라미터를 절약합니다.
 
 ```python
 PROMPTS = [
@@ -334,6 +354,10 @@ The little girlakak everyush Sarahgged:un't different different# gl keepner Grai
 [prompt] A big dog
 A big dog cle music hisftere learnedpe fam pullve bat batinin paper paper teacherkes cr wear soup yes curi tw7 colors wall runlf This Sam bb …(뒤 113자 생략)
 ```
+
+**결과 해석**
+
+random init 모델은 logits 가 무작위 초기값이라 *의미 없는 byte 조각·짧은 단어가 반복* 되는, 영어 문장과 거리가 먼 출력을 냅니다. 이 출력이 학습 후 결과와 나란히 비교할 *기준선* 으로, 사전학습이 본체에 next-token 분포를 새기기 전 상태를 보여줍니다.
 
 ```python
 from transformers import (DataCollatorForLanguageModeling, Trainer,
@@ -419,6 +443,10 @@ random baseline (ln vocab): 7.6246
 final peak    : 60 MiB
 ```
 
+**결과 해석**
+
+최종 `train_loss` 약 3.83 으로 random baseline `ln(2048) ≈ 7.62` 대비 크게 떨어져, 모델이 다음 토큰 후보를 *균등 추측에서 수십 개 수준으로 좁힌* 상태입니다. peak VRAM 약 60 MiB 로 T4 16GB 에 한참 여유가 있어 작은 모델·짧은 context 의 가벼움을 보여줍니다.
+
 ```python
 # loss curve + VRAM trace
 log = trainer.state.log_history
@@ -458,6 +486,10 @@ plt.tight_layout(); plt.show()
 
 ![output](../assets/24-gpt_tinystories-out1.png)
 
+**결과 해석**
+
+train·eval loss 가 점선으로 표시된 균등 baseline `ln(2048) ≈ 7.62` 아래로 빠르게 내려가 안정화되고, 오른쪽 VRAM 추이는 학습 내내 수십 MiB 수준으로 평탄합니다. eval loss 가 train loss 를 크게 벗어나지 않아 과적합 없이 학습이 진행됨을 보여줍니다.
+
 ```python
 torch.manual_seed(SEED)
 model.eval()
@@ -491,6 +523,10 @@ A big dog, but they could go in the park. They ran away and the truck. The bird 
 
 "It's okay, it is not very curious. He is not
 ```
+
+**결과 해석**
+
+학습 후에는 `there was a girl named Lily` 처럼 *주어 + 동사 + 목적어* 구조의 말이 되는 영어 문장과 동화 풍 어휘 (Lily, friends, park, ...) 가 나옵니다. 완벽하진 않아도 사전학습이 본체에 next-token 분포를 새겼음을 generation 으로 직접 확인할 수 있습니다.
 
 ```python
 # before / after 나란히 - 사전학습이 본체에 새긴 next-token 분포의 직접적 증거
@@ -532,6 +568,10 @@ AFTER   : , but they could go in the park. They ran away and the truck. The bird
 
 "It's okay, it is not very curious. He is not
 ```
+
+**결과 해석**
+
+같은 prompt·seed 에서 BEFORE 의 무의미한 byte 조각 나열이 AFTER 에서는 동화 풍 영어 문장으로 바뀌어, 1500 step 의 사전학습이 만든 차이가 세 prompt 모두에서 한눈에 드러납니다. Ch 20·22 의 *사전·사후 [MASK] top-5* 비교의 generation 판에 해당합니다.
 
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -586,6 +626,10 @@ In the long run, we find that people who have an allergy to animals are less lik
 But these people are less likely to have
 ```
 
+**결과 해석**
+
+124M params·WebText 약 40GB 로 사전학습된 `gpt2` 는 같은 prompt 에 *동화풍이 아닌 일반 산문·뉴스·대화* 톤의 다양하고 자연스러운 문장을 냅니다. 학습 데이터 분포의 다양성이 generation 다양성으로 직결됨을 보여줍니다.
+
 ```python
 # 3-way 비교 - BEFORE (random) / OURS (3M, TinyStories) / REF (gpt2 124M, WebText)
 print("=" * 78)
@@ -634,3 +678,7 @@ OURS   : , but they could go in the park. They ran away and the truck. The bird 
 "It's okay, it is not
 ...
 ```
+
+**결과 해석**
+
+BEFORE (random) → OURS (3M, TinyStories 30K) → REF (gpt2 124M, WebText) 로 갈수록 출력이 *무의미 → 동화 풍 단순 영어 → 다양한 도메인의 자연스러운 산문* 으로 좋아집니다. 이 격차가 정확히 *모델 크기 + 데이터 규모 + 데이터 다양성* 의 격차이며, Ch 25 가 데이터 축을 통제해 이 차이를 좁히는 챕터입니다.

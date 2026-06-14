@@ -43,6 +43,10 @@ She did not know what. She liked to do with some other adventure. She would a lo
 Once upon a time, a little rabbit who liked to read water to play the toys. One day, Joe's mommy saw fool, who was gone to explore it. They …(뒤 136자 생략)
 ```
 
+**결과 해석**
+
+*학습된 본체는 그대로* 이고 sampling 설정만 바뀌었는데, `T=0.3` 은 같은 표현을 반복하며 안전하게, `T=1.0/1.2` 로 갈수록 `read water` 처럼 다양하지만 *말이 덜 되는* 조합이 섞입니다. 같은 모델도 sampling hyperparam 에 따라 일관성과 다양성의 trade-off 가 달라짐을 보여줍니다.
+
 **관전 포인트**
 
 - `temperature` ↑ → logits 분포 *평탄화* → 다양성 ↑, 일관성 ↓

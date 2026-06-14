@@ -21,3 +21,7 @@ Manual MSE: 1.556471
 sklearn MSE: 1.556471
 Diff:        0.00e+00
 ```
+
+**결과 해석**
+
+손으로 계산한 `((y_test - y_pred_test) ** 2).mean()`과 sklearn의 `mean_squared_error`가 차이 0으로 정확히 일치합니다. MSE는 별 게 아니라 "오차를 제곱해 평균낸 값"이라는 정의 그대로임을 확인할 수 있습니다.
