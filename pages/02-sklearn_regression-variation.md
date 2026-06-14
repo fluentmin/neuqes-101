@@ -22,12 +22,13 @@ print(f"Test MSE (back to star space): {mean_squared_error(y_test, y_pred_back):
 print(f"Test MSE (no normalization):    {mean_squared_error(y_test, y_pred_test):.4f}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">logits shape: (..., ...)
-probability range: [..., ...]
-first samples:
-  ...</pre>
+```text
+Test MSE (normalized space): 0.0973
+Test MSE (back to star space): 1.5565
+Test MSE (no normalization):    1.5565
+```
 
 ```python
 # 정규화한 모델도 여전히 [0, 1]을 벗어나는 값을 뱉는가?
@@ -40,10 +41,15 @@ print(f"\nPredictions < 0: {n_below} ({n_below / len(y_pred_norm):.1%})")
 print(f"Predictions > 1: {n_above} ({n_above / len(y_pred_norm):.1%})")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Output varies by runtime, seed, and sampled data.
-Running the cell in Colab prints the corresponding string or table.</pre>
+```text
+Normalized model pred range: [-0.638, 1.538]
+Ideal range: [0, 1]
+
+Predictions < 0: 85 (8.5%)
+Predictions > 1: 92 (9.2%)
+```
 
 **관찰**: 정답 라벨을 [0, 1]로 압축해도 모델 출력은 여전히 그 범위를 벗어납니다. 가중합을 그대로 뱉는 한 어떤 라벨 스케일링으로도 [0, 1] 안에 가둘 수 없습니다.
 

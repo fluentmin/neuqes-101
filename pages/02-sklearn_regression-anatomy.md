@@ -14,7 +14,10 @@ print(f"sklearn MSE: {sklearn_mse:.6f}")
 print(f"Diff:        {abs(manual_mse - sklearn_mse):.2e}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Output varies by runtime, seed, and sampled data.
-Running the cell in Colab prints the corresponding string or table.</pre>
+```text
+Manual MSE: 1.556471
+sklearn MSE: 1.556471
+Diff:        0.00e+00
+```

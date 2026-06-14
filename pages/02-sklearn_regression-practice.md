@@ -23,12 +23,11 @@ df = ds.to_pandas()
 print(f"Sample count: {len(df)}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">DatasetDict({
-  train: Dataset({features: ['label', 'text'], num_rows: ...})
-  test:  Dataset({features: ['label', 'text'], num_rows: ...})
-})</pre>
+```text
+Sample count: 5000
+```
 
 ```python
 # 별점은 0-4로 저장돼 있으니 1-5로 변환
@@ -49,10 +48,12 @@ print(f"X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"X_test:  {X_test.shape}, y_test:  {y_test.shape}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Output varies by runtime, seed, and sampled data.
-Running the cell in Colab prints the corresponding string or table.</pre>
+```text
+X_train: (4000, 10000), y_train: (4000,)
+X_test:  (1000, 10000), y_test:  (1000,)
+```
 
 `LinearRegression`은 가중치 벡터 $w$와 편향 $b$를 학습해 다음을 출력합니다.
 
@@ -73,12 +74,14 @@ print(f"Test  MAE: {mean_absolute_error(y_test, y_pred_test):.4f}")
 print(f"Test  R²:  {r2_score(y_test, y_pred_test):.4f}")
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">logits shape: (..., ...)
-probability range: [..., ...]
-first samples:
-  ...</pre>
+```text
+Train MSE: 0.0000
+Test  MSE: 1.5565
+Test  MAE: 0.9952
+Test  R²:  0.2139
+```
 
 ```python
 # 예측값이 1-5 범위를 얼마나 벗어나는지 확인
@@ -96,7 +99,11 @@ plt.title("Prediction distribution: actual vs predicted")
 plt.show()
 ```
 
-**▶ 출력 형태**
+**▶ 실행 결과**
 
-<pre style="background:#eef3fb;border-left:4px solid #5B8DEF;padding:0.7em 1em;border-radius:4px;overflow-x:auto;font-size:0.92em;line-height:1.45;">Output varies by runtime, seed, and sampled data.
-Running the cell in Colab prints the corresponding string or table.</pre>
+```text
+Pred range: [-1.55, 7.15]
+True range: [1, 5]
+```
+
+![output](../assets/02-sklearn_regression-out1.png)

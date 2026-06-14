@@ -4,7 +4,6 @@
 
 **예상 소요 시간**: 약 5-10분 (학습은 즉시, 데이터 로딩이 대부분)
 
----
 
 ## 학습 흐름
 
@@ -76,6 +75,7 @@ mean_squared_error(y, model.predict(X))    # 평가
 > **다음 챕터(Ch 3)**: 같은 TF-IDF 그대로. 변하는 건 출력에 sigmoid가 붙고 loss가 `BCEWithLogitsLoss`로 바뀌는 것입니다.
 
 ## 이 장의 구성
+
 - [02-1. 실습: 별점 1-5를 그대로 회귀하기](02-sklearn_regression-practice.md)
 - [02-2. 해부: "출력은 그냥 숫자다"](02-sklearn_regression-anatomy.md)
 - [02-3. 변형: 별점을 [0, 1]로 정규화](02-sklearn_regression-variation.md)
