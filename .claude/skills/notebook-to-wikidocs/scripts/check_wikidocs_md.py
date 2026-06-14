@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""변환된 WikiDocs md 가 전자책 작성 규칙(wikidocs.net/198723)을 지키는지 검사한다.
+"""변환된 WikiDocs md 가 전자책 작성 규칙([wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723))을 지키는지 검사한다.
 
 `build_wikidocs.py` 로 변환한 뒤 이 스크립트로 한 번 더 점검한다. 변환기가 자동 방어하는
 규칙이라도, 사람이 손댄 페이지나 회귀를 잡기 위한 독립 린터다. 코드펜스(``` ... ```) 안은
 검사에서 제외한다(출력·코드의 내용은 자유).
 
-검사 규칙 (괄호 = 198723 항목):
+검사 규칙 (괄호 = [wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723) 항목):
   E1  본문 H1(#) 금지              [헤딩 레벨 제한]   — 페이지 제목은 TOC 가 담당
   E2  헤딩(##~) 위아래 빈 줄        [헤딩 포맷팅]      — 없으면 PDF 변환 오류
   E3  이미지 위아래 빈 줄          [이미지 포맷팅]
@@ -40,6 +40,7 @@ GIF_RE = re.compile(r"\.gif\b", re.IGNORECASE)
 RAW_HTML_RE = re.compile(r"</?[a-zA-Z][a-zA-Z0-9]*(?:\s[^<>]*)?/?>")
 HR_RE = re.compile(r"^\s*(-{3,}|\*{3,}|_{3,})\s*$")
 WIN_PATH_RE = re.compile(r"[A-Za-z]:\\")
+MATH_RE = re.compile(r"\$[^$]+\$")  # LaTeX 인라인 수식 — W1 오탐(수식 속 i:\ 등) 방지용 제외
 INLINE_CODE_RE = re.compile(r"`[^`]*`")
 FOOTNOTE_RE = re.compile(r"\[\^([^\]]+)\]")
 
@@ -98,7 +99,7 @@ def check_file(path: Path, footnotes: dict):
             errors.append(f"{rel}:{lineno}: raw HTML [E6] → 마크다운으로: {tag}")
         if HR_RE.match(ln):
             errors.append(f"{rel}:{lineno}: 수평선 [E7] → 제거 권장")
-        if WIN_PATH_RE.search(scan):
+        if WIN_PATH_RE.search(MATH_RE.sub("", scan)):  # 수식 제외 후 검사 (i:\ 류 오탐 방지)
             warnings.append(f"{rel}:{lineno}: 윈도우 경로 [W1] → 코드블록/슬래시 권장")
 
         for name in FOOTNOTE_RE.findall(ln):
@@ -143,7 +144,7 @@ def main() -> None:
         for e in all_errors:
             print("  -", e)
     else:
-        print("✅ 위반 없음 (198723 규칙 준수)")
+        print("✅ 위반 없음 (전자책 규칙 준수)")
     if all_warnings:
         print(f"\n⚠️  경고 {len(all_warnings)}건:")
         for w in all_warnings:

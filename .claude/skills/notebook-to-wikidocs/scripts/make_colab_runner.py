@@ -32,7 +32,8 @@ MD_INTRO = """\
 # 📥 Colab 실행 결과 러너 (`executed/` 생산)
 
 이 노트북을 **Colab T4** 에서 열어, 각 챕터 노트북을 끝까지 실행하고
-**출력이 포함된 `executed/<폴더>.ipynb`** 를 포크 `master` 로 커밋·푸시합니다.
+**출력이 포함된 `executed/<폴더>.ipynb`** 를 **본인 fork** `master` 로 커밋·푸시합니다.
+(원본을 그대로 열어도 됩니다 — 아래 *설정* 셀의 `REPO` 에 **본인 fork** 만 지정하면 됩니다.)
 
 - 변환기(`build_wikidocs.py`)가 `executed/<폴더>.ipynb` 가 있으면 **자동으로** 실제 출력 원천
   (`▶ 실행 결과`)으로 씁니다. 없으면 합성(`▶ 출력 형태`)으로 폴백합니다.
@@ -58,8 +59,8 @@ push 하려면 토큰이 필요해요. **레포 하나에만 권한을 주는 Fi
    (메뉴: GitHub 우상단 프로필 → *Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token*)
 2. **Token name**: 아무거나 (예: `neuqes-executed-runner`)
 3. **Expiration**: 7일 또는 30일 (짧게)
-4. **Resource owner**: 본인 계정(`fluentmin`)
-5. **Repository access** → **Only select repositories** → **`neuqes-101`** 선택
+4. **Resource owner**: 본인 계정 (위 `REPO` 의 fork 를 소유한 계정)
+5. **Repository access** → **Only select repositories** → **본인 fork(`neuqes-101`)** 선택
 6. **Permissions** → **Repository permissions** → **Contents** 를 **Read and write** 로
    (이걸 켜면 `Metadata: Read-only` 가 자동 포함됩니다 — 그대로 두세요)
 7. 맨 아래 **Generate token** → 나오는 `github_pat_...` 문자열 **복사**
@@ -72,12 +73,19 @@ push 하려면 토큰이 필요해요. **레포 하나에만 권한을 주는 Fi
 """
 
 CODE_SETUP = """\
-# 1) 의존성 설치 + 포크 클론
+# 1) 의존성 설치 + 본인 fork 클론
 import os
 
-REPO   = "fluentmin/neuqes-101"   # 포크 (executed/ 를 여기 master 로 푸시)
+# ▶ 본인 GitHub fork 를 지정하세요. executed/ 결과를 여기 master 로 push 합니다.
+#   원본(upstream)에는 push 권한이 없으니 **반드시 본인이 fork 한 레포**여야 합니다.
+#   fork 가 없다면: 원본 레포 페이지 우상단 'Fork' → 본인 계정에 복제한 뒤 그 이름을 넣으세요.
+REPO   = ""               # 예: "your-username/neuqes-101"
 BRANCH = "master"
-WORK   = "/content/neuqes-101"
+
+assert REPO and "/" in REPO, \\
+    "REPO 를 본인 fork 로 설정하세요 — 예: your-username/neuqes-101 (원본이 아니라 본인 fork)"
+
+WORK   = "/content/" + REPO.split("/")[-1]
 
 get_ipython().system('pip -q install nbclient nbformat')
 
@@ -100,9 +108,13 @@ TARGET = "stale"
 FORCE  = False             # True 면 해시가 같아도 재실행
 PER_CELL_TIMEOUT = 60 * 60 # 셀당 최대 실행 시간(초). GPU 학습 챕터 여유 있게.
 
+# 커밋 작성자 — 원하면 본인 것으로 바꾸세요(아무 값이나 가능, 토큰이 push 권한을 줍니다).
+GIT_NAME  = "colab-runner"
+GIT_EMAIL = "colab-runner@users.noreply.github.com"
+
 from getpass import getpass
 # contents:write 권한의 fine-grained PAT 권장. 입력값은 저장/출력되지 않습니다.
-GH_TOKEN = getpass("GitHub PAT (fluentmin/neuqes-101, contents:write): ").strip()
+GH_TOKEN = getpass(f"GitHub PAT ({REPO}, contents:write): ").strip()
 """
 
 CODE_HELPERS = """\
@@ -177,10 +189,17 @@ print(f"\\n실행 대상: {len(sel)}개  (TARGET={TARGET!r}, FORCE={FORCE})")
 
 CODE_EXECUTE = """\
 # 5) 실행 → executed/<폴더>.ipynb 저장 (실패해도 다음 챕터 계속)
+import time
 from nbclient import NotebookClient
 from nbclient.exceptions import CellExecutionError
 
-manifest = []
+def fmt_dur(sec):
+    \"\"\"초 → '3분 5초' / '42초' 형태.\"\"\"
+    m, s = divmod(int(round(sec)), 60)
+    return f"{m}분 {s}초" if m else f"{s}초"
+
+manifest = []                 # (폴더, 상태, 소요초)
+total_t0 = time.time()
 for f, p in sel:
     print(f"\\n=== 실행: {f} ===", flush=True)
     nb = nbformat.read(p, as_version=4)
@@ -190,6 +209,7 @@ for f, p in sel:
         allow_errors=False,
     )
     status = "ok"
+    t0 = time.time()
     try:
         client.execute()
     except CellExecutionError as e:
@@ -198,28 +218,33 @@ for f, p in sel:
     except Exception as e:  # 커널 타임아웃 등
         status = "fail: " + str(e)[:120]
         print("  ⚠️", status)
+    elapsed = time.time() - t0
     nb.metadata["executed_from"] = {
         "source_sha256": source_hash(p),
         "executed_at": datetime.datetime.now().isoformat(timespec="seconds"),
         "runtime": "colab-t4",
         "status": status,
+        "elapsed_sec": round(elapsed, 1),
     }
     out = EXEC / (f + ".ipynb")
     nbformat.write(nb, out)
-    manifest.append((f, status))
-    print(f"  → 저장 executed/{f}.ipynb  [{status}]")
+    manifest.append((f, status, elapsed))
+    print(f"  → 저장 executed/{f}.ipynb  [{status}]  ⏱ {fmt_dur(elapsed)}")
 
-print("\\n=== 요약 ===")
-for f, s in manifest:
-    print(f"  {f}: {s}")
+total_elapsed = time.time() - total_t0
+print("\\n=== 요약 (챕터별 소요 시간) ===")
+for f, s, dt in manifest:
+    print(f"  {f:<28}{fmt_dur(dt):>10}   {s}")
+print(f"  {'-'*28}{'-'*10}")
+print(f"  {'합계 (' + str(len(manifest)) + '개 챕터)':<28}{fmt_dur(total_elapsed):>10}")
 """
 
 CODE_PUSH = """\
 # 6) executed/ 만 커밋·푸시 (성공한 것만 올리고 싶으면 manifest 보고 위에서 거른 뒤 재실행)
 import subprocess
 
-subprocess.run(["git", "config", "user.name",  "ChangMin Yoo"], cwd=WORK, check=True)
-subprocess.run(["git", "config", "user.email", "fluentmin@gmail.com"], cwd=WORK, check=True)
+subprocess.run(["git", "config", "user.name",  GIT_NAME], cwd=WORK, check=True)
+subprocess.run(["git", "config", "user.email", GIT_EMAIL], cwd=WORK, check=True)
 subprocess.run(["git", "add", "executed/"], cwd=WORK, check=True)
 
 staged = subprocess.run(["git", "diff", "--cached", "--name-only"],
@@ -228,7 +253,7 @@ if not staged:
     print("커밋할 executed/ 변경이 없습니다.")
 else:
     print("커밋 대상:\\n" + staged)
-    names = ", ".join(f for f, _ in manifest) or "executed"
+    names = ", ".join(m[0] for m in manifest) or "executed"
     msg = f"executed: Colab 실행본 갱신 ({names})"
     subprocess.run(["git", "commit", "-q", "-m", msg], cwd=WORK, check=True)
     push_url = f"https://{GH_TOKEN}@github.com/{REPO}.git"

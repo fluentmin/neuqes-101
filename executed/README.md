@@ -18,8 +18,16 @@ WikiDocs 변환 시 **코드의 실제 실행 결과**(표·로그·그림)를 �
 
 ### A. 러너 노트북으로 일괄 (GPU 챕터 권장) — `run_on_colab.ipynb`
 
-이 폴더의 **`run_on_colab.ipynb` 를 Colab T4 에서 열어** 위에서부터 실행하면, 선택한 챕터를
-끝까지 돌려 `executed/<폴더>.ipynb` 를 만들고 포크 `master` 로 **직접 커밋·푸시**합니다.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yoon-gu/neuqes-101/blob/master/executed/run_on_colab.ipynb)
+
+> 🔧 **아직 upstream PR 머지 전이라면** 위 배지(정본: `yoon-gu/master`)는 파일이 없어 안 열릴 수 있습니다.
+> 그동안은 **fork 브랜치 사본**으로 여세요 → **[Colab에서 열기](https://colab.research.google.com/github/fluentmin/neuqes-101/blob/feat/notebook-to-wikidocs/executed/run_on_colab.ipynb)**
+> 안 열리면 Colab → *파일 > 노트북 열기 > GitHub* 에서 `fluentmin/neuqes-101` → 브랜치 `feat/notebook-to-wikidocs` 선택.
+> _(머지되면 배지가 살아나므로 이 임시 안내는 제거합니다.)_
+
+위 배지로 **`run_on_colab.ipynb` 를 Colab T4 에서 열어** 위에서부터 실행하면, 선택한 챕터를
+끝까지 돌려 `executed/<폴더>.ipynb` 를 만들고 **본인 fork** `master` 로 **직접 커밋·푸시**합니다.
+(배지는 정본 러너를 엽니다 — 설정 셀의 `REPO` 에 **본인 fork** 만 적으면 누구나 그대로 사용.)
 
 - 설정 셀의 `TARGET`: `"stale"`(없거나 바뀐 것만, 기본) · `"all"` · `"gpu"`(07+) · 리스트(`[1, 7, 24]`).
 - **멱등·재개**: clean 노트북 해시를 executed 메타데이터에 심어, 안 바뀐 챕터는 건너뜁니다.
@@ -34,25 +42,10 @@ WikiDocs 변환 시 **코드의 실제 실행 결과**(표·로그·그림)를 �
 2. Colab 메뉴 **파일 > .ipynb 다운로드** (출력이 함께 저장됩니다).
 3. 받은 파일을 `executed/<폴더명>.ipynb`로 저장하고 커밋.
 
-### C. 로컬 (CPU 챕터 1–6 등)
+## 이 실행본의 쓰임
 
-```bash
-python3 .claude/skills/notebook-to-wikidocs/scripts/build_wikidocs.py 1 --execute --save-executed
-# → executed/01_tfidf.ipynb 저장 + pages/01-tfidf-*.md 생성
-```
+여기 모인 실행본(`executed/<폴더>.ipynb`)은 이후 **WikiDocs 변환 도구**(별도 PR)가
+출력 원천으로 자동으로 집어 씁니다 — 변환된 마크다운에 실제 표·로그·그림을 싣기 위해서입니다.
 
-## 사용
-
-변환기가 `executed/<폴더명>.ipynb`가 있으면 **자동으로** 출력 원천으로 집어 씁니다:
-```bash
-python3 .claude/skills/notebook-to-wikidocs/scripts/build_wikidocs.py 24
-# → executed/24_gpt_tinystories.ipynb 의 출력으로 pages/24-*.md 생성
-```
-
-## 진행 현황
-
-| 챕터 | 실행본 | 비고 |
-|---|---|---|
-| 01_tfidf | ✅ | CPU, `--execute --save-executed` 로 생성 |
-| 02–06 | — | CPU, 로컬 생성 가능 |
-| 07–32 | — | 대부분 GPU → Colab 실행본 필요 |
+> 이 PR에는 **러너 도구만** 들어 있습니다(`run_on_colab.ipynb` + 생성기 + 이 문서).
+> 실행본(`executed/<폴더>.ipynb`)과 변환 도구는 후속 PR로 추가됩니다.

@@ -230,7 +230,7 @@ ch01 anatomy의 출력 박스 3개를 `<pre style>` → **`::: {.output}` + 내�
 - **⚠️ 미해결: WikiDocs '웹' 렌더러가 `:::` fenced div를 렌더하는지 미검증.** 웹은 pandoc이 아니라 자체 JS 마크다운.
   `:::`가 웹에서 리터럴로 노출되면 곤란. → 후속 검증 필요(§7-7의 PDF_EXCLUDE/INCLUDE가 대안).
 
-### 7-7. WikiDocs 공식 "전자책 작성 시 주의할 점" 반영 (wikidocs.net/198723)
+### 7-7. WikiDocs 공식 [wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723) 반영
 
 공식 문서가 7-1~7-6의 발견을 **직접 확인**해줌. 변환기/노트북이 지켜야 할 규칙:
 
@@ -266,12 +266,12 @@ ch01 anatomy의 출력 박스 3개를 `<pre style>` → **`::: {.output}` + 내�
 색깔 박스는 포기하되, `▶ 실행 결과` 라벨 + (코드=python 하이라이트 / 출력=plain)로 구분.
 `fenced-div`(전자책 전용 빌드 시 색 박스)·`html-box`(웹 전용)는 옵션으로 남김.
 
-> 미련: 웹+전자책 동시에 색을 지키려면 198723의 `PDF_EXCLUDE/INCLUDE` 이중 출력이 유일 후보지만,
+> 미련: 웹+전자책 동시에 색을 지키려면 [wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723)의 `PDF_EXCLUDE/INCLUDE` 이중 출력이 유일 후보지만,
 > EPUB 이 그 태그를 존중하는지 미검증(서버 업로드 필요)이라 보류. 필요해지면 그때 검증.
 
-### 7-9. 198723 규칙 변환기 방어 + 사후 린터 (2026-06-11)
+### 7-9. [wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723) 규칙 변환기 방어 + 사후 린터 (2026-06-11)
 
-공식 "전자책 작성 시 주의할 점"(198723)을 ch01 md·변환기에 대해 전수 감사. 결과:
+공식 [wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723)을 ch01 md·변환기에 대해 전수 감사. 결과:
 - **변환기가 만든 위반 1건**: 로드맵 `## 이 장의 구성` 헤딩 아래 빈 줄 누락 → 수정(전 챕터 영향).
 - **노트북 유래 1건**: overview 의 수평선 `---` → 변환기 방어로 제거.
 
@@ -280,7 +280,7 @@ ch01 anatomy의 출력 박스 3개를 `<pre style>` → **`::: {.output}` + 내�
 - [1] 2번째+ H1(`#`) → H2 강등(본문 H1 금지; 첫 제목 H1 은 기존대로 제거).
 - [10] 각주 이름에 챕터 stem 접두 → 전자책 전 페이지 통합 시 충돌 방지.
 - [6]/[3] raw HTML·외부 이미지는 자동수정 불가 → 변환 로그에 **경고**만(사용자가 원본 수정).
-변환 시 `방어(198723): 수평선 N 제거 …` 로 요약 출력.
+변환 시 `방어(전자책 규칙): 수평선 N 제거 …` 로 요약 출력.
 
 **사후 린터 `scripts/check_wikidocs_md.py`** — 변환 후 한 번 더 점검(회귀·수기 편집 방지):
 - E1 본문 H1 / E2 헤딩 빈줄 / E3 이미지 빈줄 / E4 외부이미지 / E5 GIF / E6 raw HTML /
@@ -318,7 +318,7 @@ Colab T4에서 여는 단일 러너 노트북 (레포에 체크인, GitHub→Col
 
 ### 8-3. [결정됨 #8] 실행본 반환 = Colab 직접 push (2026-06-11, 사용자 선택 A)
 - **A. Colab에서 직접 git push (채택)** — 러너가 PAT(getpass 입력, 저장 안 함)로 `executed/`만 커밋·푸시.
-  포크(fluentmin/neuqes-101)라 blast radius 작음. 26챕터 자동화에 최적. push URL `https://<token>@github.com/...`.
+  본인 포크라 blast radius 작음. 전 챕터 자동화에 최적. push URL `https://<token>@github.com/...`.
 - (기각) B. zip 다운로드 → 로컬 커밋 — 토큰 불필요하나 세션마다 수동 한 단계.
 - 구현: 러너 노트북 `executed/run_on_colab.ipynb` (생성기 `scripts/make_colab_runner.py`).
   소스 해시를 executed 메타데이터(`executed_from.source_sha256`)에 심어 멱등/재개. 대상 `all|gpu|stale|리스트`.
@@ -339,11 +339,15 @@ Colab T4에서 여는 단일 러너 노트북 (레포에 체크인, GitHub→Col
 
 ## 9. 진행 로그
 
+- 2026-06-14 executed 16~32 실행·push 완료(사용자, Colab 러너) → **01~32 전 챕터 실행본 확보**(§8-5 후속).
+- 2026-06-14 executed 01~32 전수 변환·린트로 잡은 보강을 변환기/린터에 반영: **헤딩 위아래 빈 줄 자동 삽입**(E2, ch29 8건 해소) + **트렁케이트 opt-out 에 22 추가**(한국어 토큰화 보존) + 노이즈 필터에 `generation_config` 보일러플레이트 추가 + **윈도우 경로 방어**(변환기는 진짜 `C:\` 경로만 인라인코드, 린터 W1은 LaTeX 수식 제외해 `i:\,` 오탐 제거). 재검 전 32챕터 **위반 0·경고 0**.
+- 2026-06-14 upstream(yoon-gu) PR 준비 — upstream/master 기준 깨끗한 브랜치 `feat/notebook-to-wikidocs` 에 항목별 커밋(러너 / 변환기·린터 / 보강 / 스킬). 러너 **repo-agnostic 화**(`REPO`=본인 fork)·챕터별 소요시간·Colab 배지 추가. `198723` 언급을 [wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723) 링크로 통일.
+- 2026-06-14 SKILL.md 전면 갱신 — 파이프라인 3단계(① executed/ 실행결과 확보 ② 변환 ③ 린터 검증)로 재정리. 변환할 챕터의 `executed/<폴더>.ipynb` 가 없으면 합성으로 넘어가지 말고 사용자에게 Colab 러너 실행을 안내·중단.
 - 2026-06-11 러너 첫 가동 — Colab 에서 01~15 실행·push, 로컬 전수 점검 전부 ok/에러0/GPU정상(§8-5). setup 셀 KeyError(.format→f-string) 수정.
 - 2026-06-11 고민 8(Colab 실행 결과 관리) 추가 — 러너 노트북 `executed/run_on_colab.ipynb` + 생성기 구현, 결정 #8=A(Colab 직접 push).
-- 2026-06-11 198723 전수 감사 → 변환기 방어(_sanitize_md_cell) + 사후 린터 check_wikidocs_md.py 추가(§7-9). ch01 통과.
+- 2026-06-11 [wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723) 전수 감사 → 변환기 방어(_sanitize_md_cell) + 사후 린터 check_wikidocs_md.py 추가(§7-9). ch01 통과.
 - 2026-06-11 WikiDocs 웹 실측: fenced div(:::) 웹에서 깨짐 → 기본 출력 스타일 code 로 확정(§7-8). ch01 재생성.
-- 2026-06-11 pandoc으로 ch01 EPUB/PDF 실측(§7-5) → fenced div 출력박스 시제품 검증(§7-6) → 공식 198723 반영(§7-7).
+- 2026-06-11 pandoc으로 ch01 EPUB/PDF 실측(§7-5) → fenced div 출력박스 시제품 검증(§7-6) → 공식 [wikidocs 전자책 작성시 주의할 점](https://wikidocs.net/198723) 반영(§7-7).
 - 2026-06-11 WikiDocs 전자책 포맷 조사(웹 403 → Playwright). EPUB/PDF 다운스트림 제약을 고민 7로 누적.
 - 2026-06-09 브랜치 `feat/notebook-to-wikidocs-skill` 생성. 스킬 스캐폴딩 + 변환기 작성.
 - 2026-06-09 ch01 `--execute` 실제 실행 → pages/01-tfidf-* 에 진짜 출력(표·그림) 검증. 커밋 f903aa9.
